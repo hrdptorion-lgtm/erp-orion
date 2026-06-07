@@ -360,17 +360,41 @@ function saveBOM(payload) {
 }
 
 function saveInvoice(payload) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Invoice');
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('DB Invoice');
+  const penawaranSheet = ss.getSheetByName('DB Penawaran');
   
-  // Logika flowchart: Hitung Total - DP
   const total = parseFloat(payload.total_harga) || 0;
   const dp = parseFloat(payload.dp) || 0;
-  const grandTotal = total - dp;
+  
+  let newStatus = 'LUNAS';
+  let sisaTagihan = total - dp;
+  
+  // Update DB Penawaran
+  if (payload.ref_surat_jalan && penawaranSheet) {
+    const pValues = penawaranSheet.getDataRange().getValues();
+    const pHeaders = pValues[0];
+    const noIdx = pHeaders.indexOf('No Penawaran');
+    const statusIdx = pHeaders.indexOf('Status');
+    const dpIdx = pHeaders.indexOf('Down Payment');
+    
+    for (let i = 1; i < pValues.length; i++) {
+      if (pValues[i][noIdx] == payload.ref_surat_jalan) {
+        let currentDP = parseFloat(pValues[i][dpIdx]) || 0;
+        let newDP = currentDP + dp;
+        newStatus = newDP >= total ? 'LUNAS' : 'Proses';
+        sisaTagihan = total - newDP;
+        penawaranSheet.getRange(i + 1, statusIdx + 1).setValue(newStatus);
+        penawaranSheet.getRange(i + 1, dpIdx + 1).setValue(newDP);
+        break;
+      }
+    }
+  }
   
   const noInvoice = 'INV-' + Date.now();
-  sheet.appendRow([noInvoice, payload.ref_surat_jalan, payload.customer, total, dp, grandTotal, 'LUNAS']);
+  sheet.appendRow([noInvoice, payload.ref_surat_jalan, payload.customer, total, dp, sisaTagihan, newStatus]);
   
-  return { status: 'success', message: 'Invoice Final diterbitkan. Piutang lunas. Total dipotong DP: Rp ' + grandTotal };
+  return { status: 'success', message: 'Pembayaran berhasil dicatat. Status: ' + newStatus + '. Sisa Tagihan: Rp ' + sisaTagihan.toLocaleString('id-ID') };
 }
 
 function addPettyCash(payload) {

@@ -56,6 +56,19 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.nav-item[data-target="dashboard"]').click();
     }
 
+    // --- Number Format Utility ---
+    function formatRibuan(numStr) {
+        let clean = String(numStr).replace(/\D/g, '');
+        if (!clean) return '';
+        return parseInt(clean, 10).toLocaleString('id-ID');
+    }
+
+    document.addEventListener('input', (e) => {
+        if (e.target.classList && e.target.classList.contains('number-format')) {
+            e.target.value = formatRibuan(e.target.value);
+        }
+    });
+
     loginForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const username = document.getElementById('login-username').value;
@@ -99,7 +112,8 @@ document.addEventListener('DOMContentLoaded', () => {
         'bom': { title: 'PMO & BOM Sampel', sub: 'Manajemen Komposisi Material dan Tahapan Produksi.' },
         'produksi': { title: 'Produksi & Gudang', sub: 'Surat Perintah Kerja dan pemotongan stok.' },
         'finance': { title: 'Finance & Kasir', sub: 'Penagihan, Invoice, dan Petty Cash.' },
-        'admin': { title: 'Manajemen Pengguna', sub: 'Pengaturan Role Akses Aplikasi.' }
+        'admin': { title: 'Manajemen Pengguna', sub: 'Pengaturan Role Akses Aplikasi.' },
+        'pengaturan': { title: 'Pengaturan Perusahaan', sub: 'Informasi dasar identitas perusahaan.' }
     };
 
     navItems.forEach(item => {
@@ -134,6 +148,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadBOMData();
             } else if (targetViewId === 'produksi') {
                 loadProduksiData();
+            } else if (targetViewId === 'pengaturan') {
+                loadSettingsData();
             }
         });
     });
@@ -422,8 +438,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function calculatePenawaranTotal() {
         let total = 0;
         pItemsContainer.querySelectorAll('.p-item-row').forEach(row => {
-            const qty = parseInt(row.querySelector('.pi-qty').value) || 0;
-            const harga = parseInt(row.querySelector('.pi-harga').value) || 0;
+            const qty = parseInt(String(row.querySelector('.pi-qty').value).replace(/\D/g, '')) || 0;
+            const harga = parseInt(String(row.querySelector('.pi-harga').value).replace(/\D/g, '')) || 0;
             const subtotal = qty * harga;
             row.querySelector('.pi-subtotal').textContent = subtotal.toLocaleString('id-ID');
             total += subtotal;
@@ -441,8 +457,8 @@ document.addEventListener('DOMContentLoaded', () => {
         div.style.alignItems = 'center';
         div.innerHTML = `
             <input type="text" class="pi-nama" placeholder="Nama / Deskripsi Barang" value="${nama}" required style="flex: 2; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
-            <input type="number" class="pi-qty" placeholder="Qty" value="${qty}" required style="flex: 1; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
-            <input type="number" class="pi-harga" placeholder="Harga Satuan" value="${harga}" required style="flex: 1.5; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            <input type="text" class="pi-qty number-format" placeholder="Qty" value="${qty ? formatRibuan(qty) : ''}" required style="flex: 1; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            <input type="text" class="pi-harga number-format" placeholder="Harga Satuan" value="${harga ? formatRibuan(harga) : ''}" required style="flex: 1.5; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
             <div style="flex: 1.5; text-align: right; color: var(--text-main); font-weight: bold;">Rp <span class="pi-subtotal">0</span></div>
             <button type="button" class="btn btn-remove-p-row" style="background: var(--danger); padding: 0.6rem;"><i class="fa-solid fa-trash"></i></button>
         `;
@@ -477,18 +493,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const items = [];
         pItemsContainer.querySelectorAll('.p-item-row').forEach(row => {
             const nama = row.querySelector('.pi-nama').value;
-            const qty = parseInt(row.querySelector('.pi-qty').value) || 0;
-            const harga = parseInt(row.querySelector('.pi-harga').value) || 0;
+            const qty = parseInt(String(row.querySelector('.pi-qty').value).replace(/\D/g, '')) || 0;
+            const harga = parseInt(String(row.querySelector('.pi-harga').value).replace(/\D/g, '')) || 0;
             if(nama) items.push({ nama, qty, harga });
         });
 
         const payload = {
             no_penawaran: document.getElementById('p_no_penawaran').value,
             customer: document.getElementById('p_customer').value,
-            total_harga: document.getElementById('p_total_harga').value,
+            total_harga: parseInt(String(document.getElementById('p_total_harga').value).replace(/\D/g, '')) || 0,
             rincian_item: items,
             narasi: document.getElementById('p_narasi').value,
-            dp: document.getElementById('p_dp').value,
+            dp: parseInt(String(document.getElementById('p_dp').value).replace(/\D/g, '')) || 0,
             status: document.getElementById('p_status').value
         };
         
@@ -521,8 +537,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const payload = {
             customer: document.getElementById('pay_customer').value,
             ref_surat_jalan: document.getElementById('pay_ref').value,
-            total_harga: document.getElementById('pay_total').value,
-            dp: document.getElementById('pay_nominal').value
+            total_harga: parseInt(String(document.getElementById('pay_total').value).replace(/\D/g, '')) || 0,
+            dp: parseInt(String(document.getElementById('pay_nominal').value).replace(/\D/g, '')) || 0
         };
         
         const btnSubmit = paymentForm.querySelector('button[type="submit"]');

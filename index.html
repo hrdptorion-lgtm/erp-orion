@@ -6,6 +6,7 @@
     <title>ERP Orion - Dashboard</title>
     <meta name="description" content="Aplikasi Enterprise Resource Planning PT Orion Karya Sejahtera">
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="logo.png" type="image/png">
     <link rel="stylesheet" href="css/style.css">
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -73,6 +74,10 @@
             <li class="nav-item admin-only" data-target="admin" style="display: none; border-top: 1px solid var(--glass-border); margin-top: 10px; padding-top: 15px;">
                 <i class="fa-solid fa-users-gear"></i>
                 <span>Manajemen Akses</span>
+            </li>
+            <li class="nav-item admin-only" data-target="pengaturan" style="display: none;">
+                <i class="fa-solid fa-cog"></i>
+                <span>Pengaturan Perusahaan</span>
             </li>
         </ul>
     </nav>
@@ -299,8 +304,7 @@
                 <div class="stat-card">
                     <div class="stat-header">
                         <span>Kas Keluar (Hari Ini)</span>
-                        <li class="menu-item" data-view="view-laporan"><i class="fa-solid fa-chart-pie"></i> Laporan Keuangan</li>
-                <li class="menu-item" data-view="view-pengaturan"><i class="fa-solid fa-cog"></i> Pengaturan</li>
+                        <div class="stat-icon icon-orange"><i class="fa-solid fa-arrow-up"></i></div>
                     </div>
                     <div class="stat-value">Rp 0</div>
                 </div>
@@ -462,7 +466,7 @@
         </div>
 
         <!-- View: Pengaturan -->
-        <section id="view-pengaturan" class="view-section">
+        <div id="view-pengaturan" class="view">
             <div class="header-actions">
                 <h2>Pengaturan Perusahaan</h2>
             </div>
@@ -483,7 +487,7 @@
                     <button type="submit" class="btn" style="margin-top: 15px;">Simpan Pengaturan</button>
                 </form>
             </div>
-        </section>
+        </div>
 
         <!-- Penawaran Modal Overlay -->
         <div id="penawaran-modal" class="login-overlay">
@@ -515,7 +519,7 @@
                     </div>
                     <div class="input-group">
                         <label>Down Payment (DP)</label>
-                        <input type="number" id="p_dp" required placeholder="0">
+                        <input type="text" id="p_dp" class="number-format" required placeholder="0">
                     </div>
                     <div class="input-group">
                         <label>Status Penawaran</label>
@@ -633,7 +637,7 @@
                     <p style="color: var(--text-muted); margin-bottom: 15px;">Referensi: <strong id="pay_ref_display" style="color: var(--text-main);"></strong></p>
                     <div class="input-group">
                         <label>Nominal Pembayaran (DP/Cicilan/Lunas)</label>
-                        <input type="number" id="pay_nominal" required placeholder="0">
+                        <input type="text" id="pay_nominal" class="number-format" placeholder="Contoh: 5.000.000" required>
                     </div>
                     <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
                         <button type="button" class="btn" id="btn-close-payment" style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
