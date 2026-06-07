@@ -1,26 +1,61 @@
 // Sample Controllers for ERP modules
 
+function hashPassword(password) {
+  const rawHash = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, password);
+  let txtHash = '';
+  for (let i = 0; i < rawHash.length; i++) {
+    let hashVal = rawHash[i];
+    if (hashVal < 0) {
+      hashVal += 256;
+    }
+    if (hashVal.toString(16).length === 1) {
+      txtHash += '0';
+    }
+    txtHash += hashVal.toString(16);
+  }
+  return txtHash;
+}
+
 function handleLogin(payload) {
-  // Dummy logic, should read from 'DB Users' in Google Sheets
   const { username, password } = payload;
+  const hashedPassword = hashPassword(password);
   
-  if (username === 'admin' && password === 'admin123') {
-    return { status: 'success', role: 'Direktur', nama: 'Bapak Direktur' };
-  } else if (username === 'purchasing1' && password === 'purchasing123') {
-    return { status: 'success', role: 'Pimpinan Purchasing', nama: 'Kepala Purchasing' };
-  } else if (username === 'purchasing2' && password === 'purchasing123') {
-    return { status: 'success', role: 'Staff Purchasing', nama: 'Staff Purchasing' };
-  } else if (username === 'produksi1' && password === 'produksi123') {
-    return { status: 'success', role: 'Pimpinan Produksi', nama: 'Kepala Produksi' };
-  } else if (username === 'produksi2' && password === 'produksi123') {
-    return { status: 'success', role: 'Staff Produksi', nama: 'Staff Produksi' };
-  } else if (username === 'finance1' && password === 'finance123') {
-    return { status: 'success', role: 'Pimpinan Finance', nama: 'Kepala Finance' };
-  } else if (username === 'finance2' && password === 'finance123') {
-    return { status: 'success', role: 'Staff Finance', nama: 'Staff Finance' };
-  } else {
+  // Hardcoded Super Admin account (Hash of ciko1234)
+  if (username === 'super' && hashedPassword === '90145cca92176dffdba677c0e523db8faeb1414bfb24583899c0bec846346f8f') {
+    return { status: 'success', role: 'Super Admin', nama: 'Super Admin' };
+  }
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('DB Users');
+  
+  if (!sheet) {
+    return { status: 'error', message: 'Sheet DB Users tidak ditemukan.' };
+  }
+
+  const data = sheet.getDataRange().getDisplayValues();
+  if (data.length <= 1) {
     return { status: 'error', message: 'Username atau Password salah!' };
   }
+
+  const headers = data[0];
+  const userIdx = headers.indexOf('Username');
+  const passIdx = headers.indexOf('Password');
+  const roleIdx = headers.indexOf('Role');
+  const namaIdx = headers.indexOf('Nama Lengkap');
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    // Mendukung pengecekan hash ATAU plain text (agar user yang belum mengubah password di DB ke hash tetap bisa login)
+    if (row[userIdx] === username && (row[passIdx] === hashedPassword || row[passIdx] === password)) {
+      return { 
+        status: 'success', 
+        role: row[roleIdx] || 'Admin', 
+        nama: row[namaIdx] || username 
+      };
+    }
+  }
+
+  return { status: 'error', message: 'Username atau Password salah!' };
 }
 
 
@@ -326,9 +361,43 @@ function getBOM() {
 }
 
 function saveBOM(payload) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB BOM');
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('DB BOM');
   if (!sheet) return { status: 'error', message: 'Sheet DB BOM tidak ditemukan.' };
   
+  // Handle new materials added in BOM
+  let materials = [];
+  try {
+    materials = typeof payload.rincian_material === 'string' ? JSON.parse(payload.rincian_material) : payload.rincian_material;
+  } catch(e) {}
+  
+  if (materials && materials.length > 0) {
+    const stockSheet = ss.getSheetByName('DB Master Bahan Baku');
+    if (stockSheet) {
+      const stockData = stockSheet.getDataRange().getValues();
+      const stockHeaders = stockData[0];
+      const sKodeIdx = stockHeaders.indexOf('Kode Material');
+      const sNamaIdx = stockHeaders.indexOf('Nama Material');
+      
+      const existingNamas = stockData.slice(1).map(r => String(r[sNamaIdx]).toLowerCase());
+      
+      materials.forEach(mat => {
+        const matNamaLower = String(mat.nama || '').toLowerCase();
+        if (matNamaLower && !existingNamas.includes(matNamaLower)) {
+          const newRow = stockHeaders.map(h => {
+             if (h === 'Kode Material') return mat.kode || ('RM' + Math.floor(Math.random()*10000));
+             if (h === 'Nama Material') return mat.nama;
+             if (h === 'Stok') return 0;
+             if (h === 'Harga Satuan') return mat.harga || 0;
+             return '';
+          });
+          stockSheet.appendRow(newRow);
+          existingNamas.push(matNamaLower); // prevent duplicates in the same loop
+        }
+      });
+    }
+  }
+
   const values = sheet.getDataRange().getValues();
   const headers = values[0];
   const kodeIdx = headers.indexOf('Kode Barang Jadi');

@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${item.kode}</td>
                     <td style="font-weight: 500;">${item.nama}</td>
                     <td>
-                        <span class="badge ${isKritis ? 'badge-warning' : 'badge-success'}">${item.stok}</span>
+                        <span class="badge ${isKritis ? 'badge-warning' : 'badge-success'}">${parseInt(item.stok || 0).toLocaleString('id-ID')}</span>
                     </td>
                     <td>${item.lokasi}</td>
                     <td>
@@ -217,9 +217,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('f_kode').value = data ? data.kode : '';
         document.getElementById('f_kode').readOnly = !!data; // readonly if editing
         document.getElementById('f_nama').value = data ? data.nama : '';
-        document.getElementById('f_stok').value = data ? data.stok : '';
-        document.getElementById('f_harga').value = data ? data.harga : '';
+        document.getElementById('f_stok').value = data && data.stok ? formatRibuan(data.stok) : '';
         document.getElementById('f_lokasi').value = data ? data.lokasi : '';
+        document.getElementById('f_harga').value = data && data.harga ? formatRibuan(data.harga) : '';
+        document.getElementById('f_spesifikasi').value = data ? data.spesifikasi : '';
         
         dataModal.classList.add('active');
     }
@@ -233,9 +234,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const payload = {
             kode: document.getElementById('f_kode').value,
             nama: document.getElementById('f_nama').value,
-            stok: document.getElementById('f_stok').value,
-            harga: document.getElementById('f_harga').value,
-            lokasi: document.getElementById('f_lokasi').value
+            stok: parseInt(String(document.getElementById('f_stok').value).replace(/\D/g, '')) || 0,
+            lokasi: document.getElementById('f_lokasi').value,
+            harga: parseInt(String(document.getElementById('f_harga').value).replace(/\D/g, '')) || 0,
+            spesifikasi: document.getElementById('f_spesifikasi').value
         };
         
         const btnSubmit = dataForm.querySelector('button[type="submit"]');
@@ -275,12 +277,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Flow 1: Penawaran
     async function loadPenawaranData() {
+        // Fetch BOM and Stock for datalist
+        const [bomRes, stockRes] = await Promise.all([
+            window.ERPAPI.request('get_bom'),
+            window.ERPAPI.request('get_stock')
+        ]);
+        
+        const list = document.getElementById('bom-items-list');
+        if (list) {
+            list.innerHTML = '';
+            if (bomRes.status === 'success' && bomRes.data) {
+                bomRes.data.forEach(b => {
+                    const option = document.createElement('option');
+                    option.value = b.nama_barang;
+                    option.setAttribute('data-harga', b.total_biaya || 0);
+                    list.appendChild(option);
+                });
+            }
+            if (stockRes.status === 'success' && stockRes.data) {
+                stockRes.data.forEach(s => {
+                    const option = document.createElement('option');
+                    option.value = s.nama;
+                    option.setAttribute('data-harga', s.harga || 0);
+                    list.appendChild(option);
+                });
+            }
+        }
+
         const tbody = document.getElementById('table-penawaran');
         if (!tbody) return;
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
         
         const response = await window.ERPAPI.request('get_penawaran');
         if (response.status === 'success' && response.data) {
+            // Populate Customer Datalist
+            const customerList = document.getElementById('customer-list');
+            if (customerList) {
+                customerList.innerHTML = '';
+                const uniqueCustomers = [...new Set(response.data.map(item => item.customer).filter(Boolean))];
+                uniqueCustomers.forEach(cust => {
+                    const option = document.createElement('option');
+                    option.value = cust;
+                    customerList.appendChild(option);
+                });
+            }
+
             tbody.innerHTML = '';
             if (response.data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Belum ada data penawaran.</td></tr>';
@@ -297,6 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${item.no_penawaran || '-'}</td>
                     <td>${item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID') : '-'}</td>
                     <td style="font-weight: 500;">${item.customer}</td>
+                    <td>${item.narasi || '-'}</td>
                     <td>Rp ${parseInt(item.total_harga).toLocaleString('id-ID')}</td>
                     <td>Rp ${parseInt(item.dp).toLocaleString('id-ID')}</td>
                     <td><span class="badge ${badgeClass}">${item.status || 'Penawaran'}</span></td>
@@ -456,7 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
         div.style.marginBottom = '10px';
         div.style.alignItems = 'center';
         div.innerHTML = `
-            <input type="text" class="pi-nama" placeholder="Nama / Deskripsi Barang" value="${nama}" required style="flex: 2; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            <input type="text" list="bom-items-list" class="pi-nama" placeholder="Nama / Pilih dari BOM" value="${nama}" required style="flex: 2; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
             <input type="text" class="pi-qty number-format" placeholder="Qty" value="${qty ? formatRibuan(qty) : ''}" required style="flex: 1; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
             <input type="text" class="pi-harga number-format" placeholder="Harga Satuan" value="${harga ? formatRibuan(harga) : ''}" required style="flex: 1.5; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
             <div style="flex: 1.5; text-align: right; color: var(--text-main); font-weight: bold;">Rp <span class="pi-subtotal">0</span></div>
@@ -468,13 +510,31 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         div.querySelector('.pi-qty').addEventListener('input', calculatePenawaranTotal);
         div.querySelector('.pi-harga').addEventListener('input', calculatePenawaranTotal);
+        
+        // Auto-fill harga from datalist
+        div.querySelector('.pi-nama').addEventListener('input', (e) => {
+            const val = e.target.value;
+            const list = document.getElementById('bom-items-list');
+            if (list) {
+                const options = Array.from(list.options);
+                const match = options.find(opt => opt.value === val);
+                if (match) {
+                    const hrg = match.getAttribute('data-harga');
+                    if (hrg) {
+                        div.querySelector('.pi-harga').value = formatRibuan(hrg);
+                        calculatePenawaranTotal();
+                    }
+                }
+            }
+        });
+
         pItemsContainer.appendChild(div);
         calculatePenawaranTotal();
     }
 
     document.getElementById('btn-add-p-item')?.addEventListener('click', () => addPenawaranItemRow());
 
-    document.getElementById('btn-run-penawaran')?.addEventListener('click', () => {
+    document.getElementById('btn-add-penawaran')?.addEventListener('click', () => {
         document.getElementById('penawaran-form').reset();
         document.getElementById('penawaran-modal-title').textContent = 'Buat Penawaran Baru';
         document.getElementById('p_no_penawaran').value = '';
@@ -577,6 +637,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!tbody) return;
         tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
         
+        // Fetch Stock for datalist
+        const stockRes = await window.ERPAPI.request('get_stock');
+        if (stockRes.status === 'success' && stockRes.data) {
+            const list = document.getElementById('bom-bahan-baku-list');
+            if (list) {
+                list.innerHTML = '';
+                stockRes.data.forEach(s => {
+                    const option = document.createElement('option');
+                    option.value = s.nama;
+                    option.setAttribute('data-kode', s.kode || '');
+                    option.setAttribute('data-harga', s.harga || 0);
+                    list.appendChild(option);
+                });
+            }
+        }
+        
         const response = await window.ERPAPI.request('get_bom');
         if (response.status === 'success' && response.data) {
             tbody.innerHTML = '';
@@ -607,7 +683,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let total = 0;
         const prices = materialsContainer.querySelectorAll('.mat-harga');
         prices.forEach(input => {
-            total += parseInt(input.value) || 0;
+            total += parseInt(String(input.value).replace(/\D/g, '')) || 0;
         });
         totalBiayaDisplay.textContent = total.toLocaleString('id-ID');
     }
@@ -618,10 +694,10 @@ document.addEventListener('DOMContentLoaded', () => {
         div.style.gap = '10px';
         div.style.marginBottom = '10px';
         div.innerHTML = `
-            <input type="text" class="mat-kode" placeholder="Kode Mat" value="${kode}" required style="flex: 1; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
-            <input type="text" class="mat-nama" placeholder="Nama Material" value="${nama}" required style="flex: 2; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
-            <input type="number" class="mat-qty" placeholder="Qty" value="${qty}" required style="flex: 1; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
-            <input type="number" class="mat-harga" placeholder="Total Biaya Mat." value="${harga}" required style="flex: 1.5; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            <input type="text" class="mat-kode" placeholder="Kode Mat" value="${kode}" style="flex: 1; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            <input type="text" list="bom-bahan-baku-list" class="mat-nama" placeholder="Nama Material" value="${nama}" required style="flex: 2; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            <input type="text" class="mat-qty number-format" placeholder="Qty" value="${qty ? formatRibuan(qty) : ''}" required style="flex: 1; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            <input type="text" class="mat-harga number-format" placeholder="Total Biaya Mat." value="${harga ? formatRibuan(harga) : ''}" required style="flex: 1.5; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
             <button type="button" class="btn btn-remove-row" style="background: var(--danger); padding: 0.6rem;"><i class="fa-solid fa-trash"></i></button>
         `;
         div.querySelector('.btn-remove-row').addEventListener('click', () => {
@@ -629,6 +705,24 @@ document.addEventListener('DOMContentLoaded', () => {
             calculateTotalBiaya();
         });
         div.querySelector('.mat-harga').addEventListener('input', calculateTotalBiaya);
+        
+        // Auto-fill kode and harga from datalist
+        div.querySelector('.mat-nama').addEventListener('input', (e) => {
+            const val = e.target.value;
+            const list = document.getElementById('bom-bahan-baku-list');
+            if (list) {
+                const options = Array.from(list.options);
+                const match = options.find(opt => opt.value === val);
+                if (match) {
+                    const hrg = match.getAttribute('data-harga');
+                    const kod = match.getAttribute('data-kode');
+                    if (hrg) div.querySelector('.mat-harga').value = formatRibuan(hrg);
+                    if (kod) div.querySelector('.mat-kode').value = kod;
+                    calculateTotalBiaya();
+                }
+            }
+        });
+
         materialsContainer.appendChild(div);
     }
 
@@ -669,9 +763,9 @@ document.addEventListener('DOMContentLoaded', () => {
         materialsContainer.querySelectorAll('div').forEach(div => {
             const kode = div.querySelector('.mat-kode')?.value;
             const nama = div.querySelector('.mat-nama')?.value;
-            const qty = div.querySelector('.mat-qty')?.value;
-            const harga = div.querySelector('.mat-harga')?.value;
-            if(nama) materials.push({ kode: kode || '', nama, qty: parseInt(qty) || 1, harga: parseInt(harga) || 0 });
+            const qty = parseInt(String(div.querySelector('.mat-qty')?.value).replace(/\D/g, '')) || 0;
+            const harga = parseInt(String(div.querySelector('.mat-harga')?.value).replace(/\D/g, '')) || 0;
+            if(nama) materials.push({ kode: kode || '', nama, qty: qty || 1, harga: harga || 0 });
         });
 
         const proses = [];
@@ -775,7 +869,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function calculateSPKEstimasi() {
         const kode = document.getElementById('spk_kode_jadi').value;
-        const qty = parseInt(document.getElementById('spk_qty_jadi').value) || 0;
+        const qty = parseInt(String(document.getElementById('spk_qty_jadi').value).replace(/\D/g, '')) || 0;
         const container = document.getElementById('spk-bahan-container');
         const totalDisp = document.getElementById('spk_total_biaya');
         const btnSubmit = produksiForm.querySelector('button[type="submit"]');
@@ -854,7 +948,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         
         const kode = document.getElementById('spk_kode_jadi').value;
-        const qty = parseInt(document.getElementById('spk_qty_jadi').value) || 0;
+        const qty = parseInt(String(document.getElementById('spk_qty_jadi').value).replace(/\D/g, '')) || 0;
         
         const bom = cachedBOMData.find(b => b.kode_barang === kode);
         let calculatedBahan = [];

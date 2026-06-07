@@ -188,6 +188,7 @@
                                 <th>No Penawaran</th>
                                 <th>Tanggal</th>
                                 <th>Customer</th>
+                                <th>Narasi</th>
                                 <th>Total Harga</th>
                                 <th>DP</th>
                                 <th>Status</th>
@@ -196,7 +197,7 @@
                         </thead>
                         <tbody id="table-penawaran">
                             <tr>
-                                <td colspan="7" style="text-align: center;">Memuat data...</td>
+                                <td colspan="8" style="text-align: center;">Memuat data...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -445,11 +446,11 @@
                     <div class="input-group" style="display: flex; gap: 1rem;">
                         <div style="flex: 1;">
                             <label>Stok Awal</label>
-                            <input type="number" id="f_stok" required placeholder="0">
+                            <input type="text" class="number-format" id="f_stok" required placeholder="0">
                         </div>
                         <div style="flex: 1;">
                             <label>Harga Satuan</label>
-                            <input type="number" id="f_harga" required placeholder="10000">
+                            <input type="text" class="number-format" id="f_harga" required placeholder="10.000">
                         </div>
                     </div>
                     <div class="input-group">
@@ -497,7 +498,7 @@
                     <input type="hidden" id="p_no_penawaran">
                     <div class="input-group">
                         <label>Customer</label>
-                        <input type="text" id="p_customer" required placeholder="Nama Customer">
+                        <input type="text" id="p_customer" list="customer-list" required placeholder="Nama Customer / Pilih dari History">
                     </div>
                     <div class="input-group" style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-top: 15px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -553,7 +554,7 @@
                     </div>
                     <div class="input-group">
                         <label>Qty Produksi (Masal)</label>
-                        <input type="number" id="spk_qty_jadi" required placeholder="10">
+                        <input type="text" class="number-format" id="spk_qty_jadi" required placeholder="10">
                     </div>
                     <div class="input-group" style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-top: 15px;">
                         <label style="color: var(--warning);">Estimasi Penggunaan Bahan Baku (Auto Deduct)</label>
@@ -714,6 +715,11 @@
     </div>
 
     <!-- Scripts -->
+    <!-- BOM Datalist for Autocomplete -->
+    <datalist id="bom-items-list"></datalist>
+    <datalist id="customer-list"></datalist>
+    <datalist id="bom-bahan-baku-list"></datalist>
+
     <script src="js/api.js"></script>
     <script src="js/app.js"></script>
 </body>
