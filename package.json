@@ -1,0 +1,21 @@
+{
+  "name": "erporion",
+  "version": "1.0.0",
+  "description": "",
+  "main": "logos_b64.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ciko15/ERPORION.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ciko15/ERPORION/issues"
+  },
+  "homepage": "https://github.com/ciko15/ERPORION#readme"
+}

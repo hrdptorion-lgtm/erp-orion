@@ -45,7 +45,6 @@ function handleLogin(payload) {
 
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
-    // Mendukung pengecekan hash ATAU plain text (agar user yang belum mengubah password di DB ke hash tetap bisa login)
     if (row[userIdx] === username && (row[passIdx] === hashedPassword || row[passIdx] === password)) {
       return { 
         status: 'success', 
@@ -58,10 +57,45 @@ function handleLogin(payload) {
   return { status: 'error', message: 'Username atau Password salah!' };
 }
 
+function getDashboardData() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  const getSheetData = (sheetName) => {
+    const sheet = ss.getSheetByName(sheetName);
+    if (!sheet) return [];
+    const values = sheet.getDataRange().getDisplayValues();
+    return values.length > 1 ? values.slice(1) : [];
+  };
 
-function getStock() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Master Bahan Baku');
-  if (!sheet) return { status: 'error', message: 'Sheet DB Master Bahan Baku tidak ditemukan.' };
+  const orders = getSheetData('DB Orders');
+  const produksi = getSheetData('DB Jadwal Produksi');
+  const inventory = getSheetData('DB Master Barang Jadi');
+  const stock = getSheetData('DB Master Bahan Baku');
+
+  const totalOrders = orders.length;
+  const activeProduksi = produksi.filter(row => row[5] !== 'Selesai').length;
+  const lowStock = stock.filter(row => parseInt(row[2] || 0) < 50).length;
+
+  return {
+    status: 'success',
+    data: {
+      kpi: {
+        totalOrders,
+        activeProduksi,
+        lowStockItems: lowStock
+      },
+      recentOrders: orders.slice(-5).map(r => ({
+        id: r[0],
+        customer: r[1],
+        status: r[6] || 'Pending'
+      }))
+    }
+  };
+}
+
+function getOrders() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Orders');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Orders tidak ditemukan.' };
   
   const values = sheet.getDataRange().getDisplayValues();
   if (values.length <= 1) return { status: 'success', data: [] };
@@ -70,13 +104,7 @@ function getStock() {
   const data = values.slice(1).map(row => {
     let obj = {};
     headers.forEach((h, i) => {
-      if (h === 'Kode Material') obj.kode = row[i];
-      if (h === 'Nama Material') obj.nama = row[i];
-      if (h === 'Stok') obj.stok = parseInt(row[i]) || 0;
-      if (h === 'Satuan') obj.satuan = row[i];
-      if (h === 'Lokasi (Rak/Zona)') obj.lokasi = row[i];
-      if (h === 'Harga Satuan') obj.harga = row[i];
-      if (h === 'Spesifikasi') obj.spesifikasi = row[i];
+      obj[String(h).toLowerCase().replace(/ /g, '_')] = row[i];
     });
     return obj;
   });
@@ -84,116 +112,198 @@ function getStock() {
   return { status: 'success', data: data };
 }
 
-function saveStock(payload) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Master Bahan Baku');
-  if (!sheet) return { status: 'error', message: 'Sheet tidak ditemukan.' };
+function saveOrder(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Orders');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Orders tidak ditemukan.' };
   
-  const values = sheet.getDataRange().getValues();
-  const headers = values[0];
-  const kodeIdx = headers.indexOf('Kode Material');
+  const rowData = [
+    'ORD-' + Math.floor(Math.random() * 10000),
+    payload.customer,
+    payload.item,
+    payload.qty,
+    payload.deadline,
+    payload.priority || 'Normal',
+    'Pending'
+  ];
   
-  let rowIndex = -1;
-  for (let i = 1; i < values.length; i++) {
-    if (values[i][kodeIdx] == payload.kode) {
-      rowIndex = i + 1;
-      break;
-    }
-  }
-  
-  const rowData = headers.map(h => {
-      if (h === 'Kode Material') return payload.kode || '';
-      if (h === 'Nama Material') return payload.nama || '';
-      if (h === 'Stok') return payload.stok || 0;
-      if (h === 'Satuan') return payload.satuan || '';
-      if (h === 'Lokasi (Rak/Zona)') return payload.lokasi || '';
-      if (h === 'Harga Satuan') return payload.harga || 0;
-      if (h === 'Spesifikasi') return payload.spesifikasi || '';
-      return '';
-  });
-  
-  if (rowIndex === -1) {
-    // Insert new
-    sheet.appendRow(rowData);
-    return { status: 'success', message: 'Data bahan baku berhasil ditambahkan.' };
-  } else {
-    // Update existing - Check for changes to log
-    const oldRow = values[rowIndex - 1];
-    const oldStok = parseInt(oldRow[headers.indexOf('Stok')]) || 0;
-    const oldHarga = parseInt(oldRow[headers.indexOf('Harga Satuan')]) || 0;
-    const oldLokasi = oldRow[headers.indexOf('Lokasi (Rak/Zona)')] || '';
-    const oldSatuan = oldRow[headers.indexOf('Satuan')] || '';
-    
-    let changes = [];
-    if (oldStok !== payload.stok) changes.push(`Stok: ${oldStok} -> ${payload.stok}`);
-    if (oldHarga !== payload.harga) changes.push(`Harga: ${oldHarga} -> ${payload.harga}`);
-    if (oldLokasi !== payload.lokasi) changes.push(`Lokasi: ${oldLokasi} -> ${payload.lokasi}`);
-    if (oldSatuan !== payload.satuan) changes.push(`Satuan: ${oldSatuan} -> ${payload.satuan}`);
-    
-    if (changes.length > 0) {
-      const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Transaksi Gudang');
-      if (logSheet) {
-        const username = payload.user_nama || payload.username || 'System';
-        logSheet.appendRow(['TRX-' + Date.now(), new Date(), 'ADJUST', 'Manual Edit', payload.kode, (payload.stok - oldStok), 'User: ' + username, 'Update Master: ' + changes.join(', ')]);
-      }
-    }
-    
-    sheet.getRange(rowIndex, 1, 1, rowData.length).setValues([rowData]);
-    return { status: 'success', message: 'Data bahan baku berhasil diperbarui.' };
-  }
+  sheet.appendRow(rowData);
+  return { status: 'success', message: 'Order berhasil disimpan.' };
 }
 
-function importStock(payload) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Master Bahan Baku');
-  if (!sheet) return { status: 'error', message: 'Sheet tidak ditemukan.' };
+function updateOrderStatus(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Orders');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Orders tidak ditemukan.' };
   
-  const values = sheet.getDataRange().getValues();
+  const values = sheet.getDataRange().getDisplayValues();
   const headers = values[0];
-  const kodeIdx = headers.indexOf('Kode Material');
+  const idIdx = headers.indexOf('ID Order');
+  const statusIdx = headers.indexOf('Status');
   
-  // Get existing kodes
-  const existingKodes = new Set();
-  for (let i = 1; i < values.length; i++) {
-    existingKodes.add(String(values[i][kodeIdx]).trim().toUpperCase());
+  if (idIdx === -1 || statusIdx === -1) {
+    return { status: 'error', message: 'Struktur DB Orders tidak valid.' };
   }
   
-  let insertedCount = 0;
-  let skippedCount = 0;
-  
-  payload.items.forEach(item => {
-    if (!item.kode) return;
-    const kodeStr = String(item.kode).trim().toUpperCase();
-    if (existingKodes.has(kodeStr)) {
-      skippedCount++;
-    } else {
-      const rowData = headers.map(h => {
-          if (h === 'Kode Material') return kodeStr;
-          if (h === 'Nama Material') return item.nama || '';
-          if (h === 'Stok') return item.stok || 0;
-          if (h === 'Satuan') return item.satuan || '';
-          if (h === 'Lokasi (Rak/Zona)') return item.lokasi || '';
-          if (h === 'Harga Satuan') return item.harga || 0;
-          if (h === 'Spesifikasi') return item.spesifikasi || '';
-          return '';
-      });
-      sheet.appendRow(rowData);
-      existingKodes.add(kodeStr); // prevent duplicates within import
-      insertedCount++;
+  for (let i = 1; i < values.length; i++) {
+    if (values[i][idIdx] === payload.id) {
+      sheet.getRange(i + 1, statusIdx + 1).setValue(payload.status);
+      return { status: 'success', message: 'Status order berhasil diupdate.' };
     }
+  }
+  
+  return { status: 'error', message: 'Order tidak ditemukan.' };
+}
+
+function getProduksi() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Jadwal Produksi');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Jadwal Produksi tidak ditemukan.' };
+  
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length <= 1) return { status: 'success', data: [] };
+  
+  const headers = values[0];
+  const data = values.slice(1).map(row => {
+    let obj = {};
+    headers.forEach((h, i) => {
+      obj[String(h).toLowerCase().replace(/ /g, '_')] = row[i];
+    });
+    return obj;
   });
   
-  return { status: 'success', message: `Import selesai. Ditambahkan: ${insertedCount} data, Dilewati (sudah ada): ${skippedCount} data.` };
+  return { status: 'success', data: data };
+}
+
+function saveProduksi(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Jadwal Produksi');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Jadwal Produksi tidak ditemukan.' };
+  
+  const headers = sheet.getDataRange().getDisplayValues()[0];
+  const rowData = headers.map(h => {
+    const key = String(h).toLowerCase().replace(/ /g, '_');
+    if (key === 'id_produksi') return 'PRD-' + Math.floor(Math.random() * 10000);
+    if (key === 'status') return 'Dijadwalkan';
+    return payload[key] || '';
+  });
+  
+  sheet.appendRow(rowData);
+  return { status: 'success', message: 'Jadwal produksi berhasil disimpan.' };
+}
+
+function getInventory() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const barangJadiSheet = ss.getSheetByName('DB Master Barang Jadi');
+  const bahanBakuSheet = ss.getSheetByName('DB Master Bahan Baku');
+  
+  let barangJadi = [];
+  let bahanBaku = [];
+  
+  if (barangJadiSheet) {
+    const values = barangJadiSheet.getDataRange().getDisplayValues();
+    if (values.length > 1) {
+      const headers = values[0];
+      barangJadi = values.slice(1).map(row => {
+        let obj = {};
+        headers.forEach((h, i) => {
+          obj[String(h).toLowerCase().replace(/ /g, '_')] = row[i];
+        });
+        obj.type = 'Barang Jadi';
+        return obj;
+      });
+    }
+  }
+  
+  if (bahanBakuSheet) {
+    const values = bahanBakuSheet.getDataRange().getDisplayValues();
+    if (values.length > 1) {
+      const headers = values[0];
+      bahanBaku = values.slice(1).map(row => {
+        let obj = {};
+        headers.forEach((h, i) => {
+          obj[String(h).toLowerCase().replace(/ /g, '_')] = row[i];
+        });
+        obj.type = 'Bahan Baku';
+        return obj;
+      });
+    }
+  }
+  
+  return { status: 'success', data: [...barangJadi, ...bahanBaku] };
+}
+
+function saveInventory(payload) {
+  const sheetName = payload.type === 'Barang Jadi' ? 'DB Master Barang Jadi' : 'DB Master Bahan Baku';
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  
+  if (!sheet) return { status: 'error', message: 'Sheet ' + sheetName + ' tidak ditemukan.' };
+  
+  const headers = sheet.getDataRange().getDisplayValues()[0];
+  const rowData = headers.map(h => {
+    const key = String(h).toLowerCase().replace(/ /g, '_');
+    if (key.includes('kode')) return payload.kode || (payload.type === 'Barang Jadi' ? 'BJ' : 'RM') + Math.floor(Math.random() * 10000);
+    return payload[key] || '';
+  });
+  
+  sheet.appendRow(rowData);
+  return { status: 'success', message: 'Data inventory berhasil disimpan.' };
+}
+
+// ==========================================
+// STOCK / BAHAN BAKU
+// ==========================================
+function getStock() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Master Bahan Baku');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Master Bahan Baku tidak ditemukan.' };
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length <= 1) return { status: 'success', data: [] };
+  const headers = values[0];
+  const kodeIdx = headers.findIndex(h => /kode/i.test(h));
+  const namaIdx = headers.findIndex(h => /nama/i.test(h));
+  const stokIdx = headers.findIndex(h => /stok|stock/i.test(h));
+  const hargaIdx = headers.findIndex(h => /harga/i.test(h));
+  const satuanIdx = headers.findIndex(h => /satuan/i.test(h));
+  const data = values.slice(1).filter(r => r[namaIdx] && String(r[namaIdx]).trim() !== '').map(row => ({
+    kode: kodeIdx !== -1 ? row[kodeIdx] : '',
+    nama: namaIdx !== -1 ? row[namaIdx] : '',
+    stok: stokIdx !== -1 ? row[stokIdx] : '0',
+    harga: hargaIdx !== -1 ? row[hargaIdx] : '0',
+    satuan: satuanIdx !== -1 ? row[satuanIdx] : 'pcs',
+  }));
+  return { status: 'success', data: data };
+}
+
+function saveStock(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Master Bahan Baku');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Master Bahan Baku tidak ditemukan.' };
+  const values = sheet.getDataRange().getDisplayValues();
+  const headers = values[0];
+  const kodeIdx = headers.findIndex(h => /kode/i.test(h));
+  // Check if updating existing
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][kodeIdx]).trim() === String(payload.kode).trim()) {
+      const rowData = headers.map(h => {
+        const key = String(h).toLowerCase().replace(/ /g, '_');
+        return payload[key] !== undefined ? payload[key] : values[i][headers.indexOf(h)];
+      });
+      sheet.getRange(i + 1, 1, 1, rowData.length).setValues([rowData]);
+      return { status: 'success', message: 'Data bahan baku berhasil diperbarui.' };
+    }
+  }
+  const rowData = headers.map(h => {
+    const key = String(h).toLowerCase().replace(/ /g, '_');
+    if (/kode/i.test(h)) return payload.kode || ('RM' + Math.floor(Math.random()*10000));
+    return payload[key] !== undefined ? payload[key] : '';
+  });
+  sheet.appendRow(rowData);
+  return { status: 'success', message: 'Data bahan baku berhasil disimpan.' };
 }
 
 function deleteStock(payload) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Master Bahan Baku');
-  if (!sheet) return { status: 'error', message: 'Sheet tidak ditemukan.' };
-  
-  const values = sheet.getDataRange().getValues();
+  if (!sheet) return { status: 'error', message: 'Sheet DB Master Bahan Baku tidak ditemukan.' };
+  const values = sheet.getDataRange().getDisplayValues();
   const headers = values[0];
-  const kodeIdx = headers.indexOf('Kode Material');
-  
+  const kodeIdx = headers.findIndex(h => /kode/i.test(h));
   for (let i = 1; i < values.length; i++) {
-    if (values[i][kodeIdx] == payload.kode) {
+    if (String(values[i][kodeIdx]).trim() === String(payload.kode).trim()) {
       sheet.deleteRow(i + 1);
       return { status: 'success', message: 'Data berhasil dihapus.' };
     }
@@ -201,186 +311,476 @@ function deleteStock(payload) {
   return { status: 'error', message: 'Data tidak ditemukan.' };
 }
 
-function createPO(payload) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB PO Supplier');
-  if (!sheet) return { status: 'error', message: 'Sheet DB PO Supplier tidak ditemukan' };
-  
-  const noPO = 'PO-' + Date.now();
-  sheet.appendRow([noPO, new Date(), payload.item || 'Berbagai Material', payload.qty || 0, 'PENDING']);
-  
-  return { status: 'success', message: 'PO Internal berhasil diterbitkan: ' + noPO };
+function importStock(payload) {
+  if (!payload || !payload.data || !Array.isArray(payload.data)) {
+    return { status: 'error', message: 'Data import tidak valid.' };
+  }
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Master Bahan Baku');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Master Bahan Baku tidak ditemukan.' };
+  let count = 0;
+  payload.data.forEach(item => {
+    sheet.appendRow([item.kode || '', item.nama || '', item.stok || 0, item.harga || 0, item.satuan || 'pcs']);
+    count++;
+  });
+  return { status: 'success', message: count + ' data berhasil diimport.' };
 }
 
-function receiveGRN(payload) {
+// ==========================================
+// BARANG JADI
+// ==========================================
+function getBarangJadi() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Master Barang Jadi');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Master Barang Jadi tidak ditemukan.' };
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length <= 1) return { status: 'success', data: [] };
+  const headers = values[0];
+  const data = values.slice(1).map(row => {
+    let obj = {};
+    headers.forEach((h, i) => { obj[String(h).toLowerCase().replace(/ /g, '_')] = row[i]; });
+    return obj;
+  });
+  return { status: 'success', data: data };
+}
+
+// ==========================================
+// USERS
+// ==========================================
+function getUsers() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Users');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Users tidak ditemukan.' };
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length <= 1) return { status: 'success', data: [] };
+  const headers = values[0];
+  const data = values.slice(1).map(row => {
+    let obj = {};
+    headers.forEach((h, i) => { if (!/password/i.test(h)) obj[String(h).toLowerCase().replace(/ /g, '_')] = row[i]; });
+    return obj;
+  });
+  return { status: 'success', data: data };
+}
+
+function saveUser(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Users');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Users tidak ditemukan.' };
+  const values = sheet.getDataRange().getDisplayValues();
+  const headers = values[0];
+  const userIdx = headers.findIndex(h => /username/i.test(h));
+  const passIdx = headers.findIndex(h => /password/i.test(h));
+  if (payload.password) payload.password = hashPassword(payload.password);
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][userIdx]).trim() === String(payload.username).trim()) {
+      const rowData = headers.map((h, idx) => {
+        const key = String(h).toLowerCase().replace(/ /g, '_');
+        if (/password/i.test(h) && !payload.password) return values[i][idx];
+        return payload[key] !== undefined ? payload[key] : values[i][idx];
+      });
+      sheet.getRange(i + 1, 1, 1, rowData.length).setValues([rowData]);
+      return { status: 'success', message: 'User berhasil diperbarui.' };
+    }
+  }
+  const rowData = headers.map(h => {
+    const key = String(h).toLowerCase().replace(/ /g, '_');
+    return payload[key] !== undefined ? payload[key] : '';
+  });
+  sheet.appendRow(rowData);
+  return { status: 'success', message: 'User berhasil ditambahkan.' };
+}
+
+function deleteUser(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Users');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Users tidak ditemukan.' };
+  const values = sheet.getDataRange().getDisplayValues();
+  const headers = values[0];
+  const userIdx = headers.findIndex(h => /username/i.test(h));
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][userIdx]).trim() === String(payload.username).trim()) {
+      sheet.deleteRow(i + 1);
+      return { status: 'success', message: 'User berhasil dihapus.' };
+    }
+  }
+  return { status: 'error', message: 'User tidak ditemukan.' };
+}
+
+// ==========================================
+// PO INTERNAL
+// ==========================================
+function getPOInternal() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const poSheet = ss.getSheetByName('DB PO Supplier');
-  const stockSheet = ss.getSheetByName('DB Master Bahan Baku');
+  let sheet = ss.getSheetByName('DB PO Internal');
   
-  // Update PO Status
-  const poData = poSheet.getDataRange().getValues();
-  for (let i = 1; i < poData.length; i++) {
-    if (poData[i][0] == payload.no_po) {
-      poSheet.getRange(i+1, 5).setValue('RECEIVED'); // Status GRN
-      break;
-    }
+  // Auto-create sheet with correct headers if not exist
+  if (!sheet) {
+    sheet = ss.insertSheet('DB PO Internal');
+    sheet.appendRow(['No PO', 'Tanggal', 'Pemohon', 'Items', 'Total Estimasi', 'Status', 'Catatan', 'Disetujui Oleh', 'Tanggal Approve']);
   }
-  
-  // Update Stock
-  const stockData = stockSheet.getDataRange().getValues();
-  for (let i = 1; i < stockData.length; i++) {
-    if (stockData[i][0] == payload.kode_material) {
-      let currentStock = parseInt(stockData[i][3]) || 0;
-      stockSheet.getRange(i+1, 4).setValue(currentStock + parseInt(payload.qty));
-      
-      // Log Transaksi Gudang
-      const logSheet = ss.getSheetByName('DB Transaksi Gudang');
-      if(logSheet) {
-        logSheet.appendRow(['TRX-' + Date.now(), new Date(), 'IN', payload.no_po, payload.kode_material, payload.qty, 'Penerima: Sistem GRN', 'Penerimaan Barang (GRN)']);
-      }
-      
-      return { status: 'success', message: 'Barang diterima (GRN) dan stok bertambah' };
-    }
-  }
-  return { status: 'error', message: 'Material tidak ditemukan di master' };
-}
-
-function getPenawaran() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Penawaran');
-  if (!sheet) return { status: 'error', message: 'Sheet DB Penawaran tidak ditemukan.' };
   
   const values = sheet.getDataRange().getDisplayValues();
   if (values.length <= 1) return { status: 'success', data: [] };
   
   const headers = values[0];
-  const data = values.slice(1).map(row => {
+  const data = values.slice(1).filter(r => r[0] && String(r[0]).trim() !== '').map(row => {
     let obj = {};
-    headers.forEach((h, i) => {
-      if (h === 'No Penawaran') obj.no_penawaran = row[i];
-      if (h === 'Tanggal') obj.tanggal = row[i];
-      if (h === 'Customer') obj.customer = row[i];
-      if (h === 'Status') obj.status = row[i];
-      if (h === 'Total Harga') obj.total_harga = row[i];
-      if (h === 'Down Payment') obj.dp = row[i];
-    });
+    headers.forEach((h, i) => { obj[String(h).toLowerCase().replace(/ /g, '_')] = row[i]; });
+    // Parse items JSON
+    try {
+      if (obj.items && typeof obj.items === 'string' && obj.items.startsWith('[')) {
+        obj.items_parsed = JSON.parse(obj.items);
+      } else {
+        obj.items_parsed = [];
+      }
+    } catch(e) { obj.items_parsed = []; }
     return obj;
   });
+  return { status: 'success', data: data };
+}
+
+function createPOInternal(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('DB PO Internal');
   
+  if (!sheet) {
+    sheet = ss.insertSheet('DB PO Internal');
+    sheet.appendRow(['No PO', 'Tanggal', 'Pemohon', 'Items', 'Total Estimasi', 'Status', 'Catatan', 'Disetujui Oleh', 'Tanggal Approve']);
+  }
+  
+  const items = payload.items || [];
+  if (items.length === 0) return { status: 'error', message: 'Minimal harus ada 1 item belanja.' };
+  
+  // Auto-register new items (not yet in stock DB) with stok=0
+  const stockSheet = ss.getSheetByName('DB Master Bahan Baku');
+  if (stockSheet) {
+    const stockValues = stockSheet.getDataRange().getDisplayValues();
+    const stockHeaders = stockValues[0];
+    const sNamaIdx = stockHeaders.findIndex(h => /nama/i.test(h));
+    const sKodeIdx = stockHeaders.findIndex(h => /kode/i.test(h));
+    const sHargaIdx = stockHeaders.findIndex(h => /harga/i.test(h));
+    const sSatuanIdx = stockHeaders.findIndex(h => /satuan/i.test(h));
+    const sStokIdx = stockHeaders.findIndex(h => /stok|stock/i.test(h));
+    const existingNames = stockValues.slice(1).map(r => String(r[sNamaIdx] || '').toLowerCase().trim());
+    
+    items.forEach(item => {
+      const namaLower = String(item.nama || '').toLowerCase().trim();
+      if (namaLower && !existingNames.includes(namaLower)) {
+        // New material — register with stok 0
+        const newKode = item.kode || ('RM' + Date.now().toString().slice(-6));
+        const newRow = stockHeaders.map((h, i) => {
+          if (i === sKodeIdx) return newKode;
+          if (i === sNamaIdx) return item.nama;
+          if (i === sStokIdx) return 0;
+          if (i === sHargaIdx) return item.harga || 0;
+          if (i === sSatuanIdx) return item.satuan || 'pcs';
+          return '';
+        });
+        stockSheet.appendRow(newRow);
+        existingNames.push(namaLower);
+        item.kode = newKode; // update kode to newly generated one
+      }
+    });
+  }
+  
+  const totalEstimasi = items.reduce((sum, item) => sum + ((parseFloat(item.harga) || 0) * (parseFloat(item.qty) || 0)), 0);
+  const noPO = 'POI-' + Date.now();
+  const tanggal = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy HH:mm');
+  
+  sheet.appendRow([
+    noPO,
+    tanggal,
+    payload.pemohon || '',
+    JSON.stringify(items),
+    totalEstimasi,
+    'Menunggu Approval',
+    payload.catatan || '',
+    '',
+    ''
+  ]);
+  
+  return { status: 'success', message: 'Pengajuan belanja berhasil dikirim!', no_po: noPO };
+}
+
+function receiveGRN(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const poSheet = ss.getSheetByName('DB PO Internal');
+  const stockSheet = ss.getSheetByName('DB Master Bahan Baku');
+  if (!poSheet || !stockSheet) return { status: 'error', message: 'Sheet tidak ditemukan.' };
+  // Update PO status
+  if (payload.no_po && poSheet) {
+    const poValues = poSheet.getDataRange().getDisplayValues();
+    const poHeaders = poValues[0];
+    const noPOIdx = poHeaders.findIndex(h => /no.*po/i.test(h));
+    const statusIdx = poHeaders.findIndex(h => /status/i.test(h));
+    for (let i = 1; i < poValues.length; i++) {
+      if (String(poValues[i][noPOIdx]).trim() === String(payload.no_po).trim()) {
+        if (statusIdx !== -1) poSheet.getRange(i + 1, statusIdx + 1).setValue('Selesai');
+        break;
+      }
+    }
+  }
+  // Update stock
+  const stockValues = stockSheet.getDataRange().getDisplayValues();
+  const stockHeaders = stockValues[0];
+  const kodeIdx = stockHeaders.findIndex(h => /kode/i.test(h));
+  const stokIdx = stockHeaders.findIndex(h => /stok|stock/i.test(h));
+  if (kodeIdx !== -1 && stokIdx !== -1) {
+    for (let i = 1; i < stockValues.length; i++) {
+      if (String(stockValues[i][kodeIdx]).trim() === String(payload.kode_material).trim()) {
+        const currentStok = parseFloat(String(stockValues[i][stokIdx]).replace(/[^0-9.]/g, '')) || 0;
+        stockSheet.getRange(i + 1, stokIdx + 1).setValue(currentStok + (parseFloat(payload.qty) || 0));
+        return { status: 'success', message: 'Stok berhasil ditambah.' };
+      }
+    }
+  }
+  return { status: 'error', message: 'Kode material tidak ditemukan di stok.' };
+}
+
+// ==========================================
+// UPDATE STATUS PO INTERNAL (dengan auto-sync stok multi-item)
+// ==========================================
+function updatePOInternalStatus(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('DB PO Internal');
+  if (!sheet) return { status: 'error', message: 'Sheet DB PO Internal tidak ditemukan.' };
+  
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0];
+  const noPOIdx = headers.findIndex(h => /no.*po/i.test(String(h)));
+  const statusIdx = headers.findIndex(h => /^status$/i.test(String(h)));
+  const itemsIdx = headers.findIndex(h => /^items$/i.test(String(h)));
+  const disetujuiOlehIdx = headers.findIndex(h => /disetujui.*oleh/i.test(String(h)));
+  const tglApproveIdx = headers.findIndex(h => /tanggal.*approve/i.test(String(h)));
+  
+  if (noPOIdx === -1 || statusIdx === -1) return { status: 'error', message: 'Struktur sheet DB PO Internal tidak valid.' };
+  
+  let rowIndex = -1;
+  let itemsJson = '';
+  
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][noPOIdx]).trim() === String(payload.no_po).trim()) {
+      rowIndex = i + 1;
+      itemsJson = values[i][itemsIdx] || '';
+      break;
+    }
+  }
+  
+  if (rowIndex === -1) return { status: 'error', message: 'No PO tidak ditemukan: ' + payload.no_po };
+  
+  // Update status
+  sheet.getRange(rowIndex, statusIdx + 1).setValue(payload.status);
+  
+  // Log who approved
+  if (payload.status === 'Disetujui (Sedang Dibelikan)' || payload.status === 'Ditolak') {
+    if (disetujuiOlehIdx !== -1) sheet.getRange(rowIndex, disetujuiOlehIdx + 1).setValue(payload.user_nama || '');
+    if (tglApproveIdx !== -1) sheet.getRange(rowIndex, tglApproveIdx + 1).setValue(Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy HH:mm'));
+  }
+  
+  // If status = Selesai, sync all items to stock
+  if (payload.status === 'Selesai (Barang Diterima)') {
+    let items = [];
+    try { items = JSON.parse(itemsJson); } catch(e) {}
+    
+    if (items.length === 0) return { status: 'success', message: 'Status diperbarui (tidak ada item untuk disinkronkan).' };
+    
+    const stockSheet = ss.getSheetByName('DB Master Bahan Baku');
+    if (!stockSheet) return { status: 'error', message: 'Sheet DB Master Bahan Baku tidak ditemukan.' };
+    
+    const stockValues = stockSheet.getDataRange().getDisplayValues();
+    const stockHeaders = stockValues[0];
+    const sKodeIdx = stockHeaders.findIndex(h => /kode/i.test(h));
+    const sNamaIdx = stockHeaders.findIndex(h => /nama/i.test(h));
+    const sStokIdx = stockHeaders.findIndex(h => /stok|stock/i.test(h));
+    const sHargaIdx = stockHeaders.findIndex(h => /harga/i.test(h));
+    const sSatuanIdx = stockHeaders.findIndex(h => /satuan/i.test(h));
+    
+    let addedNew = 0;
+    let updated = 0;
+    
+    items.forEach(item => {
+      const kodeItem = String(item.kode || '').trim();
+      const namaItem = String(item.nama || '').trim().toLowerCase();
+      const qtyTambah = parseFloat(item.qty) || 0;
+      
+      // Find by kode first, then fallback to nama
+      let foundRow = -1;
+      for (let i = 1; i < stockValues.length; i++) {
+        const kodeDB = String(stockValues[i][sKodeIdx] || '').trim();
+        const namaDB = String(stockValues[i][sNamaIdx] || '').trim().toLowerCase();
+        if ((kodeItem && kodeDB === kodeItem) || namaDB === namaItem) {
+          foundRow = i + 1;
+          break;
+        }
+      }
+      
+      if (foundRow !== -1) {
+        // Update existing stock
+        const currentStok = parseFloat(String(stockSheet.getRange(foundRow, sStokIdx + 1).getValue()).replace(/[^0-9.]/g, '')) || 0;
+        stockSheet.getRange(foundRow, sStokIdx + 1).setValue(currentStok + qtyTambah);
+        updated++;
+      } else {
+        // New material — auto create
+        const newKode = kodeItem || ('RM' + Date.now().toString().slice(-6));
+        const newRow = stockHeaders.map((h, i) => {
+          if (i === sKodeIdx) return newKode;
+          if (i === sNamaIdx) return item.nama;
+          if (i === sStokIdx) return qtyTambah;
+          if (i === sHargaIdx) return item.harga || 0;
+          if (i === sSatuanIdx) return item.satuan || 'pcs';
+          return '';
+        });
+        stockSheet.appendRow(newRow);
+        addedNew++;
+      }
+    });
+    
+    return { 
+      status: 'success', 
+      message: `Selesai! ${updated} item stok diperbarui, ${addedNew} material baru ditambahkan ke gudang.` 
+    };
+  }
+  
+  return { status: 'success', message: 'Status PO berhasil diperbarui menjadi: ' + payload.status };
+}
+
+function deletePOInternal(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB PO Internal');
+  if (!sheet) return { status: 'error', message: 'Sheet DB PO Internal tidak ditemukan.' };
+  
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0];
+  const noPOIdx = headers.findIndex(h => /no.*po/i.test(String(h)));
+  if (noPOIdx === -1) return { status: 'error', message: 'Kolom No PO tidak ditemukan.' };
+  
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][noPOIdx]).trim() === String(payload.no_po).trim()) {
+      sheet.deleteRow(i + 1);
+      return { status: 'success', message: 'Pengajuan ' + payload.no_po + ' berhasil dihapus.' };
+    }
+  }
+  return { status: 'error', message: 'No PO tidak ditemukan: ' + payload.no_po };
+}
+
+// ==========================================
+// PENAWARAN / SALES
+// ==========================================
+function getPenawaran() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Penawaran');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Penawaran tidak ditemukan.' };
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length <= 1) return { status: 'success', data: [] };
+  const headers = values[0];
+  const data = values.slice(1).map(row => {
+    let obj = {};
+    headers.forEach((h, i) => { obj[String(h).toLowerCase().replace(/ /g, '_')] = row[i]; });
+    return obj;
+  });
   return { status: 'success', data: data };
 }
 
 function savePenawaran(payload) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Penawaran');
   if (!sheet) return { status: 'error', message: 'Sheet DB Penawaran tidak ditemukan.' };
-  
-  const values = sheet.getDataRange().getValues();
-  const headers = values[0];
-  const noIdx = headers.indexOf('No Penawaran');
-  
-  const noPenawaran = payload.no_penawaran || ('PNW-' + Date.now());
-  const status = payload.status || 'Penawaran';
-  const dp = payload.dp || 0;
-  
-  let rowIndex = -1;
-  if (payload.no_penawaran) {
-    for (let i = 1; i < values.length; i++) {
-      if (values[i][noIdx] == payload.no_penawaran) {
-        rowIndex = i + 1;
-        break;
-      }
-    }
-  }
-
-  const rowData = headers.map(h => {
-      if (h === 'No Penawaran') return noPenawaran;
-      if (h === 'Tanggal') return rowIndex === -1 ? new Date() : values[rowIndex-1][headers.indexOf('Tanggal')];
-      if (h === 'Customer') return payload.customer || '';
-      if (h === 'Rincian Item') return typeof payload.rincian_item === 'string' ? payload.rincian_item : JSON.stringify(payload.rincian_item || []);
-      if (h === 'Status') return status;
-      if (h === 'Total Harga') return payload.total_harga || 0;
-      if (h === 'Down Payment') return dp;
-      if (h === 'Narasi') return payload.narasi || '';
-      return '';
-  });
-
-  if (rowIndex === -1) {
-    sheet.appendRow(rowData);
-    return { status: 'success', message: 'Penawaran berhasil disimpan.' };
-  } else {
-    sheet.getRange(rowIndex, 1, 1, rowData.length).setValues([rowData]);
-    return { status: 'success', message: 'Penawaran berhasil diperbarui.' };
-  }
+  const noDoc = 'PEN-' + Date.now();
+  sheet.appendRow([noDoc, payload.customer || '', payload.item || '', payload.qty || 0, payload.harga || 0, new Date().toLocaleDateString('id-ID'), 'Draft']);
+  return { status: 'success', message: 'Penawaran berhasil disimpan.', no_doc: noDoc };
 }
 
 function deletePenawaran(payload) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Penawaran');
-  if (!sheet) return { status: 'error', message: 'Sheet tidak ditemukan.' };
-  
-  const values = sheet.getDataRange().getValues();
-  const headers = values[0];
-  const noIdx = headers.indexOf('No Penawaran');
-  
+  if (!sheet) return { status: 'error', message: 'Sheet DB Penawaran tidak ditemukan.' };
+  const values = sheet.getDataRange().getDisplayValues();
   for (let i = 1; i < values.length; i++) {
-    if (values[i][noIdx] == payload.no_penawaran) {
+    if (String(values[i][0]).trim() === String(payload.id).trim()) {
       sheet.deleteRow(i + 1);
-      return { status: 'success', message: 'Data Penawaran berhasil dihapus.' };
+      return { status: 'success', message: 'Penawaran berhasil dihapus.' };
     }
   }
-  return { status: 'error', message: 'Data Penawaran tidak ditemukan.' };
+  return { status: 'error', message: 'Penawaran tidak ditemukan.' };
 }
 
+// ==========================================
+// SETTINGS
+// ==========================================
+function getSettings() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Settings');
+  if (!sheet) return { status: 'success', data: {} };
+  const values = sheet.getDataRange().getDisplayValues();
+  const settings = {};
+  values.forEach(row => { if (row[0]) settings[row[0]] = row[1] || ''; });
+  return { status: 'success', data: settings };
+}
+
+function saveSettings(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('DB Settings');
+  if (!sheet) { sheet = ss.insertSheet('DB Settings'); sheet.appendRow(['Key', 'Value']); }
+  const values = sheet.getDataRange().getDisplayValues();
+  Object.keys(payload).forEach(key => {
+    let found = false;
+    for (let i = 0; i < values.length; i++) {
+      if (values[i][0] === key) {
+        sheet.getRange(i + 1, 2).setValue(payload[key]);
+        found = true;
+        break;
+      }
+    }
+    if (!found) sheet.appendRow([key, payload[key]]);
+  });
+  return { status: 'success', message: 'Settings berhasil disimpan.' };
+}
+
+// ==========================================
+// SPK / INVOICE / PETTY CASH / CREATE PO
+// ==========================================
 function saveSPK(payload) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const spkSheet = ss.getSheetByName('DB SPK Produksi');
-  const stockBahan = ss.getSheetByName('DB Master Bahan Baku');
-  const stockJadi = ss.getSheetByName('DB Master Barang Jadi');
-  const logSheet = ss.getSheetByName('DB Transaksi Gudang');
-  
-  const noSPK = 'SPK-' + Date.now();
-  spkSheet.appendRow([noSPK, new Date(), payload.kode_barang, payload.qty, payload.peminta || '-', payload.pemberi || '-', 'SELESAI']);
-  
-  // Auto Deduct Bahan Baku (Massal berdasarkan kalkulasi BOM)
-  if (payload.bahan_baku && payload.bahan_baku.length > 0) {
-      const stockData = stockBahan.getDataRange().getValues();
-      const picText = `Peminta: ${payload.peminta || '-'} | Pemberi: ${payload.pemberi || '-'}`;
-      
-      payload.bahan_baku.forEach(mat => {
-          if (!mat.kode) return;
-          for (let i = 1; i < stockData.length; i++) {
-            if (stockData[i][0] == mat.kode) {
-              let currentStock = parseInt(stockData[i][3]) || 0;
-              let pemakaian = parseInt(mat.qty) || 0;
-              stockBahan.getRange(i+1, 4).setValue(currentStock - pemakaian);
-              
-              if(logSheet) {
-                logSheet.appendRow(['TRX-' + Date.now(), new Date(), 'OUT', noSPK, mat.kode, pemakaian, picText, 'Penggunaan Produksi SPK']);
-              }
-              break;
-            }
-          }
-      });
-  }
-  
-  // Auto Add Barang Jadi
-  const jadiData = stockJadi.getDataRange().getValues();
-  let found = false;
-  for (let i = 1; i < jadiData.length; i++) {
-    if (jadiData[i][0] == payload.kode_barang) {
-      let currentStock = parseInt(jadiData[i][2]) || 0;
-      stockJadi.getRange(i+1, 3).setValue(currentStock + parseInt(payload.qty));
-      found = true;
-      break;
-    }
-  }
-  if (!found) {
-      stockJadi.appendRow([payload.kode_barang, 'Barang Produksi ' + payload.kode_barang, payload.qty, 0]);
-  }
-  
-  return { status: 'success', message: 'SPK Selesai. Bahan baku dipotong & barang jadi ditambahkan.' };
+  let sheet = ss.getSheetByName('DB SPK');
+  if (!sheet) return { status: 'error', message: 'Sheet DB SPK tidak ditemukan.' };
+  sheet.appendRow(['SPK-' + Date.now(), payload.id_produksi || '', payload.item || '', payload.qty || 0, new Date().toLocaleDateString('id-ID'), 'Aktif']);
+  return { status: 'success', message: 'SPK berhasil disimpan.' };
 }
 
-function getProduksi() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB SPK Produksi');
-  if (!sheet) return { status: 'error', message: 'Sheet DB SPK Produksi tidak ditemukan.' };
+function saveInvoice(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('DB Invoice');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Invoice tidak ditemukan.' };
+  sheet.appendRow(['INV-' + Date.now(), payload.customer || '', payload.item || '', payload.qty || 0, payload.total || 0, new Date().toLocaleDateString('id-ID'), 'Unpaid']);
+  return { status: 'success', message: 'Invoice berhasil disimpan.' };
+}
+
+function addPettyCash(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('DB Petty Cash');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Petty Cash tidak ditemukan.' };
+  sheet.appendRow([new Date().toLocaleDateString('id-ID'), payload.keterangan || '', payload.jumlah || 0, payload.jenis || 'Keluar', payload.user || '']);
+  return { status: 'success', message: 'Petty cash berhasil dicatat.' };
+}
+
+function createPO(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB PO');
+  if (!sheet) return { status: 'error', message: 'Sheet DB PO tidak ditemukan.' };
+  const noPO = 'PO-' + Date.now();
+  sheet.appendRow([noPO, payload.kode_material || '', payload.nama_material || '', payload.jumlah || 0, payload.satuan || 'pcs', payload.supplier || '', new Date().toLocaleDateString('id-ID'), 'Draft']);
+  return { status: 'success', message: 'PO berhasil dibuat.', no_po: noPO };
+}
+
+function updatePOStatus(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB PO');
+  if (!sheet) return { status: 'error', message: 'Sheet DB PO tidak ditemukan.' };
+  const values = sheet.getDataRange().getDisplayValues();
+  const headers = values[0];
+  const noPOIdx = headers.findIndex(h => /no.*po/i.test(h));
+  const statusIdx = headers.findIndex(h => /status/i.test(h));
+  if (noPOIdx === -1 || statusIdx === -1) return { status: 'error', message: 'Struktur sheet tidak valid.' };
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][noPOIdx]).trim() === String(payload.id || payload.no_po).trim()) {
+      sheet.getRange(i + 1, statusIdx + 1).setValue(payload.status);
+      return { status: 'success', message: 'Status PO diperbarui.' };
+    }
+  }
+  return { status: 'error', message: 'PO tidak ditemukan.' };
+}
+
+function getPurchasing() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB PO');
+  if (!sheet) return { status: 'error', message: 'Sheet DB PO tidak ditemukan.' };
   
   const values = sheet.getDataRange().getDisplayValues();
   if (values.length <= 1) return { status: 'success', data: [] };
@@ -389,48 +789,116 @@ function getProduksi() {
   const data = values.slice(1).map(row => {
     let obj = {};
     headers.forEach((h, i) => {
-      if (h === 'No SPK') obj.no_spk = row[i];
-      if (h === 'Tanggal') obj.tanggal = row[i];
-      if (h === 'Kode Barang Jadi') obj.kode_barang = row[i];
-      if (h === 'Qty Produksi') obj.qty = row[i];
-      if (h === 'Status') obj.status = row[i];
+      obj[String(h).toLowerCase().replace(/ /g, '_')] = row[i];
     });
     return obj;
   });
   
   return { status: 'success', data: data };
+}
+
+function savePO(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB PO');
+  if (!sheet) return { status: 'error', message: 'Sheet DB PO tidak ditemukan.' };
+  
+  const headers = sheet.getDataRange().getDisplayValues()[0];
+  const rowData = headers.map(h => {
+    const key = String(h).toLowerCase().replace(/ /g, '_');
+    if (key === 'no_po') return 'PO-' + Math.floor(Math.random() * 10000);
+    if (key === 'tanggal') return new Date().toISOString().split('T')[0];
+    if (key === 'status') return 'Draft';
+    return payload[key] || '';
+  });
+  
+  sheet.appendRow(rowData);
+  return { status: 'success', message: 'PO berhasil dibuat.' };
+}
+
+function updatePOStatus(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB PO');
+  if (!sheet) return { status: 'error', message: 'Sheet DB PO tidak ditemukan.' };
+  
+  const values = sheet.getDataRange().getDisplayValues();
+  const headers = values[0];
+  const idIdx = headers.indexOf('No PO');
+  const statusIdx = headers.indexOf('Status');
+  
+  if (idIdx === -1 || statusIdx === -1) {
+    return { status: 'error', message: 'Struktur DB PO tidak valid.' };
+  }
+  
+  for (let i = 1; i < values.length; i++) {
+    if (values[i][idIdx] === payload.id) {
+      sheet.getRange(i + 1, statusIdx + 1).setValue(payload.status);
+      return { status: 'success', message: 'Status PO berhasil diupdate.' };
+    }
+  }
+  
+  return { status: 'error', message: 'PO tidak ditemukan.' };
 }
 
 function getBOM() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB BOM');
   if (!sheet) return { status: 'error', message: 'Sheet DB BOM tidak ditemukan.' };
   
-  const values = sheet.getDataRange().getDisplayValues();
+  const values = sheet.getDataRange().getValues();
   if (values.length <= 1) return { status: 'success', data: [] };
   
   const headers = values[0];
+  const normalize = (value) => String(value || '').trim().toLowerCase();
+  const findHeaderIndex = (headerName) => headers.findIndex(h => normalize(h) === normalize(headerName));
+  const kodeIdx = findHeaderIndex('Kode Barang Jadi');
+  const namaIdx = findHeaderIndex('Nama Barang');
+  const materialIdx = findHeaderIndex('Rincian Material');
+  const totalBiayaIdx = findHeaderIndex('Total Biaya Material');
+  const prosesIdx = findHeaderIndex('Rincian Proses');
+  const gambarIdx = findHeaderIndex('Gambar');
+
   const data = values.slice(1).map(row => {
     let obj = {};
-    headers.forEach((h, i) => {
-      if (h === 'Kode Barang Jadi') obj.kode_barang = row[i];
-      if (h === 'Nama Barang') obj.nama_barang = row[i];
-      if (h === 'Rincian Material') obj.rincian_material = row[i];
-      if (h === 'Total Biaya Material') obj.total_biaya = row[i];
-      if (h === 'Rincian Proses') obj.rincian_proses = row[i];
-      if (h === 'Gambar') obj.gambar = row[i];
-    });
+    if (kodeIdx !== -1) obj.kode_barang = row[kodeIdx];
+    if (namaIdx !== -1) obj.nama_barang = row[namaIdx];
+    if (materialIdx !== -1) obj.rincian_material = row[materialIdx];
+    if (totalBiayaIdx !== -1) obj.total_biaya = row[totalBiayaIdx];
+    if (prosesIdx !== -1) obj.rincian_proses = row[prosesIdx];
+    if (gambarIdx !== -1) obj.gambar = row[gambarIdx];
     return obj;
   });
   
   return { status: 'success', data: data };
 }
 
+// ==========================================
+// UPLOAD GAMBAR KE GOOGLE DRIVE
+// ==========================================
+function uploadToDrive(base64Data, mimeType, fileName) {
+  try {
+    const bytes = Utilities.base64Decode(base64Data);
+    const blob = Utilities.newBlob(bytes, mimeType, fileName);
+    
+    // Ini akan melempar error jika DriveApp belum diizinkan
+    const file = DriveApp.createFile(blob);
+    
+    // Set file agar bisa diakses oleh siapa saja
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    
+    // Gunakan URL thumbnail (API resmi yang tidak diblokir cookie browser saat ditaruh di <img>)
+    return 'https://drive.google.com/thumbnail?id=' + file.getId() + '&sz=w1000';
+  } catch (error) {
+    Logger.log('[UPLOAD ERROR] ' + error.toString());
+    throw new Error('Gagal upload ke Drive. Pastikan Anda telah mengotorisasi DriveApp di editor Apps Script. Detail: ' + error.message);
+  }
+}
+
 function saveBOM(payload) {
+  if (!payload) {
+    return { status: 'error', message: 'Payload tidak ditemukan.' };
+  }
+
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName('DB BOM');
   if (!sheet) return { status: 'error', message: 'Sheet DB BOM tidak ditemukan.' };
   
-  // Handle new materials added in BOM
   let materials = [];
   try {
     materials = typeof payload.rincian_material === 'string' ? JSON.parse(payload.rincian_material) : payload.rincian_material;
@@ -457,362 +925,111 @@ function saveBOM(payload) {
              return '';
           });
           stockSheet.appendRow(newRow);
-          existingNamas.push(matNamaLower); // prevent duplicates in the same loop
+          existingNamas.push(matNamaLower);
         }
       });
     }
   }
 
+  // Upload Gambar Utama (jika ada)
   let gambarUrl = '';
-  if (payload.gambar_base64 && payload.gambar_mime) {
+  if (payload.gambar_base64) {
     try {
-      const blob = Utilities.newBlob(Utilities.base64Decode(payload.gambar_base64), payload.gambar_mime, payload.kode_barang + '_gambar');
-      const file = DriveApp.createFile(blob);
-      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      gambarUrl = 'https://lh3.googleusercontent.com/d/' + file.getId();
-    } catch(e) {}
+      gambarUrl = uploadToDrive(payload.gambar_base64, payload.gambar_mime || 'image/jpeg', 'BOM_' + payload.kode_barang + '_' + Date.now());
+    } catch(e) {
+      return { status: 'error', message: 'Error Gambar Utama: ' + e.message };
+    }
   }
 
-  // Upload gambar per proses produksi
+  // Proses gambar per tahapan proses produksi
   let prosesFinal = payload.rincian_proses;
+  if (typeof prosesFinal === 'string') {
+    try { prosesFinal = JSON.parse(prosesFinal); } catch(e) { prosesFinal = null; }
+  }
+  
   if (prosesFinal && typeof prosesFinal !== 'string') {
-    prosesFinal = prosesFinal.map(p => {
+    for (let i = 0; i < prosesFinal.length; i++) {
+      let p = prosesFinal[i];
       let prosGambarUrl = p.gambar || '';
-      if (p.gambar_base64 && p.gambar_mime) {
+      
+      if (p.gambar_base64) {
         try {
-          const blob = Utilities.newBlob(Utilities.base64Decode(p.gambar_base64), p.gambar_mime, payload.kode_barang + '_proses_' + Date.now());
-          const file = DriveApp.createFile(blob);
-          file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-          prosGambarUrl = 'https://lh3.googleusercontent.com/d/' + file.getId();
-        } catch(e) {}
+          prosGambarUrl = uploadToDrive(p.gambar_base64, p.gambar_mime || 'image/jpeg', 'PROS_' + payload.kode_barang + '_' + i + '_' + Date.now());
+        } catch (e) {
+          return { status: 'error', message: 'Error Gambar Rincian Proses #' + (i+1) + ': ' + e.message };
+        }
       }
-      return { nama: p.nama, gambar: prosGambarUrl };
-    });
+      
+      p.gambar = prosGambarUrl;
+      // Hapus data base64 agar JSON-nya ringan!
+      delete p.gambar_base64;
+      delete p.gambar_mime;
+    }
   }
 
   const values = sheet.getDataRange().getValues();
   const headers = values[0];
-  const kodeIdx = headers.indexOf('Kode Barang Jadi');
-  
+  const normalize = (value) => String(value || '').trim().toLowerCase();
+  const findHeaderIndex = (headerName) => headers.findIndex(h => normalize(h) === normalize(headerName));
+  const kodeIdx = findHeaderIndex('Kode Barang Jadi');
+  let gambarIdx = findHeaderIndex('Gambar');
+  const rincianProsesIdx = findHeaderIndex('Rincian Proses');
+
+  if (kodeIdx === -1) {
+    return { status: 'error', message: 'Kolom Kode Barang Jadi tidak ditemukan di sheet DB BOM.' };
+  }
+
+  if (gambarIdx === -1) {
+    const newColumnPosition = headers.length + 1;
+    sheet.getRange(1, newColumnPosition).setValue('Gambar');
+    headers.push('Gambar');
+    gambarIdx = headers.length - 1;
+  }
+
   let rowIndex = -1;
   let oldGambarUrl = '';
+  let oldRincianProses = '';
   for (let i = 1; i < values.length; i++) {
     if (values[i][kodeIdx] == payload.kode_barang) {
       rowIndex = i + 1;
-      const gambarIdx = headers.indexOf('Gambar');
-      if (gambarIdx !== -1) oldGambarUrl = values[i][gambarIdx];
+      oldGambarUrl = values[i][gambarIdx] || '';
+      if (rincianProsesIdx !== -1) {
+        oldRincianProses = values[i][rincianProsesIdx] || '';
+      }
       break;
     }
   }
 
   const finalGambarUrl = gambarUrl ? gambarUrl : oldGambarUrl;
 
-  const rowData = headers.map(h => {
-      if (h === 'Kode Barang Jadi') return payload.kode_barang || '';
-      if (h === 'Nama Barang') return payload.nama_barang || '';
-      if (h === 'Rincian Material') return typeof payload.rincian_material === 'string' ? payload.rincian_material : JSON.stringify(payload.rincian_material);
-      if (h === 'Total Biaya Material') return payload.total_biaya || 0;
-      if (h === 'Rincian Proses') return typeof prosesFinal === 'string' ? prosesFinal : JSON.stringify(prosesFinal);
-      if (h === 'Gambar') return finalGambarUrl;
-      return '';
-  });
+  if ((prosesFinal === null || typeof prosesFinal === 'string') && rowIndex !== -1 && oldRincianProses) {
+    prosesFinal = oldRincianProses;
+  }
 
-  if (rowIndex === -1) {
-    sheet.appendRow(rowData);
-    return { status: 'success', message: 'Data BOM berhasil disimpan.' };
-  } else {
+  const rowData = [
+    payload.kode_barang,
+    payload.nama_barang || (rowIndex !== -1 ? values[rowIndex-1][findHeaderIndex('Nama Barang')] : ''),
+    payload.total_biaya || (rowIndex !== -1 ? values[rowIndex-1][findHeaderIndex('Total Biaya Material')] : ''),
+    JSON.stringify(payload.rincian_material) || (rowIndex !== -1 ? values[rowIndex-1][findHeaderIndex('Rincian Material')] : ''),
+    typeof prosesFinal === 'string' ? prosesFinal : JSON.stringify(prosesFinal),
+    finalGambarUrl
+  ];
+
+  if (rowIndex !== -1) {
     sheet.getRange(rowIndex, 1, 1, rowData.length).setValues([rowData]);
-    return { status: 'success', message: 'Data BOM berhasil diperbarui.' };
-  }
-}
-
-function saveInvoice(payload) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('DB Invoice');
-  const penawaranSheet = ss.getSheetByName('DB Penawaran');
-  
-  const total = parseFloat(payload.total_harga) || 0;
-  const dp = parseFloat(payload.dp) || 0;
-  
-  let newStatus = 'LUNAS';
-  let sisaTagihan = total - dp;
-  
-  // Update DB Penawaran
-  if (payload.ref_surat_jalan && penawaranSheet) {
-    const pValues = penawaranSheet.getDataRange().getValues();
-    const pHeaders = pValues[0];
-    const noIdx = pHeaders.indexOf('No Penawaran');
-    const statusIdx = pHeaders.indexOf('Status');
-    const dpIdx = pHeaders.indexOf('Down Payment');
-    
-    for (let i = 1; i < pValues.length; i++) {
-      if (pValues[i][noIdx] == payload.ref_surat_jalan) {
-        let currentDP = parseFloat(pValues[i][dpIdx]) || 0;
-        let newDP = currentDP + dp;
-        newStatus = newDP >= total ? 'LUNAS' : 'Proses';
-        sisaTagihan = total - newDP;
-        penawaranSheet.getRange(i + 1, statusIdx + 1).setValue(newStatus);
-        penawaranSheet.getRange(i + 1, dpIdx + 1).setValue(newDP);
-        break;
-      }
-    }
-  }
-  
-  const noInvoice = 'INV-' + Date.now();
-  sheet.appendRow([noInvoice, payload.ref_surat_jalan, payload.customer, total, dp, sisaTagihan, newStatus]);
-  
-  return { status: 'success', message: 'Pembayaran berhasil dicatat. Status: ' + newStatus + '. Sisa Tagihan: Rp ' + sisaTagihan.toLocaleString('id-ID') };
-}
-
-function addPettyCash(payload) {
-  // Logic to insert petty cash entry
-  return { status: 'success', message: 'Petty Cash ditambahkan.' };
-}
-
-function getSettings() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Pengaturan');
-  if (!sheet) return { status: 'error', message: 'Sheet DB Pengaturan tidak ditemukan.' };
-  
-  const values = sheet.getDataRange().getDisplayValues();
-  if (values.length <= 1) return { status: 'success', data: {} };
-  
-  let settings = {};
-  for (let i = 1; i < values.length; i++) {
-    const key = values[i][0];
-    const val = values[i][1];
-    if (key) settings[key] = val;
-  }
-  return { status: 'success', data: settings };
-}
-
-function saveSettings(payload) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Pengaturan');
-  if (!sheet) return { status: 'error', message: 'Sheet DB Pengaturan tidak ditemukan.' };
-  
-  sheet.clear();
-  sheet.appendRow(['Key', 'Value']);
-  
-  for (let key in payload) {
-    sheet.appendRow([key, payload[key]]);
-  }
-  return { status: 'success', message: 'Pengaturan berhasil disimpan.' };
-}
-
-function getInventory() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Master Bahan Baku');
-  if (!sheet) return { status: 'error', message: 'Sheet DB Master Bahan Baku tidak ditemukan.' };
-  
-  const values = sheet.getDataRange().getDisplayValues();
-  if (values.length <= 1) return { status: 'success', data: [] };
-  
-  const headers = values[0];
-  const data = values.slice(1).map(row => {
-    let obj = {};
-    headers.forEach((h, i) => {
-      if (h === 'Kode Material') obj.kode_material = row[i];
-      if (h === 'Nama Material') obj.nama_material = row[i];
-      if (h === 'Stok') obj.stok = parseInt(row[i]) || 0;
-    });
-    return obj;
-  });
-  
-  return { status: 'success', data: data };
-}
-
-function getUsers() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Users');
-  if (!sheet) return { status: 'error', message: 'Sheet DB Users tidak ditemukan.' };
-  
-  const values = sheet.getDataRange().getDisplayValues();
-  if (values.length <= 1) return { status: 'success', data: [] };
-  
-  const headers = values[0];
-  const data = values.slice(1).map(row => {
-    let obj = {};
-    headers.forEach((h, i) => {
-      if (h === 'Username') obj.username = row[i];
-      if (h === 'Role') obj.role = row[i];
-      if (h === 'Nama Lengkap') obj.nama = row[i];
-    });
-    return obj;
-  });
-  
-  return { status: 'success', data: data };
-}
-
-function saveUser(payload) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Users');
-  if (!sheet) return { status: 'error', message: 'Sheet DB Users tidak ditemukan.' };
-  
-  const values = sheet.getDataRange().getValues();
-  const headers = values[0];
-  const userIdx = headers.indexOf('Username');
-  
-  let rowIndex = -1;
-  for (let i = 1; i < values.length; i++) {
-    if (values[i][userIdx] == payload.username) {
-      rowIndex = i + 1;
-      break;
-    }
-  }
-  
-  const rowData = headers.map(h => {
-      if (h === 'Username') return payload.username || '';
-      if (h === 'Password') return payload.password || ''; // For edit, might want to ignore if blank, but this is simple implementation
-      if (h === 'Role') return payload.role || '';
-      if (h === 'Nama Lengkap') return payload.nama || '';
-      return '';
-  });
-  
-  if (rowIndex === -1) {
-    sheet.appendRow(rowData);
-    return { status: 'success', message: 'Pengguna berhasil ditambahkan.' };
   } else {
-    // If editing and password is blank, keep old password
-    if (!payload.password) {
-       rowData[headers.indexOf('Password')] = values[rowIndex-1][headers.indexOf('Password')];
-    }
-    sheet.getRange(rowIndex, 1, 1, rowData.length).setValues([rowData]);
-    return { status: 'success', message: 'Data pengguna berhasil diperbarui.' };
+    sheet.appendRow(rowData);
   }
+
+  return { status: 'success', message: 'Data BOM berhasil disimpan.' };
 }
 
-function deleteUser(payload) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Users');
-  if (!sheet) return { status: 'error', message: 'Sheet tidak ditemukan.' };
-  
-  const values = sheet.getDataRange().getValues();
-  const headers = values[0];
-  const userIdx = headers.indexOf('Username');
-  
-  for (let i = 1; i < values.length; i++) {
-    if (values[i][userIdx] == payload.username) {
-      if (payload.username === 'admin') return { status: 'error', message: 'Tidak dapat menghapus Super Admin.' };
-      sheet.deleteRow(i + 1);
-      return { status: 'success', message: 'Pengguna berhasil dihapus.' };
-    }
+function manualAuthDriveApp() {
+  // Jalankan fungsi ini HANYA SEKALI dari editor Apps Script untuk memunculkan prompt izin DriveApp.
+  const files = DriveApp.getFiles();
+  if (files.hasNext()) {
+    Logger.log("DriveApp berhasil diotorisasi!");
+  } else {
+    Logger.log("Tidak ada file di Drive, tetapi otorisasi berhasil.");
   }
-  return { status: 'error', message: 'Pengguna tidak ditemukan.' };
-}
-
-// === Inventori Barang Jadi ===
-function getBarangJadi() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Master Barang Jadi');
-  if (!sheet) return { status: 'error', message: 'Sheet DB Master Barang Jadi tidak ditemukan.' };
-  
-  const values = sheet.getDataRange().getDisplayValues();
-  if (values.length <= 1) return { status: 'success', data: [] };
-  
-  const headers = values[0];
-  const data = values.slice(1).map(row => {
-    let obj = {};
-    headers.forEach((h, i) => {
-      if (h === 'Kode Barang') obj.kode = row[i];
-      if (h === 'Nama Barang') obj.nama = row[i];
-      if (h === 'Stok') obj.stok = parseInt(row[i]) || 0;
-      if (h === 'Harga Jual') obj.harga_jual = row[i];
-      if (h === 'Lokasi Gudang') obj.lokasi = row[i];
-    });
-    return obj;
-  });
-  
-  return { status: 'success', data: data };
-}
-
-// === PO Internal (Permintaan Belanja) ===
-function getPOInternal() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB PO Internal');
-  if (!sheet) return { status: 'error', message: 'Sheet DB PO Internal tidak ditemukan.' };
-  
-  const values = sheet.getDataRange().getDisplayValues();
-  if (values.length <= 1) return { status: 'success', data: [] };
-  
-  const headers = values[0];
-  const data = values.slice(1).map(row => {
-    let obj = {};
-    headers.forEach((h, i) => {
-      if (h === 'No PO') obj.no_po = row[i];
-      if (h === 'Tanggal') obj.tanggal = row[i];
-      if (h === 'Pemohon') obj.pemohon = row[i];
-      if (h === 'Kode Material') obj.kode_material = row[i];
-      if (h === 'Nama Material') obj.nama_material = row[i];
-      if (h === 'Jumlah') obj.jumlah = row[i];
-      if (h === 'Status') obj.status = row[i];
-    });
-    return obj;
-  });
-  
-  return { status: 'success', data: data };
-}
-
-function createPOInternal(payload) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB PO Internal');
-  if (!sheet) return { status: 'error', message: 'Sheet DB PO Internal tidak ditemukan.' };
-  
-  const noPO = 'POI-' + Date.now();
-  sheet.appendRow([
-    noPO,
-    new Date(),
-    payload.pemohon || '-',
-    payload.kode_material || '',
-    payload.nama_material || '',
-    parseInt(payload.jumlah) || 0,
-    'Menunggu Approval'
-  ]);
-  
-  return { status: 'success', message: 'Pengajuan belanja berhasil: ' + noPO };
-}
-
-function updatePOStatus(payload) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('DB PO Internal');
-  if (!sheet) return { status: 'error', message: 'Sheet DB PO Internal tidak ditemukan.' };
-  
-  const values = sheet.getDataRange().getValues();
-  const headers = values[0];
-  const noPOIdx = headers.indexOf('No PO');
-  const statusIdx = headers.indexOf('Status');
-  const kodeIdx = headers.indexOf('Kode Material');
-  const jumlahIdx = headers.indexOf('Jumlah');
-  
-  for (let i = 1; i < values.length; i++) {
-    if (values[i][noPOIdx] == payload.no_po) {
-      // Update status
-      sheet.getRange(i + 1, statusIdx + 1).setValue(payload.status);
-      
-      // Jika status = Selesai → Tambahkan stok ke Master Bahan Baku
-      if (payload.status === 'Selesai (Barang Diterima)') {
-        const kodeMaterial = payload.kode_material || values[i][kodeIdx];
-        const qty = parseInt(payload.qty) || parseInt(values[i][jumlahIdx]) || 0;
-        
-        const stockSheet = ss.getSheetByName('DB Master Bahan Baku');
-        if (stockSheet) {
-          const stockData = stockSheet.getDataRange().getValues();
-          for (let j = 1; j < stockData.length; j++) {
-            if (stockData[j][0] == kodeMaterial) {
-              let stokIdx = stockData[0].indexOf('Stok');
-              let currentStock = parseInt(stockData[j][stokIdx]) || 0;
-              stockSheet.getRange(j + 1, stokIdx + 1).setValue(currentStock + qty);
-              
-              // Log ke DB Transaksi Gudang
-              const logSheet = ss.getSheetByName('DB Transaksi Gudang');
-              if (logSheet) {
-                logSheet.appendRow([
-                  'TRX-' + Date.now(), new Date(), 'IN', payload.no_po,
-                  kodeMaterial, qty,
-                  'Petugas: ' + (payload.user_nama || 'System'),
-                  'Penerimaan Belanja PO Internal'
-                ]);
-              }
-              break;
-            }
-          }
-        }
-      }
-      
-      return { status: 'success', message: 'Status PO berhasil diubah menjadi: ' + payload.status };
-    }
-  }
-  
-  return { status: 'error', message: 'PO tidak ditemukan.' };
 }

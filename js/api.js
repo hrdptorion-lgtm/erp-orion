@@ -1,29 +1,73 @@
 // Replace with the actual URL from Google Apps Script deployment
-const API_URL = 'https://script.google.com/macros/s/AKfycbz62bYOJaLoeoJr2CEhIT0UJB9JSHl38S90xCwCki_uvwhgS1v4MHyaVvqWiie_xvNo/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxpWtZ4n7rr4F3H5r3ORbvSBaF9SiyJuJukiOmJ6O3m_c57L9vowjHqJjVjKmfoisOuFQ/exec';
 
 class ERPAPI {
-    static async request(action, payload = {}) {
+    static async request(action, payload = {}, timeoutMs = 60000) {
         try {
-            // Because GAS requires no-cors for direct browser fetch or cors setup.
-            // Using POST to web app.
-            // In a real scenario, use URLSearchParams or a proxy if CORS is an issue.
+            console.log(`[API] Mengirim request: action=${action}, payload keys=${Object.keys(payload).join(',')}`);
+
+            // Create abort controller for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+            // Gunakan x-www-form-urlencoded untuk mencegah bug CORS redirect di Google Apps Script
+            const formBody = 'payload=' + encodeURIComponent(JSON.stringify({ action, payload }));
+
             const response = await fetch(API_URL, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'text/plain;charset=utf-8', // Bypass preflight
+                    'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: JSON.stringify({ action, payload })
+                body: formBody,
+                signal: controller.signal
             });
-            
+
+            clearTimeout(timeoutId);
+
+            console.log(`[API] Response status: ${response.status}`);
+
             // Note: with text/plain to GAS, it returns opaque response in no-cors, 
             // so we might need JSONP or ensure GAS handles CORS properly.
             // Assuming GAS allows CORS for this implementation.
-            return await response.json();
+            const responseText = await response.text();
+            console.log(`[API] Response text length: ${responseText.length}`);
+
+            try {
+                const jsonResponse = JSON.parse(responseText);
+                console.log(`[API] Response parsed successfully:`, jsonResponse);
+
+                if (action.startsWith('get_') && jsonResponse.status === 'success') {
+                    localStorage.setItem(`erp_cache_${action}`, JSON.stringify(jsonResponse));
+                }
+
+                return jsonResponse;
+            } catch (parseErr) {
+                console.error('[API] Gagal parse response JSON:', parseErr);
+                console.error('[API] Response text:', responseText.substring(0, 500));
+                return {
+                    status: 'error',
+                    message: 'Server mengembalikan response yang tidak valid. Silakan periksa Console (F12) untuk detail.'
+                };
+            }
         } catch (error) {
-            console.error('API Error:', error);
-            // Return mock data if API fails (for demo purposes)
-            return this.getMockData(action);
+            console.error('[API] Fetch error:', error);
+
+            let errorMsg = error.message;
+            if (error.name === 'AbortError') {
+                errorMsg = `Request timeout (lebih dari ${60000 / 1000} detik). Server mungkin terlalu lambat atau file gambar terlalu besar.`;
+            }
+
+            showToast?.(`❌ Koneksi gagal: ${errorMsg}`, 'error', 5000);
+            return { status: 'error', message: 'Koneksi ke server gagal: ' + errorMsg };
         }
+    }
+
+    static getCached(action) {
+        try {
+            const cached = localStorage.getItem(`erp_cache_${action}`);
+            if (cached) return JSON.parse(cached);
+        } catch (e) { }
+        return null;
     }
 
     static getMockData(action) {
@@ -59,17 +103,17 @@ class ERPAPI {
             return {
                 status: 'success',
                 data: [
-                    { 
-                        no_penawaran: 'PNW-20260601', tanggal: '01/06/2026', customer: 'PT Klien Sukses', status: 'Penawaran', 
-                        rincian_item: [{nama: 'Produk A', qty: 10, harga: 1000000}, {nama: 'Produk B', qty: 5, harga: 1000000}],
+                    {
+                        no_penawaran: 'PNW-20260601', tanggal: '01/06/2026', customer: 'PT Klien Sukses', status: 'Penawaran',
+                        rincian_item: [{ nama: 'Produk A', qty: 10, harga: 1000000 }, { nama: 'Produk B', qty: 5, harga: 1000000 }],
                         narasi: 'Harga sewaktu-waktu dapat berubah.\\nOngkos kirim ditanggung pembeli.',
-                        total_harga: 15000000, dp: 5000000 
+                        total_harga: 15000000, dp: 5000000
                     },
-                    { 
-                        no_penawaran: 'PNW-20260602', tanggal: '02/06/2026', customer: 'CV Maju Jaya', status: 'Approved', 
-                        rincian_item: [{nama: 'Jasa Pemasangan', qty: 1, harga: 8000000}],
+                    {
+                        no_penawaran: 'PNW-20260602', tanggal: '02/06/2026', customer: 'CV Maju Jaya', status: 'Approved',
+                        rincian_item: [{ nama: 'Jasa Pemasangan', qty: 1, harga: 8000000 }],
                         narasi: 'Termasuk garansi pemasangan 1 bulan.',
-                        total_harga: 8000000, dp: 8000000 
+                        total_harga: 8000000, dp: 8000000
                     }
                 ]
             };

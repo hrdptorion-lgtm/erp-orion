@@ -1,74 +1,135 @@
-function doGet(e) {
-  // Setup routing or returning basic info
-  return ContentService.createTextOutput(JSON.stringify({ status: 'success', message: 'API ERP Orion is running' }))
+function createJsonResponse(payload) {
+  return ContentService.createTextOutput(JSON.stringify(payload || {}))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  // Info endpoint for health check / quick API verification
+  return createJsonResponse({ status: 'success', message: 'API ERP Orion is running' });
 }
 
 function doPost(e) {
   // Handle POST requests from the frontend
   let response = { status: 'error', message: 'Invalid request' };
-  
+
   try {
-    const data = JSON.parse(e.postData.contents);
-    const action = data.action;
-    
-    if (action === 'create_po') {
-      response = createPO(data.payload);
-    } else if (action === 'get_stock') {
-      response = getStock();
-    } else if (action === 'save_stock') {
-      response = saveStock(data.payload);
-    } else if (action === 'delete_stock') {
-      response = deleteStock(data.payload);
-    } else if (action === 'get_users') {
-      response = getUsers();
-    } else if (action === 'save_user') {
-      response = saveUser(data.payload);
-    } else if (action === 'delete_user') {
-      response = deleteUser(data.payload);
-    } else if (action === 'receive_grn') {
-      response = receiveGRN(data.payload);
-    } else if (action === 'get_penawaran') {
-      response = getPenawaran();
-    } else if (action === 'save_penawaran') {
-      response = savePenawaran(data.payload);
-    } else if (action === 'delete_penawaran') {
-      response = deletePenawaran(data.payload);
-    } else if (action === 'get_produksi') {
-      response = getProduksi();
-    } else if (action === 'get_inventory') {
-      response = getInventory();
-    } else if (action === 'get_bom') {
-      response = getBOM();
-    } else if (action === 'save_bom') {
-      response = saveBOM(data.payload);
-    } else if (action === 'save_spk') {
-      response = saveSPK(data.payload);
-    } else if (action === 'save_invoice') {
-      response = saveInvoice(data.payload);
-    } else if (action === 'add_petty_cash') {
-      response = addPettyCash(data.payload);
-    } else if (action === 'login') {
-      response = handleLogin(data.payload);
-    } else if (action === 'get_settings') {
-      response = getSettings();
-    } else if (action === 'save_settings') {
-      response = saveSettings(data.payload);
-    } else if (action === 'get_barang_jadi') {
-      response = getBarangJadi();
-    } else if (action === 'get_po_internal') {
-      response = getPOInternal();
-    } else if (action === 'create_po_internal') {
-      response = createPOInternal(data.payload);
-    } else if (action === 'update_po_status') {
-      response = updatePOStatus(data.payload);
-    } else if (action === 'import_stock') {
-      response = importStock(data.payload);
+    let rawData;
+    if (e && e.parameter && e.parameter.payload) {
+      rawData = e.parameter.payload;
+    } else if (e && e.postData && e.postData.contents) {
+      rawData = e.postData.contents;
+    } else {
+      throw new Error('Request body kosong atau tidak tersedia.');
+    }
+
+    let data;
+    try {
+      data = JSON.parse(rawData);
+    } catch (parseError) {
+      throw new Error('Payload JSON tidak valid: ' + parseError.message + ', raw: ' + String(rawData).substring(0, 50));
+    }
+
+    if (!data || typeof data !== 'object') {
+      throw new Error('Payload harus berupa objek JSON.');
+    }
+
+    const action = String(data.action || '').trim();
+    const payload = data.payload || {};
+
+    if (!action) {
+      throw new Error('Field action dibutuhkan.');
+    }
+
+    switch (action) {
+      case 'create_po':
+        response = createPO(payload);
+        break;
+      case 'get_stock':
+        response = getStock();
+        break;
+      case 'save_stock':
+        response = saveStock(payload);
+        break;
+      case 'delete_stock':
+        response = deleteStock(payload);
+        break;
+      case 'get_users':
+        response = getUsers();
+        break;
+      case 'save_user':
+        response = saveUser(payload);
+        break;
+      case 'delete_user':
+        response = deleteUser(payload);
+        break;
+      case 'receive_grn':
+        response = receiveGRN(payload);
+        break;
+      case 'get_penawaran':
+        response = getPenawaran();
+        break;
+      case 'save_penawaran':
+        response = savePenawaran(payload);
+        break;
+      case 'delete_penawaran':
+        response = deletePenawaran(payload);
+        break;
+      case 'get_produksi':
+        response = getProduksi();
+        break;
+      case 'get_inventory':
+        response = getInventory();
+        break;
+      case 'get_bom':
+        response = getBOM();
+        break;
+      case 'save_bom':
+        response = saveBOM(payload);
+        break;
+      case 'save_spk':
+        response = saveSPK(payload);
+        break;
+      case 'save_invoice':
+        response = saveInvoice(payload);
+        break;
+      case 'add_petty_cash':
+        response = addPettyCash(payload);
+        break;
+      case 'login':
+        response = handleLogin(payload);
+        break;
+      case 'get_settings':
+        response = getSettings();
+        break;
+      case 'save_settings':
+        response = saveSettings(payload);
+        break;
+      case 'get_barang_jadi':
+        response = getBarangJadi();
+        break;
+      case 'get_po_internal':
+        response = getPOInternal();
+        break;
+      case 'create_po_internal':
+        response = createPOInternal(payload);
+        break;
+      case 'update_po_status':
+        response = updatePOInternalStatus(payload);
+        break;
+      case 'delete_po_internal':
+        response = deletePOInternal(payload);
+        break;
+      case 'import_stock':
+        response = importStock(payload);
+        break;
+      default:
+        response = { status: 'error', message: 'Action tidak dikenali: ' + action };
+        break;
     }
   } catch (error) {
-    response = { status: 'error', message: error.toString() };
+    Logger.log('[doPost] ERROR: ' + (error.stack || error.toString()));
+    response = { status: 'error', message: error.message || String(error) };
   }
-  
-  return ContentService.createTextOutput(JSON.stringify(response))
-    .setMimeType(ContentService.MimeType.JSON);
+
+  return createJsonResponse(response);
 }
