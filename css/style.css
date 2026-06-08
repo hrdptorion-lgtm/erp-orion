@@ -386,7 +386,9 @@ tbody tr:hover {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: var(--bg-main);
+  background: rgba(10, 14, 23, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   z-index: 9999;
   display: flex;
   align-items: center;

@@ -59,9 +59,17 @@
                 <i class="fa-solid fa-cart-shopping"></i>
                 <span>Purchasing</span>
             </li>
+            <li class="nav-item" data-target="po-internal">
+                <i class="fa-solid fa-clipboard-list"></i>
+                <span>Permintaan Belanja</span>
+            </li>
             <li class="nav-item" data-target="bom">
                 <i class="fa-solid fa-flask"></i>
                 <span>PMO & BOM Sampel</span>
+            </li>
+            <li class="nav-item" data-target="barang-jadi">
+                <i class="fa-solid fa-boxes-stacked"></i>
+                <span>Inventori Barang Jadi</span>
             </li>
             <li class="nav-item" data-target="produksi">
                 <i class="fa-solid fa-industry"></i>
@@ -213,7 +221,8 @@
                     <div style="display: flex; gap: 10px;">
                         <button class="btn" id="btn-grn" style="background: var(--success);"><i class="fa-solid fa-box-open"></i> Terima Barang (GRN)</button>
                         <button class="btn" id="btn-add-stock" style="background: var(--secondary);"><i class="fa-solid fa-plus"></i> Tambah Bahan</button>
-                        <button class="btn" id="btn-create-po"><i class="fa-solid fa-file-invoice"></i> Buat PO Internal</button>
+                        <button class="btn" id="btn-import-stock" style="background: var(--info);"><i class="fa-solid fa-file-import"></i> Import Data</button>
+                        <input type="file" id="file-import-stock" accept=".csv, .xlsx" style="display: none;">
                     </div>
                 </div>
                 <div class="table-container">
@@ -237,6 +246,78 @@
             </div>
         </div>
 
+        <!-- View: Permintaan Belanja (PO Internal) -->
+        <div id="view-po-internal" class="view">
+            <div class="header">
+                <div class="page-title">
+                    <h1>Permintaan Belanja</h1>
+                    <p>Approval & Tracking PO Internal Barang</p>
+                </div>
+            </div>
+
+            <div class="data-section">
+                <div class="section-header">
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn" id="btn-add-po-internal"><i class="fa-solid fa-plus"></i> Buat Pengajuan Belanja</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No PO</th>
+                                <th>Tanggal</th>
+                                <th>Pemohon</th>
+                                <th>Barang</th>
+                                <th>Jumlah</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-po-internal">
+                            <tr>
+                                <td colspan="7" style="text-align: center;">Memuat data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Inventori Barang Jadi -->
+        <div id="view-barang-jadi" class="view">
+            <div class="header">
+                <div class="page-title">
+                    <h1>Inventori Barang Jadi</h1>
+                    <p>Stok produk jadi siap kirim / jual</p>
+                </div>
+            </div>
+
+            <div class="data-section">
+                <div class="section-header">
+                    <h3>Daftar Barang Jadi</h3>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Kode Barang</th>
+                                <th>Nama Barang</th>
+                                <th>Stok</th>
+                                <th>Harga Jual</th>
+                                <th>Lokasi Gudang</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-barang-jadi">
+                            <tr>
+                                <td colspan="5" style="text-align: center;">Memuat data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- View: BOM & Sampel -->
         <div id="view-bom" class="view">
             <div class="data-section">
@@ -250,13 +331,14 @@
                             <tr>
                                 <th>Kode Barang Jadi</th>
                                 <th>Nama Barang</th>
+                                <th>Gambar</th>
                                 <th>Total Biaya Material</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="table-bom">
                             <tr>
-                                <td colspan="4" style="text-align: center;">Memuat data...</td>
+                                <td colspan="5" style="text-align: center;">Memuat data...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -390,6 +472,28 @@
             </div>
         </div>
 
+        <!-- PO Internal Modal Overlay -->
+        <div id="po-modal" class="login-overlay">
+            <div class="login-box" style="max-width: 500px;">
+                <h2 style="margin-bottom: 1.5rem;">Pengajuan Belanja Baru</h2>
+                <form id="po-form">
+                    <div class="input-group">
+                        <label>Pilih Bahan Baku</label>
+                        <input type="text" id="po_material" list="bom-bahan-baku-list" required placeholder="Cari bahan baku...">
+                    </div>
+                    <div class="input-group">
+                        <label>Jumlah Permintaan</label>
+                        <input type="text" class="number-format" id="po_jumlah" required placeholder="Contoh: 100">
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 2rem;">
+                        <button type="button" class="btn" id="btn-close-po-modal" style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                        <button type="submit" class="btn" style="flex: 1; justify-content: center;">Ajukan Belanja</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- User Modal Overlay -->
         <div id="user-modal" class="login-overlay">
             <div class="login-box" style="max-width: 400px;">
@@ -410,13 +514,13 @@
                     <div class="input-group">
                         <label>Role</label>
                         <select id="u_role" style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
-                            <option value="Direktur" style="color: #000;">Direktur / Admin</option>
-                            <option value="Pimpinan Purchasing" style="color: #000;">Pimpinan Purchasing</option>
-                            <option value="Staff Purchasing" style="color: #000;">Staff Purchasing</option>
-                            <option value="Pimpinan Produksi" style="color: #000;">Pimpinan Produksi</option>
-                            <option value="Staff Produksi" style="color: #000;">Staff Produksi</option>
-                            <option value="Pimpinan Finance" style="color: #000;">Pimpinan Finance</option>
-                            <option value="Staff Finance" style="color: #000;">Staff Finance</option>
+                            <option value="Admin" style="color: #000;">Admin</option>
+                            <option value="Marketing" style="color: #000;">Marketing</option>
+                            <option value="Finance / Accounting" style="color: #000;">Finance / Accounting</option>
+                            <option value="Produksi" style="color: #000;">Produksi</option>
+                            <option value="Gudang" style="color: #000;">Gudang</option>
+                            <option value="Purchasing" style="color: #000;">Purchasing</option>
+                            <option value="Management" style="color: #000;">Management</option>
                         </select>
                     </div>
                     
@@ -449,13 +553,21 @@
                             <input type="text" class="number-format" id="f_stok" required placeholder="0">
                         </div>
                         <div style="flex: 1;">
+                            <label>Satuan</label>
+                            <input type="text" id="f_satuan" list="satuan-list" required placeholder="Pcs, Kg...">
+                        </div>
+                        <div style="flex: 1;">
                             <label>Harga Satuan</label>
                             <input type="text" class="number-format" id="f_harga" required placeholder="10.000">
                         </div>
                     </div>
                     <div class="input-group">
                         <label>Lokasi (Rak/Zona)</label>
-                        <input type="text" id="f_lokasi" placeholder="Rak A1">
+                        <input type="text" id="f_lokasi" list="lokasi-list" placeholder="Rak A1">
+                    </div>
+                    <div class="input-group">
+                        <label>Spesifikasi</label>
+                        <input type="text" id="f_spesifikasi" placeholder="Spesifikasi / Keterangan (Opsional)">
                     </div>
                     
                     <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
@@ -595,6 +707,13 @@
                         <label>Nama Barang</label>
                         <input type="text" id="bom_nama" required placeholder="Nama Produk">
                     </div>
+                    <div class="input-group">
+                        <label>Gambar Produk / Proses (Opsional)</label>
+                        <input type="file" id="bom_gambar" accept="image/*" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 10px; padding: 0.5rem; width: 100%; color: var(--text-main);">
+                        <div id="bom_gambar_preview" style="margin-top: 10px; display: none;">
+                            <img src="" style="max-width: 100%; border-radius: 10px; max-height: 200px;">
+                        </div>
+                    </div>
                     
                     <div class="input-group" style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-top: 15px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -645,6 +764,22 @@
                         <button type="submit" class="btn" style="flex: 1; justify-content: center;">Catat Pembayaran</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- Logout Modal Overlay -->
+        <div id="logout-modal" class="login-overlay">
+            <div class="login-box" style="max-width: 400px; text-align: center;">
+                <div style="font-size: 3rem; color: var(--danger); margin-bottom: 1rem;">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </div>
+                <h2 style="margin-bottom: 1rem;">Konfirmasi Logout</h2>
+                <p style="color: var(--text-muted); margin-bottom: 2rem;">Yakin ingin keluar dari aplikasi ERP Orion?</p>
+                
+                <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
+                    <button type="button" class="btn" id="btn-cancel-logout" style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                    <button type="button" class="btn" id="btn-confirm-logout" style="flex: 1; background: var(--danger); justify-content: center;">Ya, Keluar</button>
+                </div>
             </div>
         </div>
 
@@ -715,10 +850,21 @@
     </div>
 
     <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- BOM Datalist for Autocomplete -->
     <datalist id="bom-items-list"></datalist>
     <datalist id="customer-list"></datalist>
     <datalist id="bom-bahan-baku-list"></datalist>
+    <datalist id="lokasi-list"></datalist>
+    <datalist id="satuan-list">
+        <option value="Pcs"></option>
+        <option value="Meter"></option>
+        <option value="Kg"></option>
+        <option value="Liter"></option>
+        <option value="Box"></option>
+        <option value="Roll"></option>
+        <option value="Set"></option>
+    </datalist>
 
     <script src="js/api.js"></script>
     <script src="js/app.js"></script>

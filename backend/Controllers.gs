@@ -73,6 +73,7 @@ function getStock() {
       if (h === 'Kode Material') obj.kode = row[i];
       if (h === 'Nama Material') obj.nama = row[i];
       if (h === 'Stok') obj.stok = parseInt(row[i]) || 0;
+      if (h === 'Satuan') obj.satuan = row[i];
       if (h === 'Lokasi (Rak/Zona)') obj.lokasi = row[i];
       if (h === 'Harga Satuan') obj.harga = row[i];
       if (h === 'Spesifikasi') obj.spesifikasi = row[i];
@@ -103,6 +104,7 @@ function saveStock(payload) {
       if (h === 'Kode Material') return payload.kode || '';
       if (h === 'Nama Material') return payload.nama || '';
       if (h === 'Stok') return payload.stok || 0;
+      if (h === 'Satuan') return payload.satuan || '';
       if (h === 'Lokasi (Rak/Zona)') return payload.lokasi || '';
       if (h === 'Harga Satuan') return payload.harga || 0;
       if (h === 'Spesifikasi') return payload.spesifikasi || '';
@@ -114,10 +116,72 @@ function saveStock(payload) {
     sheet.appendRow(rowData);
     return { status: 'success', message: 'Data bahan baku berhasil ditambahkan.' };
   } else {
-    // Update existing
+    // Update existing - Check for changes to log
+    const oldRow = values[rowIndex - 1];
+    const oldStok = parseInt(oldRow[headers.indexOf('Stok')]) || 0;
+    const oldHarga = parseInt(oldRow[headers.indexOf('Harga Satuan')]) || 0;
+    const oldLokasi = oldRow[headers.indexOf('Lokasi (Rak/Zona)')] || '';
+    const oldSatuan = oldRow[headers.indexOf('Satuan')] || '';
+    
+    let changes = [];
+    if (oldStok !== payload.stok) changes.push(`Stok: ${oldStok} -> ${payload.stok}`);
+    if (oldHarga !== payload.harga) changes.push(`Harga: ${oldHarga} -> ${payload.harga}`);
+    if (oldLokasi !== payload.lokasi) changes.push(`Lokasi: ${oldLokasi} -> ${payload.lokasi}`);
+    if (oldSatuan !== payload.satuan) changes.push(`Satuan: ${oldSatuan} -> ${payload.satuan}`);
+    
+    if (changes.length > 0) {
+      const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Transaksi Gudang');
+      if (logSheet) {
+        const username = payload.user_nama || payload.username || 'System';
+        logSheet.appendRow(['TRX-' + Date.now(), new Date(), 'ADJUST', 'Manual Edit', payload.kode, (payload.stok - oldStok), 'User: ' + username, 'Update Master: ' + changes.join(', ')]);
+      }
+    }
+    
     sheet.getRange(rowIndex, 1, 1, rowData.length).setValues([rowData]);
     return { status: 'success', message: 'Data bahan baku berhasil diperbarui.' };
   }
+}
+
+function importStock(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Master Bahan Baku');
+  if (!sheet) return { status: 'error', message: 'Sheet tidak ditemukan.' };
+  
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0];
+  const kodeIdx = headers.indexOf('Kode Material');
+  
+  // Get existing kodes
+  const existingKodes = new Set();
+  for (let i = 1; i < values.length; i++) {
+    existingKodes.add(String(values[i][kodeIdx]).trim().toUpperCase());
+  }
+  
+  let insertedCount = 0;
+  let skippedCount = 0;
+  
+  payload.items.forEach(item => {
+    if (!item.kode) return;
+    const kodeStr = String(item.kode).trim().toUpperCase();
+    if (existingKodes.has(kodeStr)) {
+      skippedCount++;
+    } else {
+      const rowData = headers.map(h => {
+          if (h === 'Kode Material') return kodeStr;
+          if (h === 'Nama Material') return item.nama || '';
+          if (h === 'Stok') return item.stok || 0;
+          if (h === 'Satuan') return item.satuan || '';
+          if (h === 'Lokasi (Rak/Zona)') return item.lokasi || '';
+          if (h === 'Harga Satuan') return item.harga || 0;
+          if (h === 'Spesifikasi') return item.spesifikasi || '';
+          return '';
+      });
+      sheet.appendRow(rowData);
+      existingKodes.add(kodeStr); // prevent duplicates within import
+      insertedCount++;
+    }
+  });
+  
+  return { status: 'success', message: `Import selesai. Ditambahkan: ${insertedCount} data, Dilewati (sudah ada): ${skippedCount} data.` };
 }
 
 function deleteStock(payload) {
@@ -353,6 +417,7 @@ function getBOM() {
       if (h === 'Rincian Material') obj.rincian_material = row[i];
       if (h === 'Total Biaya Material') obj.total_biaya = row[i];
       if (h === 'Rincian Proses') obj.rincian_proses = row[i];
+      if (h === 'Gambar') obj.gambar = row[i];
     });
     return obj;
   });
@@ -398,24 +463,57 @@ function saveBOM(payload) {
     }
   }
 
+  let gambarUrl = '';
+  if (payload.gambar_base64 && payload.gambar_mime) {
+    try {
+      const blob = Utilities.newBlob(Utilities.base64Decode(payload.gambar_base64), payload.gambar_mime, payload.kode_barang + '_gambar');
+      const file = DriveApp.createFile(blob);
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      gambarUrl = 'https://lh3.googleusercontent.com/d/' + file.getId();
+    } catch(e) {}
+  }
+
+  // Upload gambar per proses produksi
+  let prosesFinal = payload.rincian_proses;
+  if (prosesFinal && typeof prosesFinal !== 'string') {
+    prosesFinal = prosesFinal.map(p => {
+      let prosGambarUrl = p.gambar || '';
+      if (p.gambar_base64 && p.gambar_mime) {
+        try {
+          const blob = Utilities.newBlob(Utilities.base64Decode(p.gambar_base64), p.gambar_mime, payload.kode_barang + '_proses_' + Date.now());
+          const file = DriveApp.createFile(blob);
+          file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+          prosGambarUrl = 'https://lh3.googleusercontent.com/d/' + file.getId();
+        } catch(e) {}
+      }
+      return { nama: p.nama, gambar: prosGambarUrl };
+    });
+  }
+
   const values = sheet.getDataRange().getValues();
   const headers = values[0];
   const kodeIdx = headers.indexOf('Kode Barang Jadi');
   
   let rowIndex = -1;
+  let oldGambarUrl = '';
   for (let i = 1; i < values.length; i++) {
     if (values[i][kodeIdx] == payload.kode_barang) {
       rowIndex = i + 1;
+      const gambarIdx = headers.indexOf('Gambar');
+      if (gambarIdx !== -1) oldGambarUrl = values[i][gambarIdx];
       break;
     }
   }
+
+  const finalGambarUrl = gambarUrl ? gambarUrl : oldGambarUrl;
 
   const rowData = headers.map(h => {
       if (h === 'Kode Barang Jadi') return payload.kode_barang || '';
       if (h === 'Nama Barang') return payload.nama_barang || '';
       if (h === 'Rincian Material') return typeof payload.rincian_material === 'string' ? payload.rincian_material : JSON.stringify(payload.rincian_material);
       if (h === 'Total Biaya Material') return payload.total_biaya || 0;
-      if (h === 'Rincian Proses') return typeof payload.rincian_proses === 'string' ? payload.rincian_proses : JSON.stringify(payload.rincian_proses);
+      if (h === 'Rincian Proses') return typeof prosesFinal === 'string' ? prosesFinal : JSON.stringify(prosesFinal);
+      if (h === 'Gambar') return finalGambarUrl;
       return '';
   });
 
@@ -595,4 +693,126 @@ function deleteUser(payload) {
     }
   }
   return { status: 'error', message: 'Pengguna tidak ditemukan.' };
+}
+
+// === Inventori Barang Jadi ===
+function getBarangJadi() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Master Barang Jadi');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Master Barang Jadi tidak ditemukan.' };
+  
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length <= 1) return { status: 'success', data: [] };
+  
+  const headers = values[0];
+  const data = values.slice(1).map(row => {
+    let obj = {};
+    headers.forEach((h, i) => {
+      if (h === 'Kode Barang') obj.kode = row[i];
+      if (h === 'Nama Barang') obj.nama = row[i];
+      if (h === 'Stok') obj.stok = parseInt(row[i]) || 0;
+      if (h === 'Harga Jual') obj.harga_jual = row[i];
+      if (h === 'Lokasi Gudang') obj.lokasi = row[i];
+    });
+    return obj;
+  });
+  
+  return { status: 'success', data: data };
+}
+
+// === PO Internal (Permintaan Belanja) ===
+function getPOInternal() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB PO Internal');
+  if (!sheet) return { status: 'error', message: 'Sheet DB PO Internal tidak ditemukan.' };
+  
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length <= 1) return { status: 'success', data: [] };
+  
+  const headers = values[0];
+  const data = values.slice(1).map(row => {
+    let obj = {};
+    headers.forEach((h, i) => {
+      if (h === 'No PO') obj.no_po = row[i];
+      if (h === 'Tanggal') obj.tanggal = row[i];
+      if (h === 'Pemohon') obj.pemohon = row[i];
+      if (h === 'Kode Material') obj.kode_material = row[i];
+      if (h === 'Nama Material') obj.nama_material = row[i];
+      if (h === 'Jumlah') obj.jumlah = row[i];
+      if (h === 'Status') obj.status = row[i];
+    });
+    return obj;
+  });
+  
+  return { status: 'success', data: data };
+}
+
+function createPOInternal(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB PO Internal');
+  if (!sheet) return { status: 'error', message: 'Sheet DB PO Internal tidak ditemukan.' };
+  
+  const noPO = 'POI-' + Date.now();
+  sheet.appendRow([
+    noPO,
+    new Date(),
+    payload.pemohon || '-',
+    payload.kode_material || '',
+    payload.nama_material || '',
+    parseInt(payload.jumlah) || 0,
+    'Menunggu Approval'
+  ]);
+  
+  return { status: 'success', message: 'Pengajuan belanja berhasil: ' + noPO };
+}
+
+function updatePOStatus(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('DB PO Internal');
+  if (!sheet) return { status: 'error', message: 'Sheet DB PO Internal tidak ditemukan.' };
+  
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0];
+  const noPOIdx = headers.indexOf('No PO');
+  const statusIdx = headers.indexOf('Status');
+  const kodeIdx = headers.indexOf('Kode Material');
+  const jumlahIdx = headers.indexOf('Jumlah');
+  
+  for (let i = 1; i < values.length; i++) {
+    if (values[i][noPOIdx] == payload.no_po) {
+      // Update status
+      sheet.getRange(i + 1, statusIdx + 1).setValue(payload.status);
+      
+      // Jika status = Selesai → Tambahkan stok ke Master Bahan Baku
+      if (payload.status === 'Selesai (Barang Diterima)') {
+        const kodeMaterial = payload.kode_material || values[i][kodeIdx];
+        const qty = parseInt(payload.qty) || parseInt(values[i][jumlahIdx]) || 0;
+        
+        const stockSheet = ss.getSheetByName('DB Master Bahan Baku');
+        if (stockSheet) {
+          const stockData = stockSheet.getDataRange().getValues();
+          for (let j = 1; j < stockData.length; j++) {
+            if (stockData[j][0] == kodeMaterial) {
+              let stokIdx = stockData[0].indexOf('Stok');
+              let currentStock = parseInt(stockData[j][stokIdx]) || 0;
+              stockSheet.getRange(j + 1, stokIdx + 1).setValue(currentStock + qty);
+              
+              // Log ke DB Transaksi Gudang
+              const logSheet = ss.getSheetByName('DB Transaksi Gudang');
+              if (logSheet) {
+                logSheet.appendRow([
+                  'TRX-' + Date.now(), new Date(), 'IN', payload.no_po,
+                  kodeMaterial, qty,
+                  'Petugas: ' + (payload.user_nama || 'System'),
+                  'Penerimaan Belanja PO Internal'
+                ]);
+              }
+              break;
+            }
+          }
+        }
+      }
+      
+      return { status: 'success', message: 'Status PO berhasil diubah menjadi: ' + payload.status };
+    }
+  }
+  
+  return { status: 'error', message: 'PO tidak ditemukan.' };
 }

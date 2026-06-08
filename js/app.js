@@ -34,9 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Role-based Access Control
         const isPurchasing = user.role.toLowerCase().includes('purchasing');
-        const isProduksi = user.role.toLowerCase().includes('produksi');
-        const isFinance = user.role.toLowerCase().includes('finance');
-        const isAdmin = user.role.toLowerCase().includes('direktur') || user.role.toLowerCase().includes('admin');
+        const isProduksi = user.role.toLowerCase().includes('produksi') || user.role.toLowerCase().includes('gudang');
+        const isFinance = user.role.toLowerCase().includes('finance') || user.role.toLowerCase().includes('accounting');
+        const isSales = user.role.toLowerCase().includes('marketing');
+        const isAdmin = ['direktur', 'admin', 'management'].some(r => user.role.toLowerCase().includes(r));
 
         navItems.forEach(item => {
             const target = item.getAttribute('data-target');
@@ -44,8 +45,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!isAdmin) {
                 if (isPurchasing && target !== 'dashboard' && target !== 'purchasing') item.style.display = 'none';
-                if (isProduksi && target !== 'dashboard' && target !== 'produksi') item.style.display = 'none';
+                if (isProduksi && target !== 'dashboard' && target !== 'produksi' && target !== 'bom') item.style.display = 'none';
                 if (isFinance && target !== 'dashboard' && target !== 'finance') item.style.display = 'none';
+                if (isSales && target !== 'dashboard' && target !== 'sales') item.style.display = 'none';
                 if (item.classList.contains('admin-only')) item.style.display = 'none';
             } else {
                 if (item.classList.contains('admin-only')) item.style.display = 'flex';
@@ -95,7 +97,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    const logoutModal = document.getElementById('logout-modal');
     btnLogout?.addEventListener('click', () => {
+        logoutModal.classList.add('active');
+    });
+
+    document.getElementById('btn-cancel-logout')?.addEventListener('click', () => {
+        logoutModal.classList.remove('active');
+    });
+
+    document.getElementById('btn-confirm-logout')?.addEventListener('click', () => {
+        logoutModal.classList.remove('active');
         localStorage.removeItem('erp_session');
         loginOverlay.classList.add('active');
     });
@@ -148,6 +160,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadBOMData();
             } else if (targetViewId === 'produksi') {
                 loadProduksiData();
+            } else if (targetViewId === 'po-internal') {
+                loadPOInternalData();
+            } else if (targetViewId === 'barang-jadi') {
+                loadBarangJadiData();
             } else if (targetViewId === 'pengaturan') {
                 loadSettingsData();
             }
@@ -162,6 +178,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const response = await window.ERPAPI.request('get_stock');
         
         if (response.status === 'success' && response.data) {
+            const lokasiList = document.getElementById('lokasi-list');
+            if (lokasiList) {
+                lokasiList.innerHTML = '';
+                const uniqueLokasi = [...new Set(response.data.map(item => item.lokasi).filter(Boolean))];
+                uniqueLokasi.forEach(lok => {
+                    const option = document.createElement('option');
+                    option.value = lok;
+                    lokasiList.appendChild(option);
+                });
+            }
+
+            const satuanList = document.getElementById('satuan-list');
+            if (satuanList) {
+                const uniqueSatuan = [...new Set(response.data.map(item => item.satuan).filter(Boolean))];
+                uniqueSatuan.forEach(sat => {
+                    // Hanya tambahkan jika belum ada di opsi default
+                    if (![...satuanList.options].some(opt => opt.value.toLowerCase() === sat.toLowerCase())) {
+                        const option = document.createElement('option');
+                        option.value = sat;
+                        satuanList.appendChild(option);
+                    }
+                });
+            }
+
             tbody.innerHTML = '';
             response.data.forEach(item => {
                 const tr = document.createElement('tr');
@@ -170,11 +210,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${item.kode}</td>
                     <td style="font-weight: 500;">${item.nama}</td>
                     <td>
-                        <span class="badge ${isKritis ? 'badge-warning' : 'badge-success'}">${parseInt(item.stok || 0).toLocaleString('id-ID')}</span>
+                        <span class="badge ${isKritis ? 'badge-warning' : 'badge-success'}">${parseInt(item.stok || 0).toLocaleString('id-ID')} ${item.satuan || ''}</span>
                     </td>
                     <td>${item.lokasi}</td>
                     <td>
-                        <button class="btn btn-edit-stock" data-kode="${item.kode}" data-nama="${item.nama}" data-stok="${item.stok}" data-lokasi="${item.lokasi}" data-harga="${item.harga || 0}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn btn-edit-stock" data-kode="${item.kode}" data-nama="${item.nama}" data-stok="${item.stok}" data-satuan="${item.satuan || ''}" data-lokasi="${item.lokasi}" data-harga="${item.harga || 0}" data-spesifikasi="${item.spesifikasi || ''}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>
                         <button class="btn btn-delete-stock" data-kode="${item.kode}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger); display: inline-flex;"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 `;
@@ -189,8 +229,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         kode: b.getAttribute('data-kode'),
                         nama: b.getAttribute('data-nama'),
                         stok: b.getAttribute('data-stok'),
+                        satuan: b.getAttribute('data-satuan'),
                         lokasi: b.getAttribute('data-lokasi'),
-                        harga: b.getAttribute('data-harga')
+                        harga: b.getAttribute('data-harga'),
+                        spesifikasi: b.getAttribute('data-spesifikasi')
                     });
                 });
             });
@@ -218,9 +260,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('f_kode').readOnly = !!data; // readonly if editing
         document.getElementById('f_nama').value = data ? data.nama : '';
         document.getElementById('f_stok').value = data && data.stok ? formatRibuan(data.stok) : '';
+        document.getElementById('f_satuan').value = data && data.satuan ? data.satuan : '';
         document.getElementById('f_lokasi').value = data ? data.lokasi : '';
         document.getElementById('f_harga').value = data && data.harga ? formatRibuan(data.harga) : '';
-        document.getElementById('f_spesifikasi').value = data ? data.spesifikasi : '';
+        document.getElementById('f_spesifikasi').value = data && data.spesifikasi && data.spesifikasi !== 'undefined' ? data.spesifikasi : '';
         
         dataModal.classList.add('active');
     }
@@ -231,13 +274,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     dataForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const session = localStorage.getItem('erp_session');
+        const user = session ? JSON.parse(session) : {};
         const payload = {
             kode: document.getElementById('f_kode').value,
             nama: document.getElementById('f_nama').value,
             stok: parseInt(String(document.getElementById('f_stok').value).replace(/\D/g, '')) || 0,
+            satuan: document.getElementById('f_satuan').value,
             lokasi: document.getElementById('f_lokasi').value,
             harga: parseInt(String(document.getElementById('f_harga').value).replace(/\D/g, '')) || 0,
-            spesifikasi: document.getElementById('f_spesifikasi').value
+            spesifikasi: document.getElementById('f_spesifikasi').value,
+            username: user.username,
+            user_nama: user.nama
         };
         
         const btnSubmit = dataForm.querySelector('button[type="submit"]');
@@ -262,18 +310,239 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-add-stock')?.addEventListener('click', () => {
         openDataModal('Tambah Bahan Baku Baru');
     });
-    document.getElementById('btn-create-po')?.addEventListener('click', () => {
-        // Generate mock data and print PO
-        const tgl = new Date().toLocaleDateString('id-ID');
-        document.getElementById('po-tanggal').textContent = tgl;
-        document.getElementById('po-table-body').innerHTML = `
-            <tr><td>RM001</td><td>Besi Plat</td><td>100 Pcs</td><td>Rp 50.000</td><td>Rp 5.000.000</td></tr>
-            <tr><td>RM002</td><td>Baut M10</td><td>500 Pcs</td><td>Rp 1.000</td><td>Rp 500.000</td></tr>
-            <tr><td colspan="4" style="text-align: right; font-weight: bold;">Grand Total</td><td>Rp 5.500.000</td></tr>
-        `;
-        // Trigger browser print
-        window.print();
+
+    document.getElementById('btn-import-stock')?.addEventListener('click', () => {
+        document.getElementById('file-import-stock').click();
     });
+
+    document.getElementById('file-import-stock')?.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const btnImport = document.getElementById('btn-import-stock');
+        const oldHtml = btnImport.innerHTML;
+        btnImport.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
+        btnImport.disabled = true;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
+                
+                const items = json.map(row => {
+                    const getVal = (keys) => {
+                        for (let key in row) {
+                            if (keys.some(k => key.toLowerCase().replace(/[^a-z0-9]/g, '').includes(k))) return row[key];
+                        }
+                        return "";
+                    };
+                    return {
+                        kode: getVal(['kode']),
+                        nama: getVal(['nama', 'material', 'bahan']),
+                        stok: parseInt(getVal(['stok', 'qty', 'jumlah'])) || 0,
+                        satuan: getVal(['satuan', 'unit']),
+                        harga: parseInt(getVal(['harga', 'price'])) || 0,
+                        lokasi: getVal(['lokasi', 'rak', 'zona']),
+                        spesifikasi: getVal(['spesifikasi', 'spek', 'desc'])
+                    };
+                }).filter(item => item.kode && item.nama);
+                
+                if (items.length > 0) {
+                    const session = localStorage.getItem('erp_session');
+                    const user = session ? JSON.parse(session) : {};
+                    const res = await window.ERPAPI.request('import_stock', { items, username: user.username, user_nama: user.nama });
+                    alert(res.message);
+                    if (res.status === 'success') loadPurchasingData();
+                } else {
+                    alert('Tidak ada data valid yang bisa diimpor. Pastikan ada kolom Kode dan Nama Material.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Terjadi kesalahan saat memproses file.');
+            }
+            btnImport.innerHTML = oldHtml;
+            btnImport.disabled = false;
+            document.getElementById('file-import-stock').value = '';
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    // Flow 0: PO Internal
+    async function loadPOInternalData() {
+        const tbody = document.getElementById('table-po-internal');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+        
+        // Fetch Material Master for datalist
+        const stockRes = await window.ERPAPI.request('get_stock');
+        if (stockRes.status === 'success' && stockRes.data) {
+            const list = document.getElementById('bom-bahan-baku-list');
+            if (list) {
+                list.innerHTML = '';
+                stockRes.data.forEach(s => {
+                    const option = document.createElement('option');
+                    option.value = s.nama;
+                    option.setAttribute('data-kode', s.kode || '');
+                    list.appendChild(option);
+                });
+            }
+        }
+        
+        const response = await window.ERPAPI.request('get_po_internal');
+        if (response.status === 'success' && response.data) {
+            tbody.innerHTML = '';
+            if (response.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Belum ada PO Internal.</td></tr>';
+                return;
+            }
+            
+            const session = localStorage.getItem('erp_session');
+            const user = session ? JSON.parse(session) : {};
+            const isAtasan = (user.role === 'Admin' || user.role === 'Management' || user.role === 'Super');
+            const isPurchasing = (user.role === 'Admin' || user.role === 'Purchasing' || user.role === 'Super');
+
+            response.data.forEach(item => {
+                const tr = document.createElement('tr');
+                let badgeClass = 'badge-warning';
+                if (item.status === 'Disetujui (Sedang Dibelikan)') badgeClass = 'badge-success';
+                else if (item.status === 'Selesai (Barang Diterima)') badgeClass = 'badge-success';
+                else if (item.status === 'Ditolak') badgeClass = 'badge-warning';
+                
+                let actionBtns = '';
+                if (item.status === 'Menunggu Approval' && isAtasan) {
+                    actionBtns += `<button class="btn btn-approve-po" data-no="${item.no_po}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-check"></i> Approve</button>`;
+                    actionBtns += `<button class="btn btn-reject-po" data-no="${item.no_po}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger); display: inline-flex;"><i class="fa-solid fa-times"></i> Tolak</button>`;
+                } else if (item.status === 'Disetujui (Sedang Dibelikan)' && isPurchasing) {
+                    actionBtns += `<button class="btn btn-selesai-po" data-no="${item.no_po}" data-kode="${item.kode_material}" data-qty="${item.jumlah}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--info); display: inline-flex;"><i class="fa-solid fa-box-open"></i> Selesai (Terima Barang)</button>`;
+                }
+                
+                if (!actionBtns) actionBtns = '-';
+
+                tr.innerHTML = `
+                    <td style="font-weight: 500;">${item.no_po}</td>
+                    <td>${item.tanggal}</td>
+                    <td>${item.pemohon}</td>
+                    <td>${item.nama_material}</td>
+                    <td>${parseInt(item.jumlah || 0).toLocaleString('id-ID')}</td>
+                    <td><span class="badge ${badgeClass}">${item.status}</span></td>
+                    <td>${actionBtns}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            // Event Delegation for Table Actions
+            tbody.querySelectorAll('.btn-approve-po').forEach(btn => {
+                btn.addEventListener('click', () => updatePOStatus(btn.getAttribute('data-no'), 'Disetujui (Sedang Dibelikan)'));
+            });
+            tbody.querySelectorAll('.btn-reject-po').forEach(btn => {
+                btn.addEventListener('click', () => updatePOStatus(btn.getAttribute('data-no'), 'Ditolak'));
+            });
+            tbody.querySelectorAll('.btn-selesai-po').forEach(btn => {
+                btn.addEventListener('click', () => updatePOStatus(btn.getAttribute('data-no'), 'Selesai (Barang Diterima)', btn.getAttribute('data-kode'), btn.getAttribute('data-qty')));
+            });
+        }
+    }
+
+    async function updatePOStatus(no_po, status, kode_material = '', qty = 0) {
+        if (!confirm(`Yakin ingin mengubah status PO menjadi ${status}?`)) return;
+        
+        const session = localStorage.getItem('erp_session');
+        const user = session ? JSON.parse(session) : {};
+        
+        const res = await window.ERPAPI.request('update_po_status', {
+            no_po, status, kode_material, qty, user_nama: user.nama || user.username || 'System'
+        });
+        
+        if (res.status === 'success') {
+            loadPOInternalData();
+        } else {
+            alert(res.message);
+        }
+    }
+
+    const poModal = document.getElementById('po-modal');
+    const poForm = document.getElementById('po-form');
+
+    document.getElementById('btn-add-po-internal')?.addEventListener('click', () => {
+        poForm.reset();
+        poModal.classList.add('active');
+    });
+
+    document.getElementById('btn-close-po-modal')?.addEventListener('click', () => {
+        poModal.classList.remove('active');
+    });
+
+    poForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const session = localStorage.getItem('erp_session');
+        const user = session ? JSON.parse(session) : {};
+        
+        const materialInput = document.getElementById('po_material').value;
+        const datalist = document.getElementById('bom-bahan-baku-list');
+        let kodeMaterial = '';
+        if (datalist) {
+            const option = Array.from(datalist.options).find(opt => opt.value === materialInput);
+            if (option) kodeMaterial = option.getAttribute('data-kode');
+        }
+        
+        const payload = {
+            pemohon: user.nama || user.username || 'System',
+            kode_material: kodeMaterial,
+            nama_material: materialInput,
+            jumlah: parseInt(String(document.getElementById('po_jumlah').value).replace(/\D/g, '')) || 0
+        };
+        
+        const btnSubmit = poForm.querySelector('button[type="submit"]');
+        const oldHtml = btnSubmit.innerHTML;
+        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengajukan...';
+        btnSubmit.disabled = true;
+
+        const res = await window.ERPAPI.request('create_po_internal', payload);
+        
+        btnSubmit.innerHTML = oldHtml;
+        btnSubmit.disabled = false;
+        
+        if (res.status === 'success') {
+            poModal.classList.remove('active');
+            loadPOInternalData();
+        } else {
+            alert(res.message);
+        }
+    });
+
+    // Flow: Inventori Barang Jadi
+    async function loadBarangJadiData() {
+        const tbody = document.getElementById('table-barang-jadi');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+        
+        const response = await window.ERPAPI.request('get_barang_jadi');
+        if (response.status === 'success' && response.data) {
+            tbody.innerHTML = '';
+            if (response.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Belum ada data barang jadi.</td></tr>';
+                return;
+            }
+            response.data.forEach(item => {
+                const tr = document.createElement('tr');
+                const isKritis = parseInt(item.stok) < 5;
+                tr.innerHTML = `
+                    <td style="font-weight: 500;">${item.kode}</td>
+                    <td>${item.nama}</td>
+                    <td>
+                        <span class="badge ${isKritis ? 'badge-warning' : 'badge-success'}">${parseInt(item.stok || 0).toLocaleString('id-ID')}</span>
+                    </td>
+                    <td>Rp ${parseInt(item.harga_jual || 0).toLocaleString('id-ID')}</td>
+                    <td>${item.lokasi || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    }
 
     // Flow 1: Penawaran
     async function loadPenawaranData() {
@@ -657,20 +926,119 @@ document.addEventListener('DOMContentLoaded', () => {
         if (response.status === 'success' && response.data) {
             tbody.innerHTML = '';
             if (response.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Belum ada data BOM.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Belum ada data BOM.</td></tr>';
                 return;
             }
+
+            const session = localStorage.getItem('erp_session');
+            const user = session ? JSON.parse(session) : {};
+            const canEdit = ['Admin', 'Management', 'Produksi', 'Super', 'Super Admin'].some(r => (user.role || '').includes(r));
+
             response.data.forEach(item => {
                 const tr = document.createElement('tr');
+                const imgHtml = item.gambar ? `<a href="${item.gambar}" target="_blank"><img src="${item.gambar}" style="max-width: 50px; max-height: 50px; border-radius: 5px; object-fit: cover;"></a>` : '<span style="color:var(--text-muted);font-size:0.8rem;">Tidak ada</span>';
+                
+                let actionBtns = `<button class="btn btn-detail-bom" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: var(--accent);"><i class="fa-solid fa-eye"></i> Detail</button>`;
+                if (canEdit) {
+                    actionBtns += `<button class="btn btn-edit-bom" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex;"><i class="fa-solid fa-pen"></i> Edit</button>`;
+                }
+                
                 tr.innerHTML = `
                     <td style="font-weight: 500;">${item.kode_barang}</td>
                     <td>${item.nama_barang}</td>
+                    <td>${imgHtml}</td>
                     <td>Rp ${parseInt(item.total_biaya || 0).toLocaleString('id-ID')}</td>
-                    <td><span class="badge badge-success">Tersedia</span></td>
+                    <td>${actionBtns}</td>
                 `;
                 tbody.appendChild(tr);
+
+                // Detail button
+                tr.querySelector('.btn-detail-bom').addEventListener('click', () => openBOMDetail(item));
+                // Edit button
+                if (canEdit) {
+                    tr.querySelector('.btn-edit-bom').addEventListener('click', () => openBOMEdit(item));
+                }
             });
         }
+    }
+
+    function openBOMDetail(item) {
+        let materials = [];
+        let proses = [];
+        try { materials = typeof item.rincian_material === 'string' ? JSON.parse(item.rincian_material) : (item.rincian_material || []); } catch(e) {}
+        try { proses = typeof item.rincian_proses === 'string' ? JSON.parse(item.rincian_proses) : (item.rincian_proses || []); } catch(e) {}
+
+        let matHtml = materials.map((m, i) => `<tr><td>${i+1}</td><td>${m.kode || '-'}</td><td>${m.nama}</td><td>${parseInt(m.qty || 0).toLocaleString('id-ID')}</td><td>Rp ${parseInt(m.harga || 0).toLocaleString('id-ID')}</td></tr>`).join('');
+        let prosHtml = proses.map((p, i) => `<tr><td>${i+1}</td><td>${p.nama}</td><td>${p.gambar ? `<a href="${p.gambar}" target="_blank"><img src="${p.gambar}" style="max-width:80px;max-height:60px;border-radius:5px;object-fit:cover;"></a>` : '<span style="color:var(--text-muted);font-size:0.8rem;">-</span>'}</td></tr>`).join('');
+        let imgHtml = item.gambar ? `<div style="margin-bottom: 15px; text-align: center;"><img src="${item.gambar}" style="max-width: 100%; max-height: 200px; border-radius: 10px;"></div>` : '';
+
+        const detailOverlay = document.createElement('div');
+        detailOverlay.className = 'login-overlay active';
+        detailOverlay.innerHTML = `
+            <div class="login-box" style="max-width: 650px; max-height: 90vh; overflow-y: auto;">
+                <h2 style="margin-bottom: 1rem;">Detail BOM: ${item.kode_barang}</h2>
+                <p style="color: var(--text-muted); margin-bottom: 15px;">${item.nama_barang}</p>
+                ${imgHtml}
+                <div style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-bottom: 15px;">
+                    <h4 style="color: var(--primary); margin-bottom: 10px;">Rincian Material</h4>
+                    <table style="width: 100%; font-size: 0.85rem;">
+                        <thead><tr><th>#</th><th>Kode</th><th>Nama</th><th>Qty</th><th>Biaya</th></tr></thead>
+                        <tbody>${matHtml || '<tr><td colspan="5" style="text-align:center;">-</td></tr>'}</tbody>
+                    </table>
+                    <p style="text-align: right; margin-top: 8px; font-weight: bold;">Total: Rp ${parseInt(item.total_biaya || 0).toLocaleString('id-ID')}</p>
+                </div>
+                <div style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-bottom: 15px;">
+                    <h4 style="color: var(--secondary); margin-bottom: 10px;">Rincian Proses Produksi</h4>
+                    <table style="width: 100%; font-size: 0.85rem;">
+                        <thead><tr><th>#</th><th>Tahapan</th><th>Gambar</th></tr></thead>
+                        <tbody>${prosHtml || '<tr><td colspan="3" style="text-align:center;">-</td></tr>'}</tbody>
+                    </table>
+                </div>
+                <button class="btn" id="btn-close-bom-detail" style="width: 100%; justify-content: center; background: var(--bg-glass);">Tutup</button>
+            </div>
+        `;
+        document.body.appendChild(detailOverlay);
+        detailOverlay.querySelector('#btn-close-bom-detail').addEventListener('click', () => detailOverlay.remove());
+    }
+
+    function openBOMEdit(item) {
+        document.getElementById('bom-modal-title').textContent = 'Edit BOM: ' + item.kode_barang;
+        document.getElementById('bom_kode').value = item.kode_barang;
+        document.getElementById('bom_kode').readOnly = true;
+        document.getElementById('bom_nama').value = item.nama_barang;
+
+        bomGambarBase64 = null;
+        bomGambarMime = null;
+        const preview = document.getElementById('bom_gambar_preview');
+        if (item.gambar) {
+            preview.style.display = 'block';
+            preview.querySelector('img').src = item.gambar;
+        } else {
+            preview.style.display = 'none';
+        }
+
+        materialsContainer.innerHTML = '';
+        prosesContainer.innerHTML = '';
+
+        let materials = [];
+        let proses = [];
+        try { materials = typeof item.rincian_material === 'string' ? JSON.parse(item.rincian_material) : (item.rincian_material || []); } catch(e) {}
+        try { proses = typeof item.rincian_proses === 'string' ? JSON.parse(item.rincian_proses) : (item.rincian_proses || []); } catch(e) {}
+
+        if (materials.length > 0) {
+            materials.forEach(m => addMaterialRow(m.kode || '', m.nama || '', m.qty || '1', m.harga || ''));
+        } else {
+            addMaterialRow();
+        }
+
+        if (proses.length > 0) {
+            proses.forEach(p => addProsesRow(p.nama || '', p.gambar || ''));
+        } else {
+            addProsesRow();
+        }
+
+        calculateTotalBiaya();
+        bomModal.classList.add('active');
     }
 
     const bomModal = document.getElementById('bom-modal');
@@ -726,24 +1094,75 @@ document.addEventListener('DOMContentLoaded', () => {
         materialsContainer.appendChild(div);
     }
 
-    function addProsesRow(nama = '') {
+    function addProsesRow(nama = '', gambarUrl = '') {
         const div = document.createElement('div');
-        div.style.display = 'flex';
-        div.style.gap = '10px';
         div.style.marginBottom = '10px';
         div.innerHTML = `
-            <input type="text" class="pros-nama" placeholder="Deskripsi Tahapan Proses" value="${nama}" required style="flex: 1; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
-            <button type="button" class="btn btn-remove-row" style="background: var(--danger); padding: 0.6rem;"><i class="fa-solid fa-trash"></i></button>
+            <div style="display: flex; gap: 10px; margin-bottom: 5px;">
+                <input type="text" class="pros-nama" placeholder="Deskripsi Tahapan Proses" value="${nama}" required style="flex: 1; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+                <label class="btn" style="padding: 0.5rem 0.8rem; font-size: 0.75rem; cursor: pointer; background: var(--accent);">
+                    <i class="fa-solid fa-image"></i>
+                    <input type="file" class="pros-gambar-file" accept="image/*" style="display: none;">
+                </label>
+                <button type="button" class="btn btn-remove-row" style="background: var(--danger); padding: 0.6rem;"><i class="fa-solid fa-trash"></i></button>
+            </div>
+            <div class="pros-gambar-preview" style="display: ${gambarUrl ? 'block' : 'none'}; margin-left: 5px;">
+                <img src="${gambarUrl}" style="max-width: 100px; max-height: 60px; border-radius: 5px; object-fit: cover;">
+            </div>
+            <input type="hidden" class="pros-gambar-url" value="${gambarUrl}">
+            <input type="hidden" class="pros-gambar-base64" value="">
+            <input type="hidden" class="pros-gambar-mime" value="">
         `;
         div.querySelector('.btn-remove-row').addEventListener('click', () => div.remove());
+        div.querySelector('.pros-gambar-file').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const dataUrl = event.target.result;
+                    div.querySelector('.pros-gambar-base64').value = dataUrl.split(',')[1];
+                    div.querySelector('.pros-gambar-mime').value = file.type;
+                    div.querySelector('.pros-gambar-preview').style.display = 'block';
+                    div.querySelector('.pros-gambar-preview img').src = dataUrl;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
         prosesContainer.appendChild(div);
     }
 
     document.getElementById('btn-add-material')?.addEventListener('click', () => addMaterialRow());
     document.getElementById('btn-add-proses')?.addEventListener('click', () => addProsesRow());
 
+    let bomGambarBase64 = null;
+    let bomGambarMime = null;
+
+    document.getElementById('bom_gambar')?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            bomGambarMime = file.type;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const dataUrl = event.target.result;
+                bomGambarBase64 = dataUrl.split(',')[1];
+                document.getElementById('bom_gambar_preview').style.display = 'block';
+                document.getElementById('bom_gambar_preview').querySelector('img').src = dataUrl;
+            };
+            reader.readAsDataURL(file);
+        } else {
+            bomGambarBase64 = null;
+            bomGambarMime = null;
+            document.getElementById('bom_gambar_preview').style.display = 'none';
+        }
+    });
+
     document.getElementById('btn-add-bom')?.addEventListener('click', () => {
+        document.getElementById('bom-modal-title').textContent = 'Form BOM & PMO Sampel';
         bomForm.reset();
+        document.getElementById('bom_kode').readOnly = false;
+        bomGambarBase64 = null;
+        bomGambarMime = null;
+        document.getElementById('bom_gambar_preview').style.display = 'none';
         materialsContainer.innerHTML = '';
         prosesContainer.innerHTML = '';
         totalBiayaDisplay.textContent = '0';
@@ -769,9 +1188,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const proses = [];
-        prosesContainer.querySelectorAll('div').forEach(div => {
+        prosesContainer.querySelectorAll(':scope > div').forEach(div => {
             const nama = div.querySelector('.pros-nama')?.value;
-            if(nama) proses.push(nama);
+            if(nama) {
+                proses.push({
+                    nama,
+                    gambar: div.querySelector('.pros-gambar-url')?.value || '',
+                    gambar_base64: div.querySelector('.pros-gambar-base64')?.value || '',
+                    gambar_mime: div.querySelector('.pros-gambar-mime')?.value || ''
+                });
+            }
         });
 
         const payload = {
@@ -779,7 +1205,9 @@ document.addEventListener('DOMContentLoaded', () => {
             nama_barang: document.getElementById('bom_nama').value,
             rincian_material: materials,
             total_biaya: parseInt(totalBiayaDisplay.textContent.replace(/,/g, '').replace(/\./g, '')),
-            rincian_proses: proses
+            rincian_proses: proses,
+            gambar_base64: bomGambarBase64,
+            gambar_mime: bomGambarMime
         };
         
         const btnSubmit = bomForm.querySelector('button[type="submit"]');

@@ -54,6 +54,16 @@ function doPost(e) {
       response = getSettings();
     } else if (action === 'save_settings') {
       response = saveSettings(data.payload);
+    } else if (action === 'get_barang_jadi') {
+      response = getBarangJadi();
+    } else if (action === 'get_po_internal') {
+      response = getPOInternal();
+    } else if (action === 'create_po_internal') {
+      response = createPOInternal(data.payload);
+    } else if (action === 'update_po_status') {
+      response = updatePOStatus(data.payload);
+    } else if (action === 'import_stock') {
+      response = importStock(data.payload);
     }
   } catch (error) {
     response = { status: 'error', message: error.toString() };
