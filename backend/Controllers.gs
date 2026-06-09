@@ -260,12 +260,17 @@ function getStock() {
   const stokIdx = headers.findIndex(h => /stok|stock/i.test(h));
   const hargaIdx = headers.findIndex(h => /harga/i.test(h));
   const satuanIdx = headers.findIndex(h => /satuan/i.test(h));
+  const lokasiIdx = headers.findIndex(h => /lokasi/i.test(h));
+  const spesifikasiIdx = headers.findIndex(h => /spesifikasi/i.test(h));
+  
   const data = values.slice(1).filter(r => r[namaIdx] && String(r[namaIdx]).trim() !== '').map(row => ({
     kode: kodeIdx !== -1 ? row[kodeIdx] : '',
     nama: namaIdx !== -1 ? row[namaIdx] : '',
     stok: stokIdx !== -1 ? row[stokIdx] : '0',
     harga: hargaIdx !== -1 ? row[hargaIdx] : '0',
     satuan: satuanIdx !== -1 ? row[satuanIdx] : 'pcs',
+    lokasi: lokasiIdx !== -1 ? row[lokasiIdx] : '-',
+    spesifikasi: spesifikasiIdx !== -1 ? row[spesifikasiIdx] : ''
   }));
   return { status: 'success', data: data };
 }

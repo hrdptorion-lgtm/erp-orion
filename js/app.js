@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    
+
     // --- Lightbox Image Viewer ---
     function openLightbox(imgSrc, caption = '') {
         const overlay = document.getElementById('lightbox-overlay');
@@ -7,15 +7,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const cap = document.getElementById('lightbox-caption');
         const openNew = document.getElementById('lightbox-open-new');
         if (!overlay || !img) return;
-        
+
         img.src = imgSrc;
         cap.textContent = caption;
         openNew.href = imgSrc;
         overlay.classList.add('active');
     }
-    
+
     window.openLightbox = openLightbox;
-    
+
     function closeLightbox() {
         const overlay = document.getElementById('lightbox-overlay');
         if (!overlay) return;
@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
             overlay.classList.remove('closing');
         }, 300);
     }
-    
+
     document.getElementById('lightbox-close')?.addEventListener('click', closeLightbox);
     document.getElementById('lightbox-overlay')?.addEventListener('click', (e) => {
         if (e.target.id === 'lightbox-overlay') closeLightbox();
@@ -54,17 +54,17 @@ document.addEventListener('DOMContentLoaded', () => {
             word-wrap: break-word;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         `;
-        
+
         const bgColor = {
             'success': '#10b981',
             'error': '#ef4444',
             'warning': '#f59e0b',
             'info': '#3b82f6'
         }[type] || '#3b82f6';
-        
+
         toast.style.backgroundColor = bgColor;
         toast.innerHTML = message;
-        
+
         // Add animation keyframe if not exists
         if (!document.getElementById('toast-animation')) {
             const style = document.createElement('style');
@@ -93,26 +93,26 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             document.head.appendChild(style);
         }
-        
+
         document.body.appendChild(toast);
-        
+
         if (duration > 0) {
             setTimeout(() => {
                 toast.style.animation = 'slideOut 0.3s ease-out forwards';
                 setTimeout(() => toast.remove(), 300);
             }, duration);
         }
-        
+
         return toast;
     }
 
     window.showToast = showToast; // Make globally available
 
     // --- Professional Custom Confirm Dialog ---
-    function showConfirm({ 
-        title = 'Konfirmasi', 
-        message = 'Apakah Anda yakin?', 
-        confirmText = 'Ya, Hapus', 
+    function showConfirm({
+        title = 'Konfirmasi',
+        message = 'Apakah Anda yakin?',
+        confirmText = 'Ya, Hapus',
         cancelText = 'Batal',
         type = 'danger',  // 'danger' | 'warning' | 'info'
         icon = '🗑️'
@@ -135,9 +135,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Style based on type
             const colorMap = {
-                danger:  { bg: 'rgba(239,68,68,0.15)',  border: 'rgba(239,68,68,0.3)',  btn: 'linear-gradient(135deg,#ef4444,#dc2626)', shadow: 'rgba(239,68,68,0.4)' },
+                danger: { bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.3)', btn: 'linear-gradient(135deg,#ef4444,#dc2626)', shadow: 'rgba(239,68,68,0.4)' },
                 warning: { bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.3)', btn: 'linear-gradient(135deg,#f59e0b,#d97706)', shadow: 'rgba(245,158,11,0.4)' },
-                info:    { bg: 'rgba(99,102,241,0.15)', border: 'rgba(99,102,241,0.3)', btn: 'linear-gradient(135deg,#6366f1,#4f46e5)', shadow: 'rgba(99,102,241,0.4)' }
+                info: { bg: 'rgba(99,102,241,0.15)', border: 'rgba(99,102,241,0.3)', btn: 'linear-gradient(135deg,#6366f1,#4f46e5)', shadow: 'rgba(99,102,241,0.4)' }
             };
             const c = colorMap[type] || colorMap.danger;
             iconEl.style.background = c.bg;
@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
     const loginError = document.getElementById('login-error');
     const btnLogout = document.getElementById('btn-logout');
-    
+
     const userNameDisplay = document.getElementById('user-name-display');
     const userRoleDisplay = document.getElementById('user-role-display');
     const userAvatarInitial = document.getElementById('user-avatar-initial');
@@ -228,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // save=false to avoid re-writing history on initial restore
         const hashView = location.hash.replace('#', '').trim();
         const savedView = hashView || localStorage.getItem('erp_active_view') || 'dashboard';
-        
+
         // Check if the target nav is visible for this user
         const targetNav = document.querySelector(`.nav-item[data-target="${savedView}"]`);
         const isVisible = targetNav && getComputedStyle(targetNav).display !== 'none';
@@ -252,14 +252,14 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const username = document.getElementById('login-username').value;
         const password = document.getElementById('login-password').value;
-        
+
         const btnSubmit = loginForm.querySelector('button[type="submit"]');
         btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading...';
         btnSubmit.disabled = true;
         loginError.style.display = 'none';
 
         const res = await window.ERPAPI.request('login', { username, password });
-        
+
         btnSubmit.innerHTML = 'Masuk <i class="fa-solid fa-arrow-right-to-bracket"></i>';
         btnSubmit.disabled = false;
 
@@ -297,12 +297,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const titles = {
         'dashboard': { title: 'Dashboard Overview', sub: 'Selamat datang kembali, Tim Operasional.' },
         'sales': { title: 'Penawaran & Sales', sub: 'Manajemen Penawaran kepada Customer.' },
-        'purchasing': { title: 'Modul Purchasing', sub: 'Manajemen pengadaan bahan baku & inventory.' },
+        'purchasing': { title: 'Modul Purchasing', sub: 'Manajemen pengadaan bahan baku.' },
         'bom': { title: 'PMO & BOM Sampel', sub: 'Manajemen Komposisi Material dan Tahapan Produksi.' },
         'produksi': { title: 'Produksi & Gudang', sub: 'Surat Perintah Kerja dan pemotongan stok.' },
         'finance': { title: 'Finance & Kasir', sub: 'Penagihan, Invoice, dan Petty Cash.' },
         'admin': { title: 'Manajemen Pengguna', sub: 'Pengaturan Role Akses Aplikasi.' },
-        'pengaturan': { title: 'Pengaturan Perusahaan', sub: 'Informasi dasar identitas perusahaan.' }
+        'pengaturan': { title: 'Pengaturan Perusahaan', sub: 'Informasi dasar identitas perusahaan.' },
+        'barang-jadi': { title: 'Inventori Barang Jadi', sub: 'Stok produk jadi siap kirim / jual.' }
     };
 
     // --- Core View Switcher (must be defined before event listeners & checkSession) ---
@@ -333,14 +334,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Load data
-        if (targetViewId === 'purchasing')       loadPurchasingData();
-        else if (targetViewId === 'admin')        loadAdminData();
-        else if (targetViewId === 'sales')        loadPenawaranData();
-        else if (targetViewId === 'bom')          loadBOMData();
-        else if (targetViewId === 'produksi')     loadProduksiData();
-        else if (targetViewId === 'po-internal')  loadPOInternalData();
-        else if (targetViewId === 'barang-jadi')  loadBarangJadiData();
-        else if (targetViewId === 'pengaturan')   loadSettingsData();
+        if (targetViewId === 'purchasing') loadPurchasingData();
+        else if (targetViewId === 'admin') loadAdminData();
+        else if (targetViewId === 'sales') loadPenawaranData();
+        else if (targetViewId === 'bom') loadBOMData();
+        else if (targetViewId === 'produksi') loadProduksiData();
+        else if (targetViewId === 'po-internal') loadPOInternalData();
+        else if (targetViewId === 'barang-jadi') loadBarangJadiData();
+        else if (targetViewId === 'pengaturan') loadSettingsData();
     }
 
     navItems.forEach(item => {
@@ -356,9 +357,9 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadPurchasingData() {
         const tbody = document.getElementById('table-bahan-baku');
         tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
-        
+
         const response = await window.ERPAPI.request('get_stock');
-        
+
         if (response.status === 'success' && response.data) {
             const lokasiList = document.getElementById('lokasi-list');
             if (lokasiList) {
@@ -402,7 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 tbody.appendChild(tr);
             });
-            
+
             // Bind edit/delete buttons
             document.querySelectorAll('.btn-edit-stock').forEach(btn => {
                 btn.addEventListener('click', (e) => {
@@ -443,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Modal Logic ---
     const dataModal = document.getElementById('data-modal');
     const dataForm = document.getElementById('data-form');
-    
+
     function openDataModal(title, data = null) {
         document.getElementById('modal-title').textContent = title;
         document.getElementById('f_kode').value = data ? data.kode : '';
@@ -454,7 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('f_lokasi').value = data ? data.lokasi : '';
         document.getElementById('f_harga').value = data && data.harga ? formatRibuan(data.harga) : '';
         document.getElementById('f_spesifikasi').value = data && data.spesifikasi && data.spesifikasi !== 'undefined' ? data.spesifikasi : '';
-        
+
         dataModal.classList.add('active');
     }
 
@@ -477,17 +478,17 @@ document.addEventListener('DOMContentLoaded', () => {
             username: user.username,
             user_nama: user.nama
         };
-        
+
         const btnSubmit = dataForm.querySelector('button[type="submit"]');
         const oldHtml = btnSubmit.innerHTML;
         btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
         btnSubmit.disabled = true;
 
         const res = await window.ERPAPI.request('save_stock', payload);
-        
+
         btnSubmit.innerHTML = oldHtml;
         btnSubmit.disabled = false;
-        
+
         if (res.status === 'success') {
             dataModal.classList.remove('active');
             loadPurchasingData(); // Reload table
@@ -518,11 +519,11 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.onload = async (event) => {
             try {
                 const data = new Uint8Array(event.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
+                const workbook = XLSX.read(data, { type: 'array' });
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
-                const json = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
-                
+                const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
                 const items = json.map(row => {
                     const getVal = (keys) => {
                         for (let key in row) {
@@ -540,7 +541,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         spesifikasi: getVal(['spesifikasi', 'spek', 'desc'])
                     };
                 }).filter(item => item.kode && item.nama);
-                
+
                 if (items.length > 0) {
                     const session = localStorage.getItem('erp_session');
                     const user = session ? JSON.parse(session) : {};
@@ -564,7 +565,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
     // Flow 0: PO Internal (Pengajuan Belanja)
     // =============================================
-    
+
     // Datalist bahan baku — shared across BOM and PO
     let poStockData = []; // cache stock data for autocomplete
 
@@ -591,9 +592,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = document.getElementById('table-po-internal');
         if (!tbody) return;
         tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
-        
+
         await loadPOStockData();
-        
+
         const response = await window.ERPAPI.request('get_po_internal');
         if (response.status === 'success' && response.data) {
             tbody.innerHTML = '';
@@ -601,7 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Belum ada pengajuan belanja.</td></tr>';
                 return;
             }
-            
+
             const session = localStorage.getItem('erp_session');
             const user = session ? JSON.parse(session) : {};
             const isAtasan = ['Admin', 'Management', 'Super Admin', 'Super', 'super'].includes(user.role);
@@ -622,21 +623,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (item.status === 'Disetujui (Sedang Dibelikan)') { badgeClass = 'badge-success'; badgeIcon = '✅'; }
                 else if (item.status === 'Selesai (Barang Diterima)') { badgeClass = 'badge-success'; badgeIcon = '📦'; }
                 else if (item.status === 'Ditolak') { badgeClass = 'badge-danger'; badgeIcon = '❌'; }
-                
+
                 let actionBtns = `<button class="btn btn-detail-po" data-no="${item.no_po}" style="padding:0.35rem 0.7rem; font-size:0.78rem; background:rgba(255,255,255,0.08); margin-right:4px;" title="Lihat Detail"><i class="fa-solid fa-eye"></i></button>`;
-                
+
                 if (item.status === 'Menunggu Approval' && isAtasan) {
                     actionBtns += `<button class="btn btn-approve-po" data-no="${item.no_po}" style="padding:0.35rem 0.7rem; font-size:0.78rem; margin-right:4px;" title="Approve"><i class="fa-solid fa-check"></i></button>`;
                     actionBtns += `<button class="btn btn-reject-po" data-no="${item.no_po}" style="padding:0.35rem 0.7rem; font-size:0.78rem; background:var(--danger); margin-right:4px;" title="Tolak"><i class="fa-solid fa-times"></i></button>`;
                 } else if (item.status === 'Disetujui (Sedang Dibelikan)' && isPurchasing) {
                     actionBtns += `<button class="btn btn-selesai-po" data-no="${item.no_po}" style="padding:0.35rem 0.7rem; font-size:0.78rem; background:var(--info); margin-right:4px;" title="Selesai - Terima Barang"><i class="fa-solid fa-box-open"></i> Terima</button>`;
                 }
-                
+
                 // Tombol hapus hanya untuk Admin / Super Admin
                 if (isAdmin) {
                     actionBtns += `<button class="btn btn-delete-po" data-no="${item.no_po}" style="padding:0.35rem 0.7rem; font-size:0.78rem; background:var(--danger);" title="Hapus PO"><i class="fa-solid fa-trash"></i></button>`;
                 }
-                
+
                 tr.innerHTML = `
                     <td style="font-weight:500; font-size:0.85rem;">${item.no_po}</td>
                     <td style="font-size:0.82rem;">${item.tanggal || '-'}</td>
@@ -648,7 +649,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 tbody.appendChild(tr);
             });
-            
+
             // Event delegation
             tbody.querySelectorAll('.btn-detail-po').forEach(btn => {
                 btn.addEventListener('click', () => openPODetail(btn.getAttribute('data-no'), response.data));
@@ -691,7 +692,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!item) return;
         const items = item.items_parsed || [];
         document.getElementById('po-detail-title').textContent = `Detail: ${noPO}`;
-        
+
         const totalEst = parseInt(item.total_estimasi || 0);
         let statusClass = 'badge-warning';
         if (item.status?.includes('Disetujui') || item.status?.includes('Selesai')) statusClass = 'badge-success';
@@ -699,12 +700,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const itemsHtml = items.map((it, i) => `
             <tr>
-                <td style="padding:0.5rem;">${i+1}</td>
+                <td style="padding:0.5rem;">${i + 1}</td>
                 <td style="padding:0.5rem;">${it.kode || '-'}</td>
                 <td style="padding:0.5rem; font-weight:500;">${it.nama}</td>
                 <td style="padding:0.5rem; text-align:right;">${it.qty} ${it.satuan || 'pcs'}</td>
                 <td style="padding:0.5rem; text-align:right;">Rp ${parseInt(it.harga || 0).toLocaleString('id-ID')}</td>
-                <td style="padding:0.5rem; text-align:right; font-weight:600;">Rp ${(parseInt(it.qty||0) * parseInt(it.harga||0)).toLocaleString('id-ID')}</td>
+                <td style="padding:0.5rem; text-align:right; font-weight:600;">Rp ${(parseInt(it.qty || 0) * parseInt(it.harga || 0)).toLocaleString('id-ID')}</td>
             </tr>
         `).join('');
 
@@ -755,19 +756,19 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmText: isSelesai ? 'Ya, Terima Barang' : isTolak ? 'Ya, Tolak' : 'Ya, Approve'
         });
         if (!ok) return;
-        
+
         const session = localStorage.getItem('erp_session');
         const user = session ? JSON.parse(session) : {};
-        
+
         const btn = document.querySelector(`[data-no="${noPO}"].btn-approve-po, [data-no="${noPO}"].btn-selesai-po, [data-no="${noPO}"].btn-reject-po`);
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
-        
+
         const res = await window.ERPAPI.request('update_po_status', {
-            no_po: noPO, 
-            status, 
+            no_po: noPO,
+            status,
             user_nama: user.nama || user.username || 'System'
         });
-        
+
         if (res.status === 'success') {
             showToast?.(`✅ ${res.message}`, 'success', 5000);
             loadPOInternalData();
@@ -865,8 +866,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const user = session ? JSON.parse(session) : {};
         document.getElementById('po-info-pemohon').textContent = user.nama || user.username || '-';
         const now = new Date();
-        document.getElementById('po-info-tanggal').textContent = now.toLocaleString('id-ID', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
-        
+        document.getElementById('po-info-tanggal').textContent = now.toLocaleString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
         poModal.classList.add('active');
     });
 
@@ -876,10 +877,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     poForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const session = localStorage.getItem('erp_session');
         const user = session ? JSON.parse(session) : {};
-        
+
         const items = [];
         let hasError = false;
         document.querySelectorAll('.po-item-row').forEach(row => {
@@ -888,7 +889,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const harga = parseFloat(String(row.querySelector('.po-harga')?.value || '0').replace(/\./g, '').replace(',', '.')) || 0;
             const qty = parseFloat(row.querySelector('.po-qty')?.value) || 0;
             const satuan = row.querySelector('.po-satuan')?.value.trim() || 'pcs';
-            
+
             if (!nama) { hasError = true; return; }
             if (qty <= 0) { hasError = true; return; }
             items.push({ kode, nama, harga, qty, satuan });
@@ -904,17 +905,17 @@ document.addEventListener('DOMContentLoaded', () => {
             items,
             catatan: document.getElementById('po_catatan')?.value || ''
         };
-        
+
         const btnSubmit = poForm.querySelector('button[type="submit"]');
         const oldHtml = btnSubmit.innerHTML;
         btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengajukan...';
         btnSubmit.disabled = true;
 
         const res = await window.ERPAPI.request('create_po_internal', payload);
-        
+
         btnSubmit.innerHTML = oldHtml;
         btnSubmit.disabled = false;
-        
+
         if (res.status === 'success') {
             poModal.classList.remove('active');
             showToast?.(`✅ ${res.message}`, 'success', 4000);
@@ -931,7 +932,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = document.getElementById('table-barang-jadi');
         if (!tbody) return;
         tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
-        
+
         const response = await window.ERPAPI.request('get_barang_jadi');
         if (response.status === 'success' && response.data) {
             tbody.innerHTML = '';
@@ -963,7 +964,7 @@ document.addEventListener('DOMContentLoaded', () => {
             window.ERPAPI.request('get_bom'),
             window.ERPAPI.request('get_stock')
         ]);
-        
+
         const list = document.getElementById('bom-items-list');
         if (list) {
             list.innerHTML = '';
@@ -988,7 +989,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = document.getElementById('table-penawaran');
         if (!tbody) return;
         tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
-        
+
         const response = await window.ERPAPI.request('get_penawaran');
         if (response.status === 'success' && response.data) {
             // Populate Customer Datalist
@@ -1013,7 +1014,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (item.status === 'Approved' || item.status === 'Finish') badgeClass = 'badge-success';
                 else if (item.status === 'Rejected') badgeClass = 'badge-danger';
                 else if (item.status === 'Proses') badgeClass = 'badge-info';
-                
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${item.no_penawaran || '-'}</td>
@@ -1032,7 +1033,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 tbody.appendChild(tr);
             });
-            
+
             // Bind edit and delete buttons
             document.querySelectorAll('.btn-edit-penawaran').forEach(btn => {
                 btn.addEventListener('click', (e) => {
@@ -1045,20 +1046,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('p_dp').value = item.dp;
                     document.getElementById('p_narasi').value = item.narasi || '';
                     document.getElementById('p_status').value = item.status || 'Penawaran';
-                    
+
                     pItemsContainer.innerHTML = '';
                     let items = [];
                     try {
                         items = typeof item.rincian_item === 'string' ? JSON.parse(item.rincian_item) : (item.rincian_item || []);
-                    } catch(e){}
-                    
-                    if(items.length === 0) addPenawaranItemRow();
+                    } catch (e) { }
+
+                    if (items.length === 0) addPenawaranItemRow();
                     else items.forEach(it => addPenawaranItemRow(it.nama, it.qty, it.harga));
-                    
+
                     penawaranModal.classList.add('active');
                 });
             });
-            
+
             document.querySelectorAll('.btn-delete-penawaran').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const no_penawaran = e.currentTarget.getAttribute('data-no');
@@ -1081,25 +1082,25 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.btn-print-penawaran').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const item = JSON.parse(e.currentTarget.getAttribute('data-item'));
-                    
+
                     // Header settings
                     document.getElementById('print_company_name').textContent = cachedSettings['NAMA_PERUSAHAAN'] || 'NAMA PERUSAHAAN';
                     document.getElementById('print_company_address').textContent = cachedSettings['ALAMAT'] || 'Alamat Perusahaan';
                     document.getElementById('print_company_phone').textContent = cachedSettings['NO_TELP'] || 'No. Telp';
-                    
+
                     document.getElementById('print_no').textContent = item.no_penawaran;
                     document.getElementById('print_tanggal').textContent = item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID') : '-';
                     document.getElementById('print_customer').textContent = item.customer;
-                    
+
                     // Items mapping
                     let items = [];
                     try {
                         items = typeof item.rincian_item === 'string' ? JSON.parse(item.rincian_item) : (item.rincian_item || []);
-                    } catch(ex){}
-                    
+                    } catch (ex) { }
+
                     const tbody = document.getElementById('print-items-tbody');
                     tbody.innerHTML = '';
-                    
+
                     if (items.length === 0) {
                         tbody.innerHTML = `<tr><td colspan="4" style="border: 1px solid #000; padding: 8px; text-align: center;">Penawaran Harga / Kesepakatan Khusus</td></tr>`;
                     } else {
@@ -1115,10 +1116,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             `;
                         });
                     }
-                    
+
                     document.getElementById('print_total').textContent = 'Rp ' + parseInt(item.total_harga).toLocaleString('id-ID');
                     document.getElementById('print_narasi').textContent = item.narasi || '';
-                    
+
                     window.print();
                 });
             });
@@ -1152,7 +1153,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('set_telepon').value = cachedSettings['NO_TELP'] || '';
         }
     }
-    
+
     document.getElementById('settings-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const payload = {
@@ -1198,7 +1199,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         div.querySelector('.pi-qty').addEventListener('input', calculatePenawaranTotal);
         div.querySelector('.pi-harga').addEventListener('input', calculatePenawaranTotal);
-        
+
         // Auto-fill harga from datalist
         div.querySelector('.pi-nama').addEventListener('input', (e) => {
             const val = e.target.value;
@@ -1237,13 +1238,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     penawaranForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const items = [];
         pItemsContainer.querySelectorAll('.p-item-row').forEach(row => {
             const nama = row.querySelector('.pi-nama').value;
             const qty = parseInt(String(row.querySelector('.pi-qty').value).replace(/\D/g, '')) || 0;
             const harga = parseInt(String(row.querySelector('.pi-harga').value).replace(/\D/g, '')) || 0;
-            if(nama) items.push({ nama, qty, harga });
+            if (nama) items.push({ nama, qty, harga });
         });
 
         const payload = {
@@ -1255,17 +1256,17 @@ document.addEventListener('DOMContentLoaded', () => {
             dp: parseInt(String(document.getElementById('p_dp').value).replace(/\D/g, '')) || 0,
             status: document.getElementById('p_status').value
         };
-        
+
         const btnSubmit = penawaranForm.querySelector('button[type="submit"]');
         const oldHtml = btnSubmit.innerHTML;
         btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
         btnSubmit.disabled = true;
 
         const res = await window.ERPAPI.request('save_penawaran', payload);
-        
+
         btnSubmit.innerHTML = oldHtml;
         btnSubmit.disabled = false;
-        
+
         if (res.status === 'success') {
             penawaranModal.classList.remove('active');
             loadPenawaranData(); // Reload table
@@ -1288,17 +1289,17 @@ document.addEventListener('DOMContentLoaded', () => {
             total_harga: parseInt(String(document.getElementById('pay_total').value).replace(/\D/g, '')) || 0,
             dp: parseInt(String(document.getElementById('pay_nominal').value).replace(/\D/g, '')) || 0
         };
-        
+
         const btnSubmit = paymentForm.querySelector('button[type="submit"]');
         const oldHtml = btnSubmit.innerHTML;
         btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
         btnSubmit.disabled = true;
 
         const res = await window.ERPAPI.request('save_invoice', payload);
-        
+
         btnSubmit.innerHTML = oldHtml;
         btnSubmit.disabled = false;
-        
+
         if (res.status === 'success') {
             paymentModal.classList.remove('active');
             alert(res.message);
@@ -1338,10 +1339,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 response.data.forEach((item, itemIdx) => {
                     const tr = document.createElement('tr');
-                    
+
                     let b = item;
                     let gambarUrl = b.gambar || '';
-            
+
                     // Auto-convert old Drive export=download URLs to thumbnail format
                     if (gambarUrl.includes('drive.google.com/uc') && gambarUrl.includes('export=download')) {
                         const match = gambarUrl.match(/id=([^&]+)/);
@@ -1356,12 +1357,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         imgHtml = '<span style="color:var(--text-muted);font-size:0.8rem;">Tidak ada</span>';
                     }
-                    
+
                     let actionBtns = `<button class="btn btn-detail-bom" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: var(--accent);"><i class="fa-solid fa-eye"></i> Detail</button>`;
                     if (canEdit) {
                         actionBtns += `<button class="btn btn-edit-bom" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex;"><i class="fa-solid fa-pen"></i> Edit</button>`;
                     }
-                    
+
                     tr.innerHTML = `
                         <td style="font-weight: 500;">${item.kode_barang}</td>
                         <td>${item.nama_barang}</td>
@@ -1404,7 +1405,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
-        
+
         const response = await window.ERPAPI.request('get_bom');
         if (!cached || JSON.stringify(cached.data) !== JSON.stringify(response.data)) {
             render(response);
@@ -1414,31 +1415,31 @@ document.addEventListener('DOMContentLoaded', () => {
     function openBOMDetail(item) {
         console.log('[BOM DETAIL] Membuka detail untuk:', item.kode_barang);
         console.log('[BOM DETAIL] item.gambar:', item.gambar, '(type:', typeof item.gambar, ', length:', item.gambar ? item.gambar.length : 0 + ')');
-        
+
         let materials = [];
         let proses = [];
-        try { 
+        try {
             let rm = item.rincian_material;
             if (typeof rm === 'string' && rm.trim() !== '') {
                 materials = JSON.parse(rm);
             } else if (rm && typeof rm === 'object') {
                 materials = rm;
             }
-        } catch(e) {}
+        } catch (e) { }
         if (!Array.isArray(materials)) materials = [];
 
-        try { 
+        try {
             let rp = item.rincian_proses;
             if (typeof rp === 'string' && rp.trim() !== '') {
                 proses = JSON.parse(rp);
             } else if (rp && typeof rp === 'object') {
                 proses = rp;
             }
-        } catch(e) { console.error('[BOM DETAIL] Parse error rincian_proses:', e.message); }
+        } catch (e) { console.error('[BOM DETAIL] Parse error rincian_proses:', e.message); }
         if (!Array.isArray(proses)) proses = [];
         console.log('[BOM DETAIL] proses count:', proses.length, '| items:', JSON.stringify(proses.map((p, idx) => ({ idx, nama: p.nama, gambar: p.gambar ? 'ADA (' + p.gambar.substring(0, 40) + '...)' : 'KOSONG' }))));
 
-        let matHtml = materials.map((m, i) => `<tr><td>${i+1}</td><td>${m.kode || '-'}</td><td>${m.nama}</td><td>${parseInt(m.qty || 0).toLocaleString('id-ID')}</td><td>Rp ${parseInt(m.harga || 0).toLocaleString('id-ID')}</td></tr>`).join('');
+        let matHtml = materials.map((m, i) => `<tr><td>${i + 1}</td><td>${m.kode || '-'}</td><td>${m.nama}</td><td>${parseInt(m.qty || 0).toLocaleString('id-ID')}</td><td>Rp ${parseInt(m.harga || 0).toLocaleString('id-ID')}</td></tr>`).join('');
         const prosPlaceholder = '<span style="display:inline-flex;align-items:center;justify-content:center;width:80px;height:60px;background:rgba(255,255,255,0.05);border-radius:5px;color:var(--text-muted);font-size:0.75rem;text-align:center;line-height:1.2;">Tidak ada<br>gambar</span>';
         let prosHtml = proses.map((p, i) => {
             let gambarUrl = p.gambar || '';
@@ -1455,9 +1456,9 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 gambarCell = prosPlaceholder;
             }
-            return `<tr><td>${i+1}</td><td>${p.nama || '-'}</td><td>${gambarCell}</td></tr>`;
+            return `<tr><td>${i + 1}</td><td>${p.nama || '-'}</td><td>${gambarCell}</td></tr>`;
         }).join('');
-        
+
         let mainImgUrl = item.gambar || '';
         if (mainImgUrl.includes('drive.google.com/uc') && mainImgUrl.includes('export=download')) {
             const match = mainImgUrl.match(/id=([^&]+)/);
@@ -1522,8 +1523,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let materials = [];
         let proses = [];
-        try { materials = typeof item.rincian_material === 'string' ? JSON.parse(item.rincian_material) : (item.rincian_material || []); } catch(e) {}
-        try { proses = typeof item.rincian_proses === 'string' ? JSON.parse(item.rincian_proses) : (item.rincian_proses || []); } catch(e) {}
+        try { materials = typeof item.rincian_material === 'string' ? JSON.parse(item.rincian_material) : (item.rincian_material || []); } catch (e) { }
+        try { proses = typeof item.rincian_proses === 'string' ? JSON.parse(item.rincian_proses) : (item.rincian_proses || []); } catch (e) { }
 
         if (materials.length > 0) {
             materials.forEach(m => addMaterialRow(m.kode || '', m.nama || '', m.qty || '1', m.harga || ''));
@@ -1573,7 +1574,7 @@ document.addEventListener('DOMContentLoaded', () => {
             calculateTotalBiaya();
         });
         div.querySelector('.mat-harga').addEventListener('input', calculateTotalBiaya);
-        
+
         // Auto-fill kode and harga from datalist
         div.querySelector('.mat-nama').addEventListener('input', (e) => {
             const val = e.target.value;
@@ -1621,12 +1622,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     width = Math.round(width);
                     height = Math.round(height);
-                    
+
                     canvas.width = width;
                     canvas.height = height;
                     const ctx = canvas.getContext('2d', { willReadFrequently: true });
                     ctx.drawImage(img, 0, 0, width, height);
-                    
+
                     const dataUrl = canvas.toDataURL('image/jpeg', quality);
                     resolve(dataUrl);
                 };
@@ -1665,7 +1666,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 prosesImageCompressionInProgress++;
                 const compressedDataUrl = await compressImage(file, 800, 800, 0.8);
-                
+
                 div.querySelector('.pros-gambar-base64').value = compressedDataUrl.split(',')[1];
                 div.querySelector('.pros-gambar-mime').value = file.type;
                 div.querySelector('.pros-gambar-preview').style.display = 'block';
@@ -1698,7 +1699,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             bomGambarMime = file.type;
             bomImageCompressionInProgress = true;
-            
+
             const compressedDataUrl = await compressImage(file, 1024, 1024, 0.8);
             bomGambarBase64 = compressedDataUrl.split(',')[1];
             document.getElementById('bom_gambar_preview').style.display = 'block';
@@ -1732,23 +1733,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     bomForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         // Validasi input dasar
         const kodeBOM = document.getElementById('bom_kode')?.value?.trim();
         const namaBOM = document.getElementById('bom_nama')?.value?.trim();
-        
+
         if (!kodeBOM || !namaBOM) {
             showToast('❌ Kode dan Nama BOM harus diisi', 'error');
             return;
         }
-        
+
         const materials = [];
         materialsContainer.querySelectorAll('div').forEach(div => {
             const kode = div.querySelector('.mat-kode')?.value;
             const nama = div.querySelector('.mat-nama')?.value;
             const qty = parseInt(String(div.querySelector('.mat-qty')?.value).replace(/\D/g, '')) || 0;
             const harga = parseInt(String(div.querySelector('.mat-harga')?.value).replace(/\D/g, '')) || 0;
-            if(nama) materials.push({ kode: kode || '', nama, qty: qty || 1, harga: harga || 0 });
+            if (nama) materials.push({ kode: kode || '', nama, qty: qty || 1, harga: harga || 0 });
         });
 
         if (materials.length === 0) {
@@ -1764,7 +1765,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const proses = [];
         prosesContainer.querySelectorAll(':scope > div').forEach(div => {
             const nama = div.querySelector('.pros-nama')?.value;
-            if(nama) {
+            if (nama) {
                 proses.push({
                     nama,
                     gambar: div.querySelector('.pros-gambar-url')?.value || '',
@@ -1788,12 +1789,12 @@ document.addEventListener('DOMContentLoaded', () => {
             gambar_base64: bomGambarBase64,
             gambar_mime: bomGambarMime
         };
-        
+
         // Check payload size
         const payloadStr = JSON.stringify(payload);
         const payloadSize = new Blob([payloadStr]).size;
         const payloadSizeMB = (payloadSize / (1024 * 1024)).toFixed(2);
-        
+
         console.log('[BOM SUBMIT] Mulai submit dengan data:', {
             kodeBOM,
             namaBOM,
@@ -1804,12 +1805,12 @@ document.addEventListener('DOMContentLoaded', () => {
             prosesImages: proses.map((p, i) => ({ nama: p.nama, hasImage: !!p.gambar_base64, size: p.gambar_base64 ? p.gambar_base64.length : 0 })),
             totalPayloadSize: payloadSizeMB + ' MB'
         });
-        
+
         // Warn if payload is large (> 5MB)
         if (payloadSize > 5 * 1024 * 1024) {
             showToast(`⚠️ Data sangat besar (${payloadSizeMB} MB). Proses mungkin memakan waktu lama. Harap tunggu...`, 'warning', 4000);
         }
-        
+
         const btnSubmit = bomForm.querySelector('button[type="submit"]');
         const oldHtml = btnSubmit.innerHTML;
         btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
@@ -1818,10 +1819,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Use longer timeout for BOM save (up to 120 seconds) since it involves image uploads
             const res = await window.ERPAPI.request('save_bom', payload, 120000);
-            
+
             btnSubmit.innerHTML = oldHtml;
             btnSubmit.disabled = false;
-            
+
             console.log('[BOM SUBMIT] Response dari server:', res);
 
             if (res.status === 'success') {
@@ -1836,7 +1837,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             btnSubmit.innerHTML = oldHtml;
             btnSubmit.disabled = false;
-            
+
             console.error('[BOM SUBMIT] Exception:', error);
             showToast('❌ Koneksi gagal: ' + error.message, 'error', 5000);
         }
@@ -1847,7 +1848,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = document.getElementById('table-produksi');
         if (!tbody) return;
         tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
-        
+
         const response = await window.ERPAPI.request('get_produksi');
         if (response.status === 'success' && response.data) {
             tbody.innerHTML = '';
@@ -1878,7 +1879,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('produksi-form').reset();
         document.getElementById('spk-bahan-container').innerHTML = 'Pilih barang dan isi Qty untuk melihat estimasi...';
         document.getElementById('spk_total_biaya').textContent = '0';
-        
+
         const select = document.getElementById('spk_kode_jadi');
         select.innerHTML = '<option value="" disabled selected>Memuat data BOM & Inventory...</option>';
         produksiModal.classList.add('active');
@@ -1915,7 +1916,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById('spk-bahan-container');
         const totalDisp = document.getElementById('spk_total_biaya');
         const btnSubmit = produksiForm.querySelector('button[type="submit"]');
-        
+
         if (!kode || qty <= 0) {
             container.innerHTML = 'Pilih barang dan isi Qty untuk melihat estimasi...';
             totalDisp.textContent = '0';
@@ -1930,7 +1931,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let matArray = [];
         try {
             matArray = typeof bom.rincian_material === 'string' ? JSON.parse(bom.rincian_material) : bom.rincian_material;
-        } catch(e) {}
+        } catch (e) { }
 
         if (!matArray || matArray.length === 0) {
             container.innerHTML = 'Tidak ada rincian material pada BOM ini.';
@@ -1988,10 +1989,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     produksiForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const kode = document.getElementById('spk_kode_jadi').value;
         const qty = parseInt(String(document.getElementById('spk_qty_jadi').value).replace(/\D/g, '')) || 0;
-        
+
         const bom = cachedBOMData.find(b => b.kode_barang === kode);
         let calculatedBahan = [];
         if (bom) {
@@ -2010,17 +2011,17 @@ document.addEventListener('DOMContentLoaded', () => {
             peminta: document.getElementById('spk_peminta').value,
             pemberi: document.getElementById('spk_pemberi').value
         };
-        
+
         const btnSubmit = produksiForm.querySelector('button[type="submit"]');
         const oldHtml = btnSubmit.innerHTML;
         btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
         btnSubmit.disabled = true;
 
         const res = await window.ERPAPI.request('save_spk', payload);
-        
+
         btnSubmit.innerHTML = oldHtml;
         btnSubmit.disabled = false;
-        
+
         if (res.status === 'success') {
             produksiModal.classList.remove('active');
             loadProduksiData(); // Reload table
@@ -2043,12 +2044,12 @@ document.addEventListener('DOMContentLoaded', () => {
             alert(res.message);
         }
     });
-    
+
     // --- Admin (User Management) Logic ---
     async function loadAdminData() {
         const tbody = document.getElementById('table-users');
         tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data pengguna...</td></tr>';
-        
+
         const response = await window.ERPAPI.request('get_users');
         if (response.status === 'success' && response.data) {
             tbody.innerHTML = '';
@@ -2065,7 +2066,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 tbody.appendChild(tr);
             });
-            
+
             // Bind edit/delete user
             document.querySelectorAll('.btn-edit-user').forEach(btn => {
                 btn.addEventListener('click', (e) => {
@@ -2095,7 +2096,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const userModal = document.getElementById('user-modal');
     const userForm = document.getElementById('user-form');
-    
+
     function openUserModal(title, data = null) {
         document.getElementById('user-modal-title').textContent = title;
         document.getElementById('u_username').value = data ? data.username : '';
@@ -2104,7 +2105,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('u_role').value = data ? data.role : 'Staff Purchasing';
         document.getElementById('u_password').value = '';
         document.getElementById('u_password').required = !data; // required for new user
-        
+
         userModal.classList.add('active');
     }
 
@@ -2124,17 +2125,17 @@ document.addEventListener('DOMContentLoaded', () => {
             nama: document.getElementById('u_nama').value,
             role: document.getElementById('u_role').value
         };
-        
+
         const btnSubmit = userForm.querySelector('button[type="submit"]');
         const oldHtml = btnSubmit.innerHTML;
         btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
         btnSubmit.disabled = true;
 
         const res = await window.ERPAPI.request('save_user', payload);
-        
+
         btnSubmit.innerHTML = oldHtml;
         btnSubmit.disabled = false;
-        
+
         if (res.status === 'success') {
             userModal.classList.remove('active');
             loadAdminData();
