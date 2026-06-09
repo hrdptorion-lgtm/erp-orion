@@ -1,9 +1,21 @@
 // Replace with the actual URL from Google Apps Script deployment
 const API_URL = 'https://script.google.com/macros/s/AKfycbxpWtZ4n7rr4F3H5r3ORbvSBaF9SiyJuJukiOmJ6O3m_c57L9vowjHqJjVjKmfoisOuFQ/exec';
 
+let activeRequests = 0;
+function toggleSyncIcon(isSyncing) {
+    const syncIcon = document.querySelector('#btn-sync i');
+    if (syncIcon) {
+        if (isSyncing) syncIcon.classList.add('fa-spin');
+        else syncIcon.classList.remove('fa-spin');
+    }
+}
+
 class ERPAPI {
     static async request(action, payload = {}, timeoutMs = 60000) {
         try {
+            activeRequests++;
+            toggleSyncIcon(true);
+            
             console.log(`[API] Mengirim request: action=${action}, payload keys=${Object.keys(payload).join(',')}`);
 
             // Create abort controller for timeout
@@ -59,6 +71,12 @@ class ERPAPI {
 
             showToast?.(`❌ Koneksi gagal: ${errorMsg}`, 'error', 5000);
             return { status: 'error', message: 'Koneksi ke server gagal: ' + errorMsg };
+        } finally {
+            activeRequests--;
+            if (activeRequests <= 0) {
+                activeRequests = 0;
+                toggleSyncIcon(false);
+            }
         }
     }
 

@@ -754,7 +754,7 @@ function addPettyCash(payload) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName('DB Petty Cash');
   if (!sheet) return { status: 'error', message: 'Sheet DB Petty Cash tidak ditemukan.' };
-  sheet.appendRow([new Date().toLocaleDateString('id-ID'), payload.keterangan || '', payload.jumlah || 0, payload.jenis || 'Keluar', payload.user || '']);
+  sheet.appendRow([new Date().toLocaleDateString('id-ID'), payload.keterangan || '', payload.jumlah || 0, payload.jenis || 'Keluar', payload.coa || '', payload.user || '']);
   return { status: 'success', message: 'Petty cash berhasil dicatat.' };
 }
 

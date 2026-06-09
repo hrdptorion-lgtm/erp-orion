@@ -55,57 +55,174 @@
                 <i class="fa-solid fa-handshake"></i>
                 <span>Penawaran & Sales</span>
             </li>
-            <li class="nav-item" data-target="purchasing">
-                <i class="fa-solid fa-cart-shopping"></i>
-                <span>Purchasing</span>
+            <!-- Submenu Produk -->
+            <li class="nav-item has-submenu" id="menu-produk-toggle">
+                <i class="fa-solid fa-box-open"></i>
+                <span style="flex: 1;">Produk & Logistik</span>
+                <i class="fa-solid fa-chevron-down submenu-icon"></i>
             </li>
-            <li class="nav-item" data-target="po-internal">
-                <i class="fa-solid fa-clipboard-list"></i>
-                <span>Permintaan Belanja</span>
-            </li>
-            <li class="nav-item" data-target="bom">
-                <i class="fa-solid fa-flask"></i>
-                <span>PMO & BOM Sampel</span>
-            </li>
-            <li class="nav-item" data-target="barang-jadi">
-                <i class="fa-solid fa-boxes-stacked"></i>
-                <span>Inventori Barang Jadi</span>
-            </li>
-            <li class="nav-item" data-target="produksi">
-                <i class="fa-solid fa-industry"></i>
-                <span>Produksi & Gudang</span>
-            </li>
+            <ul class="submenu" id="submenu-produk">
+                <li class="nav-item" data-target="purchasing">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span>Purchasing</span>
+                </li>
+                <li class="nav-item" data-target="po-internal">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                    <span>Permintaan Belanja</span>
+                </li>
+                <li class="nav-item" data-target="bom">
+                    <i class="fa-solid fa-flask"></i>
+                    <span>PMO & BOM Sampel</span>
+                </li>
+                <li class="nav-item" data-target="barang-jadi">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                    <span>Inventori Barang Jadi</span>
+                </li>
+                <li class="nav-item" data-target="produksi">
+                    <i class="fa-solid fa-industry"></i>
+                    <span>Produksi & Gudang</span>
+                </li>
+            </ul>
             <li class="nav-item" data-target="finance">
                 <i class="fa-solid fa-file-invoice-dollar"></i>
                 <span>Finance & Kasir</span>
             </li>
-            <li class="nav-item admin-only" data-target="admin" style="display: none; border-top: 1px solid var(--glass-border); margin-top: 10px; padding-top: 15px;">
-                <i class="fa-solid fa-users-gear"></i>
-                <span>Manajemen Akses</span>
-            </li>
-            <li class="nav-item admin-only" data-target="pengaturan" style="display: none;">
+            <!-- Submenu Pengaturan -->
+            <li class="nav-item has-submenu admin-only" id="menu-pengaturan-toggle" style="display: none; border-top: 1px solid var(--glass-border); margin-top: 10px; padding-top: 15px;">
                 <i class="fa-solid fa-cog"></i>
-                <span>Pengaturan Perusahaan</span>
+                <span style="flex: 1;">Pengaturan</span>
+                <i class="fa-solid fa-chevron-down submenu-icon"></i>
             </li>
+            <ul class="submenu admin-only" id="submenu-pengaturan">
+                <li class="nav-item admin-only" data-target="profil">
+                    <i class="fa-solid fa-building"></i>
+                    <span>Profil Perusahaan</span>
+                </li>
+                <li class="nav-item admin-only" data-target="coa">
+                    <i class="fa-solid fa-file-invoice"></i>
+                    <span>Kategori COA</span>
+                </li>
+                <li class="nav-item admin-only" data-target="approval">
+                    <i class="fa-solid fa-diagram-project"></i>
+                    <span>Alur Approval</span>
+                </li>
+                <li class="nav-item admin-only" data-target="admin">
+                    <i class="fa-solid fa-users-gear"></i>
+                    <span>Manajemen Akses</span>
+                </li>
+            </ul>
         </ul>
+        <div class="sidebar-profile-container" style="margin-top: auto; padding: 15px; border-top: 1px solid var(--glass-border);">
+            <div class="user-profile-sidebar" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; border-radius: 10px; transition: background 0.3s;" id="btn-sidebar-profile">
+                <div class="avatar" id="user-avatar-initial" style="width: 35px; height: 35px; min-width: 35px; font-size: 1rem;">A</div>
+                <div class="user-info" style="flex: 1; overflow: hidden;">
+                    <span id="user-name-display" style="font-weight: 500; font-size: 0.9rem; display: block; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">Admin Orion</span>
+                    <span id="user-role-display" style="font-size: 0.75rem; color: var(--text-muted);">Direktur</span>
+                </div>
+                <i class="fa-solid fa-chevron-up" style="font-size: 0.8rem; color: var(--text-muted);"></i>
+            </div>
+            <div id="profile-action-menu" class="profile-action-menu" style="display: none; flex-direction: column; gap: 5px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--glass-border);">
+                <button class="btn btn-profile-action" id="btn-my-profile" style="background: transparent; color: var(--text-main); justify-content: flex-start; padding: 8px 12px; font-size: 0.85rem; box-shadow: none;">
+                    <i class="fa-solid fa-user" style="width: 20px;"></i> Profil Saya
+                </button>
+                <button class="btn btn-profile-action" id="btn-logout" style="background: transparent; color: var(--danger); justify-content: flex-start; padding: 8px 12px; font-size: 0.85rem; box-shadow: none;">
+                    <i class="fa-solid fa-sign-out-alt" style="width: 20px;"></i> Keluar
+                </button>
+            </div>
+        </div>
     </nav>
+    <!-- Global FAB for Mobile (Speed Dial Ready) -->
+    <div class="fab-backdrop" id="fab-backdrop"></div>
+    <div class="fab-wrapper" id="global-fab-wrapper" style="display: none;">
+        <div class="fab-actions" id="global-fab-actions">
+            <!-- Diinjeksi dinamis via JS -->
+        </div>
+        <button class="btn fab-main" id="global-fab-main" style="background: var(--primary);">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="bottom-nav" id="bottom-nav">
+        <div class="bottom-nav-item active" data-target="dashboard">
+            <i class="fa-solid fa-house"></i>
+            <span>Dashboard</span>
+        </div>
+        <div class="bottom-nav-item" data-target="sales">
+            <i class="fa-solid fa-handshake"></i>
+            <span>Penawaran</span>
+        </div>
+        <div class="bottom-nav-item" data-target="finance">
+            <i class="fa-solid fa-file-invoice-dollar"></i>
+            <span>Finance</span>
+        </div>
+        <div class="bottom-nav-item" id="btn-mobile-produk">
+            <i class="fa-solid fa-box-open"></i>
+            <span>Produk</span>
+        </div>
+        <div class="bottom-nav-item" id="btn-mobile-more">
+            <i class="fa-solid fa-ellipsis"></i>
+            <span>Lainnya</span>
+        </div>
+    </nav>
+
+    <!-- Mobile Menus (Bottom Sheets) -->
+    <div class="mobile-bottom-sheet" id="sheet-produk">
+        <div class="sheet-header">
+            <h3>Produk & Logistik</h3>
+            <button class="btn-close-sheet"><i class="fa-solid fa-times"></i></button>
+        </div>
+        <div class="sheet-content">
+            <div class="sheet-item" data-target="purchasing"><i class="fa-solid fa-cart-shopping"></i> Purchasing</div>
+            <div class="sheet-item" data-target="po-internal"><i class="fa-solid fa-clipboard-list"></i> Permintaan Belanja</div>
+            <div class="sheet-item" data-target="bom"><i class="fa-solid fa-flask"></i> PMO & BOM Sampel</div>
+            <div class="sheet-item" data-target="barang-jadi"><i class="fa-solid fa-boxes-stacked"></i> Inventori Barang Jadi</div>
+            <div class="sheet-item" data-target="produksi"><i class="fa-solid fa-industry"></i> Produksi & Gudang</div>
+        </div>
+    </div>
+
+    <div class="mobile-bottom-sheet" id="sheet-more">
+        <div class="sheet-header">
+            <h3>Menu Lainnya</h3>
+            <button class="btn-close-sheet"><i class="fa-solid fa-times"></i></button>
+        </div>
+        <div class="sheet-content">
+            <div class="sheet-item admin-only" data-target="profil"><i class="fa-solid fa-building"></i> Profil Perusahaan</div>
+            <div class="sheet-item admin-only" data-target="coa"><i class="fa-solid fa-file-invoice"></i> Kategori COA</div>
+            <div class="sheet-item admin-only" data-target="approval"><i class="fa-solid fa-diagram-project"></i> Alur Approval</div>
+            <div class="sheet-item admin-only" data-target="admin"><i class="fa-solid fa-users-gear"></i> Manajemen Akses</div>
+            <div class="sheet-divider"></div>
+            <div class="sheet-item" id="btn-my-profile-mobile"><i class="fa-solid fa-user"></i> Profil Saya</div>
+            <div class="sheet-item text-danger" id="btn-logout-mobile"><i class="fa-solid fa-sign-out-alt"></i> Keluar</div>
+        </div>
+    </div>
+
+    <div class="sheet-overlay" id="sheet-overlay"></div>
 
     <!-- Main Content -->
     <main class="main-content">
         <!-- Header -->
-        <header class="header">
+        <header class="header-wrapper">
             <div class="page-title">
                 <h1 id="page-title-text">Dashboard Overview</h1>
                 <p id="page-subtitle-text">Selamat datang kembali, Tim Operasional.</p>
             </div>
-            <div class="user-profile" id="btn-logout">
-                <div class="avatar" id="user-avatar-initial">A</div>
-                <div class="user-info">
-                    <span id="user-name-display" style="font-weight: 500; font-size: 0.9rem;">Admin Orion</span>
-                    <br>
-                    <span id="user-role-display" style="font-size: 0.75rem; color: var(--text-muted);">Direktur</span>
+            
+            <div class="top-nav-actions">
+                <div class="mobile-logo-header" style="display: none; align-items: center; gap: 10px;">
+                    <div class="logo-icon" style="width: 32px; height: 32px; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fa-solid fa-infinity" style="color: white; font-size: 1rem;"></i>
+                    </div>
+                    <span style="font-size: 1.2rem; font-weight: 700; letter-spacing: 1px;">ERPORION</span>
                 </div>
-                <i class="fa-solid fa-sign-out-alt" style="font-size: 0.9rem; color: var(--danger); margin-left: 5px;" title="Logout"></i>
+                <div class="header-actions-right" style="display: flex; gap: 15px; align-items: center;">
+                    <div class="header-icon-btn" id="btn-sync" title="Sync Data" style="cursor: pointer; width: 40px; height: 40px; border-radius: 50%; background: var(--bg-glass); display: flex; align-items: center; justify-content: center; border: 1px solid var(--glass-border); transition: all 0.3s;">
+                        <i class="fa-solid fa-rotate" style="font-size: 1.1rem; color: var(--text-main);"></i>
+                    </div>
+                    <div class="header-icon-btn" id="btn-theme-toggle" title="Toggle Tema" style="cursor: pointer; width: 40px; height: 40px; border-radius: 50%; background: var(--bg-glass); display: flex; align-items: center; justify-content: center; border: 1px solid var(--glass-border); transition: all 0.3s;">
+                        <i class="fa-solid fa-moon" id="theme-icon" style="font-size: 1.1rem; color: var(--text-main);"></i>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -626,13 +743,13 @@
             </div>
         </div>
 
-        <!-- View: Pengaturan -->
-        <div id="view-pengaturan" class="view">
+        <!-- View: Profil Perusahaan -->
+        <div id="view-profil" class="view">
             <div class="header-actions">
-                <h2>Pengaturan Perusahaan</h2>
+                <h2>Profil Perusahaan</h2>
             </div>
-            <div class="data-table-container" style="padding: 20px;">
-                <form id="settings-form" style="max-width: 600px;">
+            <div class="data-table-container" style="padding: 20px; max-width: 600px;">
+                <form id="settings-form">
                     <div class="input-group">
                         <label>Nama Perusahaan</label>
                         <input type="text" id="set_nama" placeholder="PT Orion Nusantara" required>
@@ -645,8 +762,86 @@
                         <label>Nomor Telepon / Kontak</label>
                         <input type="text" id="set_telepon" placeholder="08123456789" required>
                     </div>
-                    <button type="submit" class="btn" style="margin-top: 15px;">Simpan Pengaturan</button>
+                    <button type="submit" class="btn" style="margin-top: 15px;">Simpan Profil</button>
                 </form>
+            </div>
+        </div>
+
+        <!-- View: Master COA -->
+        <div id="view-coa" class="view">
+            <div class="header-actions">
+                <h2>Daftar Kategori COA / Pos Akuntansi</h2>
+                <button class="btn admin-only" id="btn-add-coa"><i class="fa-solid fa-plus"></i> Tambah COA</button>
+            </div>
+            <div class="data-table-container" style="padding: 20px; max-width: 800px;">
+                <div id="coaListGroup" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
+                    <!-- List COA -->
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Alur Approval -->
+        <div id="view-approval" class="view">
+            <div class="data-section" style="margin-bottom: 2rem;">
+
+                <div style="display: flex; gap: 10px; margin-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; overflow-x: auto;">
+                    <button id="btn-tab-diagram" class="btn" style="background: var(--primary); white-space: nowrap;"><i class="fa-solid fa-diagram-project"></i> Diagram Struktur</button>
+                    <button id="btn-tab-flow" class="btn admin-only" style="background: var(--bg-glass); display: none; white-space: nowrap;"><i class="fa-solid fa-sliders"></i> Pengaturan Rute</button>
+                    <button id="btn-tab-jabatan" class="btn admin-only" style="background: var(--bg-glass); display: none; white-space: nowrap;"><i class="fa-solid fa-users-gear"></i> Daftar Jabatan</button>
+                </div>
+
+                <!-- Tab Diagram -->
+                <div id="tab-diagram">
+                    <div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--primary); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                        <strong>Penjelasan Diagram:</strong><br>
+                        <span style="color: var(--text-muted); font-size: 0.9rem;">Diagram di bawah ini menggambarkan hierarki dan urutan persetujuan. Panah (&#8594;) menunjukkan arah eskalasi pengajuan (Rute biru menandakan rute personal Anda).</span>
+                    </div>
+                    <div id="mermaidContainer" style="overflow: auto; min-height: 50vh; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid var(--glass-border); padding: 20px; text-align: center;">
+                        <div style="color: var(--text-muted); padding-top: 10vh;">Memuat diagram...</div>
+                    </div>
+                </div>
+
+                <!-- Tab Flow Builder -->
+                <div id="tab-flow" style="display: none;">
+                    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                        <!-- List Tipe Pengajuan -->
+                        <div style="flex: 1; min-width: 250px; max-width: 350px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <h3>Tipe Pengajuan</h3>
+                                <button class="btn admin-only" id="btn-add-kategori" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: none;"><i class="fa-solid fa-plus"></i> Baru</button>
+                            </div>
+                            <div id="kategoriListGroup" style="display: flex; flex-direction: column; gap: 8px;">
+                                <!-- Item Kategori -->
+                            </div>
+                        </div>
+
+                        <!-- Builder Area -->
+                        <div style="flex: 2; min-width: 300px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px;">
+                            <div id="flowBuilderEmpty" style="height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+                                <span>Pilih tipe pengajuan di sebelah kiri untuk mengatur rutenya.</span>
+                            </div>
+                            <div id="flowBuilderActive" style="display: none;">
+                                <h3 style="margin-bottom: 20px;">Rute Approval: <span id="activeKategoriTitle" style="color: var(--primary);"></span></h3>
+                                <div id="flowBuilderCards" style="display: flex; flex-wrap: wrap; align-items: center; gap: 15px;">
+                                    <!-- Cards diinjeksi via JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Daftar Jabatan -->
+                <div id="tab-jabatan" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3>Daftar Jabatan Perusahaan</h3>
+                        <button class="btn admin-only" id="btn-add-jabatan" style="display: none;"><i class="fa-solid fa-plus"></i> Tambah Jabatan</button>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px;">
+                        <div id="masterJabatanList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
+                            <!-- List Jabatan Master dari JS -->
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1070,6 +1265,114 @@
         </a>
     </div>
 
+    <!-- Modal Jabatan (Master) -->
+    <div id="jabatan-modal" class="login-overlay">
+        <div class="login-box" style="max-width: 400px;">
+            <h2 id="jabatan-modal-title" style="margin-bottom: 1.5rem;">Tambah Jabatan</h2>
+            <form id="jabatan-form">
+                <input type="hidden" id="jab_old_name">
+                <div class="input-group">
+                    <label>Nama Jabatan</label>
+                    <input type="text" id="jab_name" required placeholder="Contoh: Staff Purchasing">
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
+                    <button type="button" class="btn" id="btn-close-jabatan" style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                    <button type="submit" class="btn" style="flex: 1; justify-content: center;">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Modal Atasan Approval -->
+    <div id="atasan-modal" class="login-overlay">
+        <div class="login-box" style="max-width: 400px;">
+            <h2 style="margin-bottom: 1.5rem;">Pilih Role/Jabatan</h2>
+            <form id="atasan-form">
+                <div class="input-group">
+                    <label>Role/Jabatan untuk tahapan ini</label>
+                    <input type="text" id="atasan_input" list="role-datalist" required placeholder="Contoh: Manager Operasional" style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
+                    <datalist id="role-datalist">
+                        <!-- Diisi via JS -->
+                    </datalist>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
+                    <button type="button" class="btn" id="btn-close-atasan" style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                    <button type="submit" class="btn" style="flex: 1; justify-content: center;">Tambahkan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Kategori Approval Baru -->
+    <div id="kategori-modal" class="login-overlay">
+        <div class="login-box" style="max-width: 400px;">
+            <h2 style="margin-bottom: 1.5rem;">Tambah Tipe Pengajuan</h2>
+            <form id="kategori-form">
+                <div class="input-group">
+                    <label>Nama Tipe (Misal: Pengajuan QC)</label>
+                    <input type="text" id="kat_name" required placeholder="Contoh: Pengajuan Lembur">
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
+                    <button type="button" class="btn" id="btn-close-kategori" style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                    <button type="submit" class="btn" style="flex: 1; justify-content: center;">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal COA (Master) -->
+    <div id="coa-modal" class="login-overlay">
+        <div class="login-box" style="max-width: 400px;">
+            <h2 id="coa-modal-title" style="margin-bottom: 1.5rem;">Tambah Kategori COA</h2>
+            <form id="coa-form">
+                <input type="hidden" id="coa_old_name">
+                <div class="input-group">
+                    <label>Nama COA / Pos Akuntansi</label>
+                    <input type="text" id="coa_name" required placeholder="Contoh: Biaya Transportasi">
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
+                    <button type="button" class="btn" id="btn-close-coa" style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                    <button type="submit" class="btn" style="flex: 1; justify-content: center;">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Petty Cash -->
+    <div id="petty-cash-modal" class="login-overlay">
+        <div class="login-box" style="max-width: 400px;">
+            <h2 style="margin-bottom: 1.5rem;">Mutasi Kas (Petty Cash)</h2>
+            <form id="petty-cash-form">
+                <div class="input-group">
+                    <label>Jenis Transaksi</label>
+                    <select id="pc_jenis" required style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
+                        <option value="Keluar">Uang Keluar</option>
+                        <option value="Masuk">Uang Masuk</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Nominal (Rp)</label>
+                    <input type="number" id="pc_nominal" required min="1">
+                </div>
+                <div class="input-group">
+                    <label>Keterangan</label>
+                    <input type="text" id="pc_keterangan" required placeholder="Contoh: Beli token listrik">
+                </div>
+                <div class="input-group">
+                    <label>Kategori COA / Pos Akuntansi</label>
+                    <input type="text" id="pc_coa" list="coa-datalist" required placeholder="Contoh: Biaya Listrik" style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
+                    <datalist id="coa-datalist">
+                        <!-- Diisi via JS -->
+                    </datalist>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
+                    <button type="button" class="btn" id="btn-close-petty-cash" style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                    <button type="submit" class="btn" style="flex: 1; justify-content: center;">Simpan Mutasi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- BOM Datalist for Autocomplete -->
     <datalist id="bom-items-list"></datalist>

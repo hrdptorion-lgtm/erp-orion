@@ -233,6 +233,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const targetNav = document.querySelector(`.nav-item[data-target="${savedView}"]`);
         const isVisible = targetNav && getComputedStyle(targetNav).display !== 'none';
         switchView(isVisible ? savedView : 'dashboard', false);
+        
+        checkAdminVisibility();
+    }
+
+    function checkAdminVisibility() {
+        const session = localStorage.getItem('erp_session');
+        if (!session) return;
+        const user = JSON.parse(session);
+        const isAdmin = ['direktur', 'admin', 'management'].some(r => user.role.toLowerCase().includes(r));
+        
+        document.querySelectorAll('.admin-only:not(.nav-item)').forEach(el => {
+            el.style.display = isAdmin ? '' : 'none';
+        });
     }
 
     // --- Number Format Utility ---
@@ -275,9 +288,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const logoutModal = document.getElementById('logout-modal');
-    btnLogout?.addEventListener('click', () => {
+    
+    function handleLogoutClick() {
         logoutModal.classList.add('active');
-    });
+        document.getElementById('sheet-more')?.classList.remove('active');
+        document.getElementById('sheet-overlay')?.classList.remove('active');
+    }
+
+    btnLogout?.addEventListener('click', handleLogoutClick);
+    document.getElementById('btn-logout-mobile')?.addEventListener('click', handleLogoutClick);
 
     document.getElementById('btn-cancel-logout')?.addEventListener('click', () => {
         logoutModal.classList.remove('active');
@@ -302,7 +321,9 @@ document.addEventListener('DOMContentLoaded', () => {
         'produksi': { title: 'Produksi & Gudang', sub: 'Surat Perintah Kerja dan pemotongan stok.' },
         'finance': { title: 'Finance & Kasir', sub: 'Penagihan, Invoice, dan Petty Cash.' },
         'admin': { title: 'Manajemen Pengguna', sub: 'Pengaturan Role Akses Aplikasi.' },
-        'pengaturan': { title: 'Pengaturan Perusahaan', sub: 'Informasi dasar identitas perusahaan.' },
+        'profil': { title: 'Profil Perusahaan', sub: 'Informasi dasar identitas perusahaan.' },
+        'coa': { title: 'Kategori COA & Akuntansi', sub: 'Master data pos biaya akuntansi.' },
+        'approval': { title: 'Alur Approval', sub: 'Pengaturan hierarki dan rute persetujuan.' },
         'barang-jadi': { title: 'Inventori Barang Jadi', sub: 'Stok produk jadi siap kirim / jual.' }
     };
 
@@ -318,7 +339,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Update active nav link
         navItems.forEach(nav => {
-            nav.classList.toggle('active', nav.getAttribute('data-target') === targetViewId);
+            if (nav.id === 'menu-produk-toggle' || nav.id === 'menu-pengaturan-toggle') return;
+            const isActive = nav.getAttribute('data-target') === targetViewId;
+            nav.classList.toggle('active', isActive);
+
+            // If this nav item is active and it is inside the submenu, ensure submenu is open
+            if (isActive && nav.closest('.submenu')) {
+                const parentSubmenu = nav.closest('.submenu');
+                parentSubmenu.classList.add('open');
+                if (parentSubmenu.id === 'submenu-produk') {
+                    document.getElementById('menu-produk-toggle').classList.add('open');
+                } else if (parentSubmenu.id === 'submenu-pengaturan') {
+                    document.getElementById('menu-pengaturan-toggle').classList.add('open');
+                }
+            }
         });
 
         // Switch visible view panel
@@ -341,17 +375,234 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (targetViewId === 'produksi') loadProduksiData();
         else if (targetViewId === 'po-internal') loadPOInternalData();
         else if (targetViewId === 'barang-jadi') loadBarangJadiData();
-        else if (targetViewId === 'pengaturan') loadSettingsData();
+        else if (targetViewId === 'profil' || targetViewId === 'coa') loadSettingsData();
+        else if (targetViewId === 'approval') loadApprovalData();
+
+        if (typeof updateGlobalFAB === 'function') updateGlobalFAB(targetViewId);
     }
 
     navItems.forEach(item => {
         item.addEventListener('click', () => {
+            if (item.id === 'menu-produk-toggle') {
+                item.classList.toggle('open');
+                document.getElementById('submenu-produk').classList.toggle('open');
+                return; // Do not switch view for parent menu
+            }
+            if (item.id === 'menu-pengaturan-toggle') {
+                item.classList.toggle('open');
+                document.getElementById('submenu-pengaturan').classList.toggle('open');
+                return; // Do not switch view for parent menu
+            }
             switchView(item.getAttribute('data-target'));
         });
     });
 
     // NOW initialize session — event listeners & switchView are ready
     checkSession();
+
+    // --- UI Interactions (Theme, Profile, Mobile Nav) ---
+    const btnSidebarProfile = document.getElementById('btn-sidebar-profile');
+    const profileActionMenu = document.getElementById('profile-action-menu');
+    btnSidebarProfile?.addEventListener('click', () => {
+        const isHidden = profileActionMenu.style.display === 'none';
+        profileActionMenu.style.display = isHidden ? 'flex' : 'none';
+        const icon = btnSidebarProfile.querySelector('i.fa-chevron-up, i.fa-chevron-down');
+        if (icon) {
+            icon.classList.remove(isHidden ? 'fa-chevron-up' : 'fa-chevron-down');
+            icon.classList.add(isHidden ? 'fa-chevron-down' : 'fa-chevron-up');
+        }
+    });
+
+    const handleMyProfile = () => {
+        const user = JSON.parse(localStorage.getItem('erp_session') || '{}');
+        showToast(`Detail Profil: ${user.nama} (${user.role})`, 'info');
+        document.getElementById('sheet-more')?.classList.remove('active');
+        document.getElementById('sheet-overlay')?.classList.remove('active');
+    };
+    document.getElementById('btn-my-profile')?.addEventListener('click', handleMyProfile);
+    document.getElementById('btn-my-profile-mobile')?.addEventListener('click', handleMyProfile);
+
+    // Theme Toggle
+    const btnThemeToggle = document.getElementById('btn-theme-toggle');
+    const themeIcon = document.getElementById('theme-icon');
+    btnThemeToggle?.addEventListener('click', () => {
+        document.body.classList.toggle('light-mode');
+        if (document.body.classList.contains('light-mode')) {
+            themeIcon.classList.remove('fa-moon');
+            themeIcon.classList.add('fa-sun');
+        } else {
+            themeIcon.classList.remove('fa-sun');
+            themeIcon.classList.add('fa-moon');
+        }
+    });
+
+    // Sync Data
+    const btnSync = document.getElementById('btn-sync');
+    btnSync?.addEventListener('click', () => {
+        const icon = btnSync.querySelector('i');
+        icon.classList.add('spin');
+        showToast('Sinkronisasi data sedang berjalan...', 'info');
+        setTimeout(() => {
+            icon.classList.remove('spin');
+            showToast('Sinkronisasi selesai!', 'success');
+        }, 1500);
+    });
+
+    // Mobile Bottom Nav Logic
+    const bottomNavItems = document.querySelectorAll('.bottom-nav-item[data-target]');
+    bottomNavItems.forEach(item => {
+        item.addEventListener('click', () => {
+            // Update active state in bottom nav
+            document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
+            item.classList.add('active');
+            switchView(item.getAttribute('data-target'));
+        });
+    });
+
+    // Mobile Bottom Sheets
+    const sheetOverlay = document.getElementById('sheet-overlay');
+    const sheetProduk = document.getElementById('sheet-produk');
+    const sheetMore = document.getElementById('sheet-more');
+
+    const openSheet = (sheet) => {
+        sheetOverlay.classList.add('active');
+        sheet.classList.add('active');
+        document.body.classList.add('sheet-open');
+    };
+
+    const closeSheets = () => {
+        sheetOverlay.classList.remove('active');
+        sheetProduk.classList.remove('active');
+        sheetMore.classList.remove('active');
+        document.body.classList.remove('sheet-open');
+    };
+
+    document.getElementById('btn-mobile-produk')?.addEventListener('click', (e) => {
+        document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        openSheet(sheetProduk);
+    });
+
+    document.getElementById('btn-mobile-more')?.addEventListener('click', (e) => {
+        document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        openSheet(sheetMore);
+    });
+
+    document.querySelectorAll('.btn-close-sheet').forEach(btn => {
+        btn.addEventListener('click', closeSheets);
+    });
+    sheetOverlay?.addEventListener('click', closeSheets);
+
+    document.querySelectorAll('.sheet-item[data-target]').forEach(item => {
+        item.addEventListener('click', () => {
+            switchView(item.getAttribute('data-target'));
+            closeSheets();
+        });
+    });
+
+    // Global FAB Logic
+    function updateGlobalFAB(viewId) {
+        // Mappings for FAB per view
+        const fabMappings = {
+            'purchasing': [
+                { id: 'btn-add-stock', label: 'Tambah Bahan', icon: 'fa-plus', color: 'var(--secondary)' },
+                { id: 'btn-grn', label: 'Terima Barang (GRN)', icon: 'fa-box-open', color: 'var(--success)' },
+                { id: 'btn-import-stock', label: 'Import Data', icon: 'fa-file-import', color: 'var(--info)' }
+            ],
+            'sales': [{ id: 'btn-add-penawaran', label: 'Buat Penawaran', icon: 'fa-plus', color: 'var(--secondary)' }],
+            'po-internal': [{ id: 'btn-add-po-internal', label: 'Buat Pengajuan', icon: 'fa-plus', color: 'var(--primary)' }],
+            'bom': [{ id: 'btn-add-bom', label: 'Buat BOM Baru', icon: 'fa-plus', color: 'var(--accent)' }],
+            'finance': [{ id: 'btn-add-cash', label: 'Mutasi Kas', icon: 'fa-plus', color: 'var(--primary)' }],
+            'coa': [{ id: 'btn-add-coa', label: 'Tambah COA', icon: 'fa-plus', color: 'var(--primary)' }],
+            'admin': [{ id: 'btn-add-user', label: 'Tambah User', icon: 'fa-user-plus', color: 'var(--primary)' }]
+        };
+
+        const fabWrapper = document.getElementById('global-fab-wrapper');
+        const fabMain = document.getElementById('global-fab-main');
+        const fabActions = document.getElementById('global-fab-actions');
+        
+        if (!fabWrapper) return;
+        
+        // Hide FAB on desktop, rely on CSS media query, but in JS we just populate the actions
+        const actions = fabMappings[viewId];
+        
+        // Handle special cases (e.g., Approval where buttons depend on tabs)
+        // If view doesn't have mappings here, we hide FAB
+        if (!actions || actions.length === 0) {
+            fabWrapper.style.display = 'none';
+            closeFAB();
+            return;
+        }
+
+        fabWrapper.style.display = 'flex';
+        fabActions.innerHTML = ''; // Clear old actions
+
+        if (actions.length === 1) {
+            // Single Action Mode (No Speed Dial)
+            const action = actions[0];
+            fabMain.innerHTML = `<i class="fa-solid ${action.icon}"></i>`;
+            fabMain.style.background = action.color || 'var(--primary)';
+            
+            // Remove old listeners by cloning
+            const newFabMain = fabMain.cloneNode(true);
+            fabMain.parentNode.replaceChild(newFabMain, fabMain);
+            
+            newFabMain.addEventListener('click', () => {
+                const targetBtn = document.getElementById(action.id);
+                if (targetBtn) targetBtn.click();
+            });
+            
+            // Update reference
+            document.getElementById('global-fab-main').id = 'global-fab-main';
+        } else {
+            // Speed Dial Mode
+            fabMain.innerHTML = '<i class="fa-solid fa-plus"></i>';
+            fabMain.style.background = 'var(--primary)';
+            
+            actions.forEach(action => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'fab-action-wrapper';
+                wrapper.innerHTML = `
+                    <span class="fab-label">${action.label}</span>
+                    <button class="fab-action-btn" style="color: ${action.color || 'var(--primary)'}">
+                        <i class="fa-solid ${action.icon}"></i>
+                    </button>
+                `;
+                wrapper.querySelector('button').addEventListener('click', () => {
+                    closeFAB();
+                    const targetBtn = document.getElementById(action.id);
+                    if (targetBtn) targetBtn.click();
+                });
+                fabActions.appendChild(wrapper);
+            });
+
+            // Reattach listener to toggle speed dial
+            const newFabMain = fabMain.cloneNode(true);
+            fabMain.parentNode.replaceChild(newFabMain, fabMain);
+            newFabMain.addEventListener('click', () => toggleFAB());
+        }
+    }
+
+    function toggleFAB() {
+        const fabWrapper = document.getElementById('global-fab-wrapper');
+        const fabBackdrop = document.getElementById('fab-backdrop');
+        if (!fabWrapper || !fabBackdrop) return;
+        
+        if (fabWrapper.classList.contains('active')) {
+            closeFAB();
+        } else {
+            fabWrapper.classList.add('active');
+            fabBackdrop.classList.add('active');
+        }
+    }
+
+    function closeFAB() {
+        document.getElementById('global-fab-wrapper')?.classList.remove('active');
+        document.getElementById('fab-backdrop')?.classList.remove('active');
+    }
+
+    document.getElementById('fab-backdrop')?.addEventListener('click', closeFAB);
 
     // Purchasing - Load Stock
     async function loadPurchasingData() {
@@ -432,9 +683,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         confirmText: 'Ya, Hapus'
                     });
                     if (ok) {
-                        const res = await window.ERPAPI.request('delete_stock', { kode });
-                        showToast(res.status === 'success' ? `✅ ${res.message}` : `❌ ${res.message}`, res.status === 'success' ? 'success' : 'error', 3000);
-                        if (res.status === 'success') loadPurchasingData();
+                        stockData = stockData.filter(s => s.kode !== kode);
+                        renderPurchasingTable();
+
+                        window.ERPAPI.request('delete_stock', { kode }).then(res => {
+                            showToast(res.status === 'success' ? `✅ ${res.message}` : `❌ ${res.message}`, res.status === 'success' ? 'success' : 'error', 3000);
+                            if (res.status !== 'success') loadPurchasingData();
+                        });
                     }
                 });
             });
@@ -463,7 +718,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dataModal.classList.remove('active');
     });
 
-    dataForm?.addEventListener('submit', async (e) => {
+    dataForm?.addEventListener('submit', (e) => {
         e.preventDefault();
         const session = localStorage.getItem('erp_session');
         const user = session ? JSON.parse(session) : {};
@@ -479,22 +734,24 @@ document.addEventListener('DOMContentLoaded', () => {
             user_nama: user.nama
         };
 
-        const btnSubmit = dataForm.querySelector('button[type="submit"]');
-        const oldHtml = btnSubmit.innerHTML;
-        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
-        btnSubmit.disabled = true;
-
-        const res = await window.ERPAPI.request('save_stock', payload);
-
-        btnSubmit.innerHTML = oldHtml;
-        btnSubmit.disabled = false;
-
-        if (res.status === 'success') {
-            dataModal.classList.remove('active');
-            loadPurchasingData(); // Reload table
+        const existingIdx = stockData.findIndex(s => s.kode === payload.kode);
+        if (existingIdx !== -1) {
+            stockData[existingIdx] = { ...stockData[existingIdx], ...payload };
         } else {
-            alert(res.message);
+            stockData.push(payload);
         }
+        
+        renderPurchasingTable();
+        dataModal.classList.remove('active');
+
+        window.ERPAPI.request('save_stock', payload).then(res => {
+            if (res.status !== 'success') {
+                showToast(`❌ ${res.message}`, 'error', 3000);
+                loadPurchasingData();
+            } else {
+                showToast(`✅ ${res.message}`, 'success', 3000);
+            }
+        });
     });
 
     // Buttons interactions
@@ -2085,9 +2342,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         confirmText: 'Ya, Hapus Akun'
                     });
                     if (ok) {
-                        const res = await window.ERPAPI.request('delete_user', { username });
-                        showToast(res.status === 'success' ? `✅ ${res.message}` : `❌ ${res.message}`, res.status === 'success' ? 'success' : 'error', 3000);
-                        if (res.status === 'success') loadAdminData();
+                        userData = userData.filter(u => u.username !== username);
+                        renderAdminTables();
+                        
+                        window.ERPAPI.request('delete_user', { username }).then(res => {
+                            showToast(res.status === 'success' ? `✅ ${res.message}` : `❌ ${res.message}`, res.status === 'success' ? 'success' : 'error', 3000);
+                            if (res.status !== 'success') loadAdminData();
+                        });
                     }
                 });
             });
@@ -2117,7 +2378,7 @@ document.addEventListener('DOMContentLoaded', () => {
         userModal.classList.remove('active');
     });
 
-    userForm?.addEventListener('submit', async (e) => {
+    userForm?.addEventListener('submit', (e) => {
         e.preventDefault();
         const payload = {
             username: document.getElementById('u_username').value,
@@ -2126,27 +2387,773 @@ document.addEventListener('DOMContentLoaded', () => {
             role: document.getElementById('u_role').value
         };
 
-        const btnSubmit = userForm.querySelector('button[type="submit"]');
-        const oldHtml = btnSubmit.innerHTML;
-        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
-        btnSubmit.disabled = true;
-
-        const res = await window.ERPAPI.request('save_user', payload);
-
-        btnSubmit.innerHTML = oldHtml;
-        btnSubmit.disabled = false;
-
-        if (res.status === 'success') {
-            userModal.classList.remove('active');
-            loadAdminData();
+        const existingIdx = userData.findIndex(u => u.username === payload.username);
+        if (existingIdx !== -1) {
+            userData[existingIdx] = { ...userData[existingIdx], ...payload };
         } else {
-            alert(res.message);
+            userData.push(payload);
+        }
+        
+        renderAdminTables();
+        userModal.classList.remove('active');
+
+        window.ERPAPI.request('save_user', payload).then(res => {
+            if (res.status !== 'success') {
+                showToast(`❌ ${res.message}`, 'error', 3000);
+                loadAdminData();
+            } else {
+                showToast(`✅ ${res.message}`, 'success', 3000);
+            }
+        });
+    });
+
+    // Petty Cash Modal
+    const pettyCashModal = document.getElementById('petty-cash-modal');
+    document.getElementById('btn-add-cash')?.addEventListener('click', () => {
+        document.getElementById('pc_nominal').value = '';
+        document.getElementById('pc_keterangan').value = '';
+        document.getElementById('pc_coa').value = '';
+        pettyCashModal.classList.add('active');
+    });
+
+    document.getElementById('btn-close-petty-cash')?.addEventListener('click', () => {
+        pettyCashModal.classList.remove('active');
+    });
+
+    document.getElementById('petty-cash-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const jenis = document.getElementById('pc_jenis').value;
+        const nominal = document.getElementById('pc_nominal').value;
+        const keterangan = document.getElementById('pc_keterangan').value;
+        const coa = document.getElementById('pc_coa').value;
+
+        const session = localStorage.getItem('erp_session');
+        const user = session ? JSON.parse(session).username : 'Unknown';
+
+        const payload = {
+            jenis: jenis,
+            jumlah: nominal,
+            keterangan: keterangan,
+            coa: coa,
+            user: user
+        };
+
+        const res = await window.ERPAPI.request('add_petty_cash', payload);
+        if (res.status === 'success') {
+            pettyCashModal.classList.remove('active');
+            showToast('Mutasi kas berhasil disimpan', 'success');
+        } else {
+            showToast(res.message, 'error');
         }
     });
 
-    document.getElementById('btn-add-cash')?.addEventListener('click', async () => {
-        const res = await window.ERPAPI.request('add_petty_cash');
-        alert(res.message);
+    // =============================================
+    // Alur Approval
+    // =============================================
+
+    let allApprovalData = {};
+    let activeKategoriId = null;
+    let daftarJabatan = [];
+    let masterCOA = [];
+
+    // Helper to get active pipeline
+    function getActivePipeline() {
+        if (!activeKategoriId) return [];
+        return allApprovalData[activeKategoriId] || [];
+    }
+
+    async function loadApprovalData() {
+        const session = localStorage.getItem('erp_session');
+        const user = session ? JSON.parse(session) : {};
+        const isAdmin = ['Direktur', 'Admin', 'Management', 'Super Admin', 'super'].some(r => user.role.toLowerCase().includes(r.toLowerCase()));
+
+        const btnTabFlow = document.getElementById('btn-tab-flow');
+        const btnTabJabatan = document.getElementById('btn-tab-jabatan');
+        const btnAddKat = document.getElementById('btn-add-kategori');
+        const btnAddJab = document.getElementById('btn-add-jabatan');
+        
+        if (isAdmin) {
+            if (btnTabFlow) btnTabFlow.style.display = 'inline-flex';
+            if (btnTabJabatan) btnTabJabatan.style.display = 'inline-flex';
+            if (btnAddKat) btnAddKat.style.display = 'inline-flex';
+            if (btnAddJab) btnAddJab.style.display = 'inline-flex';
+        }
+
+        // Ambil data settings dari backend
+        const res = await window.ERPAPI.request('get_settings');
+        if (res.status === 'success' && res.data) {
+            if (res.data.approval_graph) {
+                try {
+                    allApprovalData = JSON.parse(res.data.approval_graph);
+                    // Migrasi ke struktur linear pipeline jika masih format lama
+                    if (!allApprovalData._order || !Array.isArray(allApprovalData._order)) {
+                        allApprovalData = { "_order": ["Pengajuan Belanja"], "Pengajuan Belanja": [] };
+                    }
+                } catch (e) {
+                    console.error("Gagal parsing approval_graph", e);
+                    allApprovalData = { "_order": ["Pengajuan Belanja"], "Pengajuan Belanja": [] };
+                }
+            } else {
+                allApprovalData = { "_order": ["Pengajuan Belanja"], "Pengajuan Belanja": [] };
+            }
+
+            if (res.data.daftar_jabatan) {
+                try {
+                    daftarJabatan = JSON.parse(res.data.daftar_jabatan);
+                } catch (e) {
+                    daftarJabatan = [];
+                }
+            } else {
+                daftarJabatan = [];
+            }
+
+            if (res.data.master_coa) {
+                try {
+                    masterCOA = JSON.parse(res.data.master_coa);
+                } catch (e) {
+                    masterCOA = [];
+                }
+            } else {
+                masterCOA = [];
+            }
+        }
+
+        if (!allApprovalData._order) allApprovalData._order = [];
+        if (allApprovalData._order.length > 0) {
+            activeKategoriId = allApprovalData._order[0];
+        }
+
+        // Kalau kosong, coba extract dari graph lama sebagai initial data
+        if (daftarJabatan.length === 0) {
+            const tempSet = new Set();
+            Object.keys(allApprovalData).forEach(k => {
+                if (k !== '_order') {
+                    const arr = allApprovalData[k] || [];
+                    arr.forEach(r => tempSet.add(r));
+                }
+            });
+            daftarJabatan = Array.from(tempSet);
+        }
+
+        renderKategoriList();
+        renderDaftarJabatan();
+        renderMermaidDiagram();
+        updateRoleDatalist();
+        
+        renderMasterCOA();
+        updateCOADatalist();
+    }
+
+    async function saveApprovalData() {
+        const payload = { 
+            approval_graph: JSON.stringify(allApprovalData),
+            daftar_jabatan: JSON.stringify(daftarJabatan),
+            master_coa: JSON.stringify(masterCOA)
+        };
+        const res = await window.ERPAPI.request('save_settings', payload);
+
+        if (res.status === 'success') {
+            showToast('✅ Rute Approval berhasil disimpan.', 'success');
+            renderMermaidDiagram();
+            // Kumpulkan semua role unik untuk autocomplete datalist
+            updateRoleDatalist();
+        } else {
+            showToast('❌ Gagal menyimpan rute.', 'error');
+        }
+    }
+
+    function updateRoleDatalist() {
+        const datalist = document.getElementById('role-datalist');
+        if (!datalist) return;
+        datalist.innerHTML = '';
+        
+        daftarJabatan.forEach(r => {
+            const opt = document.createElement('option');
+            opt.value = r;
+            datalist.appendChild(opt);
+        });
+    }
+
+    // Modal Kategori
+    const kategoriModal = document.getElementById('kategori-modal');
+    document.getElementById('btn-add-kategori')?.addEventListener('click', () => {
+        document.getElementById('kat_name').value = '';
+        kategoriModal.classList.add('active');
     });
+
+    document.getElementById('btn-close-kategori')?.addEventListener('click', () => {
+        kategoriModal.classList.remove('active');
+    });
+
+    document.getElementById('kategori-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const katName = document.getElementById('kat_name').value.trim();
+        if (!katName) return;
+
+        if (allApprovalData[katName]) {
+            showToast('Tipe Pengajuan tersebut sudah ada.', 'warning');
+            return;
+        }
+
+        allApprovalData[katName] = [];
+        if (!allApprovalData._order.includes(katName)) {
+            allApprovalData._order.push(katName);
+        }
+        
+        activeKategoriId = katName;
+        kategoriModal.classList.remove('active');
+        saveApprovalData();
+        renderKategoriList();
+        renderFlowBuilder();
+    });
+    // Tabs
+    document.getElementById('btn-tab-diagram')?.addEventListener('click', (e) => {
+        e.target.style.background = 'var(--primary)';
+        document.getElementById('btn-tab-flow').style.background = 'var(--bg-glass)';
+        document.getElementById('btn-tab-jabatan').style.background = 'var(--bg-glass)';
+        document.getElementById('tab-diagram').style.display = 'block';
+        document.getElementById('tab-flow').style.display = 'none';
+        document.getElementById('tab-jabatan').style.display = 'none';
+        renderMermaidDiagram();
+    });
+
+    document.getElementById('btn-tab-flow')?.addEventListener('click', (e) => {
+        e.target.style.background = 'var(--primary)';
+        document.getElementById('btn-tab-diagram').style.background = 'var(--bg-glass)';
+        document.getElementById('btn-tab-jabatan').style.background = 'var(--bg-glass)';
+        document.getElementById('tab-diagram').style.display = 'none';
+        document.getElementById('tab-flow').style.display = 'block';
+        document.getElementById('tab-jabatan').style.display = 'none';
+        renderKategoriList();
+        renderFlowBuilder();
+    });
+
+    document.getElementById('btn-tab-jabatan')?.addEventListener('click', (e) => {
+        e.target.style.background = 'var(--primary)';
+        document.getElementById('btn-tab-diagram').style.background = 'var(--bg-glass)';
+        document.getElementById('btn-tab-flow').style.background = 'var(--bg-glass)';
+        document.getElementById('tab-diagram').style.display = 'none';
+        document.getElementById('tab-flow').style.display = 'none';
+        document.getElementById('tab-jabatan').style.display = 'block';
+        renderDaftarJabatan();
+    });
+
+    // Modals
+    const atasanModal = document.getElementById('atasan-modal');
+    const jabatanModal = document.getElementById('jabatan-modal');
+
+    document.getElementById('btn-add-jabatan')?.addEventListener('click', () => {
+        document.getElementById('jabatan-modal-title').textContent = 'Tambah Jabatan';
+        document.getElementById('jab_old_name').value = '';
+        document.getElementById('jab_name').value = '';
+        jabatanModal.classList.add('active');
+    });
+
+    document.getElementById('btn-close-jabatan')?.addEventListener('click', () => {
+        jabatanModal.classList.remove('active');
+    });
+
+    document.getElementById('jabatan-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const oldName = document.getElementById('jab_old_name').value;
+        const newName = document.getElementById('jab_name').value.trim();
+        if (!newName) return;
+
+        if (oldName && oldName !== newName) {
+            // Edit
+            if (daftarJabatan.includes(newName)) {
+                showToast('Nama jabatan sudah ada.', 'warning');
+                return;
+            }
+            const idx = daftarJabatan.indexOf(oldName);
+            if (idx > -1) daftarJabatan[idx] = newName;
+
+            // Cascade update in approval routes
+            Object.keys(allApprovalData).forEach(k => {
+                if (k === '_order') return;
+                const arr = allApprovalData[k];
+                for (let i = 0; i < arr.length; i++) {
+                    if (arr[i] === oldName) arr[i] = newName;
+                }
+            });
+        } else if (!oldName) {
+            // Baru
+            if (daftarJabatan.includes(newName)) {
+                showToast('Nama jabatan sudah ada.', 'warning');
+                return;
+            }
+            daftarJabatan.push(newName);
+        }
+
+        jabatanModal.classList.remove('active');
+        saveApprovalData();
+        renderDaftarJabatan();
+        updateRoleDatalist();
+    });
+
+    function renderDaftarJabatan() {
+        const listContainer = document.getElementById('masterJabatanList');
+        if (!listContainer) return;
+        listContainer.innerHTML = '';
+
+        if (daftarJabatan.length === 0) {
+            listContainer.innerHTML = '<div style="color:var(--text-muted); font-size:0.9rem; grid-column: 1 / -1;">Belum ada daftar jabatan.</div>';
+            return;
+        }
+
+        daftarJabatan.forEach(jab => {
+            const div = document.createElement('div');
+            div.style.cssText = `
+                background: rgba(255,255,255,0.05); 
+                border: 1px solid var(--glass-border); 
+                padding: 15px; 
+                border-radius: 10px; 
+                display: flex; justify-content: space-between; align-items: center;
+            `;
+
+            const title = document.createElement('div');
+            title.textContent = jab;
+            title.style.fontWeight = '500';
+
+            const actions = document.createElement('div');
+            actions.style.display = 'flex';
+            actions.style.gap = '5px';
+
+            const btnEdit = document.createElement('button');
+            btnEdit.innerHTML = '<i class="fa-solid fa-pen"></i>';
+            btnEdit.className = 'btn admin-only';
+            btnEdit.style.cssText = 'padding: 5px 8px; font-size: 0.75rem; background: transparent; color: var(--text-muted); box-shadow: none;';
+            btnEdit.onmouseover = () => btnEdit.style.color = '#fff';
+            btnEdit.onmouseout = () => btnEdit.style.color = 'var(--text-muted)';
+            btnEdit.onclick = () => {
+                document.getElementById('jabatan-modal-title').textContent = 'Edit Jabatan';
+                document.getElementById('jab_old_name').value = jab;
+                document.getElementById('jab_name').value = jab;
+                jabatanModal.classList.add('active');
+            };
+
+            const btnDel = document.createElement('button');
+            btnDel.innerHTML = '<i class="fa-solid fa-trash"></i>';
+            btnDel.className = 'btn admin-only';
+            btnDel.style.cssText = 'padding: 5px 8px; font-size: 0.75rem; background: transparent; color: var(--danger); box-shadow: none;';
+            btnDel.onmouseover = () => btnDel.style.background = 'rgba(239, 68, 68, 0.2)';
+            btnDel.onmouseout = () => btnDel.style.background = 'transparent';
+            btnDel.onclick = async () => {
+                const ok = await window.showConfirm({
+                    title: 'Hapus Jabatan',
+                    message: `Yakin ingin menghapus <b>${jab}</b> dari Master?<br>Ini juga akan menghapus nama ini dari rute approval manapun yang menggunakannya.`,
+                    type: 'danger'
+                });
+                if (ok) {
+                    daftarJabatan = daftarJabatan.filter(j => j !== jab);
+                    
+                    // Cascade delete
+                    Object.keys(allApprovalData).forEach(k => {
+                        if (k === '_order') return;
+                        allApprovalData[k] = allApprovalData[k].filter(r => r !== jab);
+                    });
+
+                    saveApprovalData();
+                    renderDaftarJabatan();
+                    updateRoleDatalist();
+                }
+            };
+
+            actions.appendChild(btnEdit);
+            actions.appendChild(btnDel);
+            div.appendChild(title);
+            div.appendChild(actions);
+            listContainer.appendChild(div);
+        });
+        
+        checkAdminVisibility();
+    }
+
+    // Modal COA
+    const coaModal = document.getElementById('coa-modal');
+    document.getElementById('btn-add-coa')?.addEventListener('click', () => {
+        document.getElementById('coa-modal-title').textContent = 'Tambah Kategori COA';
+        document.getElementById('coa_old_name').value = '';
+        document.getElementById('coa_name').value = '';
+        coaModal.classList.add('active');
+    });
+
+    document.getElementById('btn-close-coa')?.addEventListener('click', () => {
+        coaModal.classList.remove('active');
+    });
+
+    document.getElementById('coa-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const oldName = document.getElementById('coa_old_name').value;
+        const newName = document.getElementById('coa_name').value.trim();
+        if (!newName) return;
+
+        if (oldName && oldName !== newName) {
+            // Edit
+            if (masterCOA.includes(newName)) {
+                showToast('Kategori COA sudah ada.', 'warning');
+                return;
+            }
+            const idx = masterCOA.indexOf(oldName);
+            if (idx > -1) masterCOA[idx] = newName;
+        } else if (!oldName) {
+            // Baru
+            if (masterCOA.includes(newName)) {
+                showToast('Kategori COA sudah ada.', 'warning');
+                return;
+            }
+            masterCOA.push(newName);
+        }
+
+        coaModal.classList.remove('active');
+        saveApprovalData();
+        renderMasterCOA();
+        updateCOADatalist();
+    });
+
+    function renderMasterCOA() {
+        const listContainer = document.getElementById('coaListGroup');
+        if (!listContainer) return;
+        listContainer.innerHTML = '';
+
+        if (masterCOA.length === 0) {
+            listContainer.innerHTML = '<div style="color:var(--text-muted); font-size:0.9rem;">Belum ada COA.</div>';
+            return;
+        }
+
+        masterCOA.forEach(coa => {
+            const div = document.createElement('div');
+            div.style.cssText = `
+                padding: 12px 15px; 
+                background: rgba(255,255,255,0.05); 
+                border: 1px solid var(--glass-border); 
+                border-radius: 8px; 
+                display: flex; justify-content: space-between; align-items: center;
+            `;
+
+            const title = document.createElement('div');
+            title.textContent = coa;
+
+            const actions = document.createElement('div');
+            actions.style.display = 'flex';
+            actions.style.gap = '5px';
+
+            const btnEdit = document.createElement('button');
+            btnEdit.innerHTML = '<i class="fa-solid fa-pen"></i>';
+            btnEdit.className = 'btn admin-only';
+            btnEdit.style.cssText = 'padding: 5px 8px; font-size: 0.75rem; background: transparent; color: var(--text-muted); box-shadow: none;';
+            btnEdit.onmouseover = () => btnEdit.style.color = '#fff';
+            btnEdit.onmouseout = () => btnEdit.style.color = 'var(--text-muted)';
+            btnEdit.onclick = () => {
+                document.getElementById('coa-modal-title').textContent = 'Edit Kategori COA';
+                document.getElementById('coa_old_name').value = coa;
+                document.getElementById('coa_name').value = coa;
+                coaModal.classList.add('active');
+            };
+
+            const btnDel = document.createElement('button');
+            btnDel.innerHTML = '<i class="fa-solid fa-trash"></i>';
+            btnDel.className = 'btn admin-only';
+            btnDel.style.cssText = 'padding: 5px 8px; font-size: 0.75rem; background: transparent; color: var(--danger); box-shadow: none;';
+            btnDel.onmouseover = () => btnDel.style.background = 'rgba(239, 68, 68, 0.2)';
+            btnDel.onmouseout = () => btnDel.style.background = 'transparent';
+            btnDel.onclick = async () => {
+                const ok = await window.showConfirm({
+                    title: 'Hapus COA',
+                    message: `Yakin ingin menghapus COA <b>${coa}</b>?`,
+                    type: 'danger'
+                });
+                if (ok) {
+                    masterCOA = masterCOA.filter(c => c !== coa);
+                    saveApprovalData();
+                    renderMasterCOA();
+                    updateCOADatalist();
+                }
+            };
+
+            actions.appendChild(btnEdit);
+            actions.appendChild(btnDel);
+            div.appendChild(title);
+            div.appendChild(actions);
+            listContainer.appendChild(div);
+        });
+        checkAdminVisibility();
+    }
+
+    function updateCOADatalist() {
+        const datalist = document.getElementById('coa-datalist');
+        if (!datalist) return;
+        datalist.innerHTML = '';
+        
+        masterCOA.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c;
+            datalist.appendChild(opt);
+        });
+    }
+
+    document.getElementById('btn-close-atasan')?.addEventListener('click', () => {
+        atasanModal.classList.remove('active');
+    });
+
+    document.getElementById('atasan-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const sel = document.getElementById('atasan_input').value.trim();
+        if (!sel || !activeKategoriId) return;
+
+        const pipeline = getActivePipeline();
+        
+        // Cek duplikasi berurutan (boleh duplikat kalau tidak bersebelahan, tapi lebih baik cegah saja)
+        if (pipeline.includes(sel)) {
+            showToast('Role/Jabatan ini sudah ada di dalam rute.', 'warning');
+            return;
+        }
+
+        pipeline.push(sel);
+        atasanModal.classList.remove('active');
+        saveApprovalData();
+        renderFlowBuilder();
+    });
+
+    function renderKategoriList() {
+        const listGroup = document.getElementById('kategoriListGroup');
+        if (!listGroup) return;
+        listGroup.innerHTML = '';
+        
+        if (allApprovalData._order.length === 0) {
+            listGroup.innerHTML = '<div style="color:var(--text-muted); font-size:0.9rem;">Belum ada Tipe Pengajuan.</div>';
+            document.getElementById('flowBuilderActive').style.display = 'none';
+            document.getElementById('flowBuilderEmpty').style.display = 'flex';
+            return;
+        }
+
+        allApprovalData._order.forEach(kat => {
+            const div = document.createElement('div');
+            const isActive = kat === activeKategoriId;
+            div.style.cssText = `
+                padding: 12px 15px; 
+                background: ${isActive ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.05)'}; 
+                border: 1px solid ${isActive ? 'var(--primary)' : 'var(--glass-border)'}; 
+                border-radius: 8px; 
+                display: flex; justify-content: space-between; align-items: center; 
+                cursor: pointer; transition: all 0.2s;
+            `;
+            
+            div.onclick = (e) => {
+                if (e.target.closest('button')) return;
+                activeKategoriId = kat;
+                renderKategoriList();
+                renderFlowBuilder();
+            };
+
+            const title = document.createElement('div');
+            title.textContent = kat;
+            title.style.fontWeight = isActive ? '600' : '400';
+            if (isActive) title.style.color = 'var(--primary)';
+
+            const actions = document.createElement('div');
+            actions.style.display = 'flex';
+            actions.style.gap = '5px';
+
+            const btnDel = document.createElement('button');
+            btnDel.innerHTML = '<i class="fa-solid fa-trash"></i>';
+            btnDel.className = 'btn admin-only';
+            btnDel.style.cssText = 'padding: 5px 8px; font-size: 0.75rem; background: transparent; color: var(--danger); box-shadow: none;';
+            btnDel.onmouseover = () => btnDel.style.background = 'rgba(239, 68, 68, 0.2)';
+            btnDel.onmouseout = () => btnDel.style.background = 'transparent';
+            btnDel.onclick = async () => {
+                if (allApprovalData._order.length <= 1) {
+                    showToast('Minimal harus ada 1 Tipe Pengajuan.', 'warning');
+                    return;
+                }
+                const ok = await window.showConfirm({
+                    title: 'Hapus Tipe Pengajuan',
+                    message: `Yakin ingin menghapus kategori <b>${kat}</b>?<br>Seluruh rute approval-nya akan terhapus.`,
+                    type: 'danger'
+                });
+                if (ok) {
+                    delete allApprovalData[kat];
+                    allApprovalData._order = allApprovalData._order.filter(k => k !== kat);
+                    
+                    if (activeKategoriId === kat) activeKategoriId = allApprovalData._order[0];
+                    saveApprovalData();
+                    renderKategoriList();
+                    renderFlowBuilder();
+                }
+            };
+
+            actions.appendChild(btnDel);
+            div.appendChild(title);
+            div.appendChild(actions);
+            listGroup.appendChild(div);
+        });
+    }
+
+    function renderFlowBuilder() {
+        if (!activeKategoriId) {
+            document.getElementById('flowBuilderActive').style.display = 'none';
+            document.getElementById('flowBuilderEmpty').style.display = 'flex';
+            return;
+        }
+
+        document.getElementById('flowBuilderEmpty').style.display = 'none';
+        document.getElementById('flowBuilderActive').style.display = 'block';
+        document.getElementById('activeKategoriTitle').textContent = activeKategoriId;
+
+        const cardsContainer = document.getElementById('flowBuilderCards');
+        cardsContainer.innerHTML = '';
+
+        const pipeline = getActivePipeline();
+
+        pipeline.forEach((role, index) => {
+            if (index > 0) {
+                const arrow = document.createElement('div');
+                arrow.innerHTML = '<i class="fa-solid fa-arrow-right"></i>';
+                arrow.style.color = 'var(--text-muted)';
+                cardsContainer.appendChild(arrow);
+            }
+
+            const card = document.createElement('div');
+            const isPemohon = index === 0;
+            card.style.cssText = `background: ${isPemohon ? 'rgba(59, 130, 246, 0.15)' : 'var(--bg-glass)'}; border: 1px solid ${isPemohon ? 'var(--primary)' : 'var(--glass-border)'}; padding: 15px 20px; border-radius: 10px; text-align: center; position: relative; min-width: 150px;`;
+            card.innerHTML = `<div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:5px;">${isPemohon ? 'PEMOHON' : 'APPROVER ' + index}</div><div style="font-weight:600;">${role}</div>`;
+            
+            const btnDel = document.createElement('button');
+            btnDel.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+            btnDel.className = 'admin-only';
+            btnDel.style.cssText = 'position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; border-radius: 50%; background: var(--danger); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; box-shadow: 0 2px 5px rgba(0,0,0,0.5);';
+            btnDel.onclick = () => {
+                pipeline.splice(index, 1);
+                saveApprovalData();
+                renderFlowBuilder();
+            };
+
+            card.appendChild(btnDel);
+            cardsContainer.appendChild(card);
+        });
+
+        // Add Button Card
+        if (pipeline.length > 0) {
+            const arrowAdd = document.createElement('div');
+            arrowAdd.innerHTML = '<i class="fa-solid fa-arrow-right"></i>';
+            arrowAdd.style.color = 'var(--text-muted)';
+            cardsContainer.appendChild(arrowAdd);
+        }
+
+        const btnAdd = document.createElement('button');
+        btnAdd.className = 'btn admin-only';
+        btnAdd.innerHTML = `<i class="fa-solid fa-plus"></i> Tambah ${pipeline.length === 0 ? 'Pemohon' : 'Urutan'}`;
+        btnAdd.style.cssText = 'background: rgba(255,255,255,0.05); border: 1px dashed var(--glass-border); box-shadow: none; display: inline-flex;';
+        btnAdd.onclick = () => {
+            document.getElementById('atasan_input').value = '';
+            atasanModal.classList.add('active');
+        };
+        cardsContainer.appendChild(btnAdd);
+
+        // Re-check admin visibility for new elements
+        checkAdminVisibility();
+    }
+
+    function renderMermaidDiagram() {
+        const container = document.getElementById('mermaidContainer');
+        if (!container) return;
+
+        let sessionRole = '';
+        try {
+            const session = localStorage.getItem('erp_session');
+            if (session) sessionRole = JSON.parse(session).role;
+        } catch (e) {}
+
+        if (!allApprovalData._order || allApprovalData._order.length === 0) {
+            container.innerHTML = '<div style="color:var(--text-muted); padding-top: 10vh;">Belum ada rute approval untuk kategori ini. Silakan atur di Tab Pengaturan Rute.</div>';
+            return;
+        }
+
+        let graphDef = 'graph TD\n';
+        const sanitizeNode = (name) => name.replace(/[^a-zA-Z0-9]/g, '');
+        let hasEdges = false;
+        let isSessionInvolved = false;
+
+        allApprovalData._order.forEach((kat, i) => {
+            const pipeline = allApprovalData[kat] || [];
+            if (pipeline.length === 0) return;
+            
+            // Subgraph for each category
+            const subId = `sub_${i}`;
+            // Use sanitizeNode for the title to avoid syntax errors in Mermaid 11.15.0
+            const katLabel = sanitizeNode(kat);
+            graphDef += `  subgraph ${subId} [${katLabel}]\n`;
+            
+            if (pipeline.length === 1) {
+                const node = sanitizeNode(`${kat}_${pipeline[0]}`);
+                graphDef += `    ${node}["${pipeline[0]}"]\n`;
+                if (pipeline[0] === sessionRole) isSessionInvolved = true;
+            } else {
+                for (let j = 0; j < pipeline.length - 1; j++) {
+                    const nodeA = sanitizeNode(`${kat}_${pipeline[j]}`);
+                    const nodeB = sanitizeNode(`${kat}_${pipeline[j+1]}`);
+                    
+                    if (!graphDef.includes(`${nodeA}["${pipeline[j]}"]`)) {
+                        graphDef += `    ${nodeA}["${pipeline[j]}"]\n`;
+                    }
+                    if (!graphDef.includes(`${nodeB}["${pipeline[j+1]}"]`)) {
+                        graphDef += `    ${nodeB}["${pipeline[j+1]}"]\n`;
+                    }
+                    
+                    graphDef += `    ${nodeA} --> ${nodeB}\n`;
+                    hasEdges = true;
+                    
+                    if (pipeline[j] === sessionRole || pipeline[j+1] === sessionRole) {
+                        isSessionInvolved = true;
+                    }
+                }
+            }
+            graphDef += `  end\n`;
+        });
+
+        if (!hasEdges && allApprovalData._order.every(k => (allApprovalData[k] || []).length === 0)) {
+            container.innerHTML = '<div style="color:var(--text-muted); padding-top: 10vh;">Rute approval kosong. Silakan atur di Tab Pengaturan Rute.</div>';
+            return;
+        }
+
+        if (sessionRole) {
+            graphDef += `\n  classDef highlight fill:rgba(59, 130, 246, 0.4),stroke:#3b82f6,stroke-width:2px,color:#fff;\n`;
+            
+            allApprovalData._order.forEach(kat => {
+                const pipeline = allApprovalData[kat] || [];
+                pipeline.forEach(role => {
+                    if (role === sessionRole) {
+                        const rNode = sanitizeNode(`${kat}_${role}`);
+                        graphDef += `  class ${rNode} highlight\n`;
+                    }
+                });
+            });
+        }
+
+        // Custom ERPORION theme for mermaid
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            themeVariables: {
+                primaryColor: 'rgba(255,255,255,0.05)',
+                primaryTextColor: '#f8fafc',
+                primaryBorderColor: 'rgba(255,255,255,0.2)',
+                lineColor: '#94a3b8',
+                secondaryColor: '#1e293b',
+                tertiaryColor: '#0f172a'
+            },
+            flowchart: {
+                curve: 'basis'
+            }
+        });
+
+        container.innerHTML = `<div class="mermaid">${graphDef}</div>`;
+        try {
+            mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+        } catch (error) {
+            console.error('Mermaid render error:', error);
+            container.innerHTML = '<div style="color:var(--danger); padding-top: 10vh;">Gagal me-render diagram.</div>';
+        }
+    }
 
 });
