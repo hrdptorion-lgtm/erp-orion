@@ -415,9 +415,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const handleMyProfile = () => {
         const user = JSON.parse(localStorage.getItem('erp_session') || '{}');
-        showToast(`Detail Profil: ${user.nama} (${user.role})`, 'info');
+        openUserModal('Profil Saya', user);
         document.getElementById('sheet-more')?.classList.remove('active');
         document.getElementById('sheet-overlay')?.classList.remove('active');
+        document.getElementById('profile-action-menu').style.display = 'none'; // hide desktop menu
     };
     document.getElementById('btn-my-profile')?.addEventListener('click', handleMyProfile);
     document.getElementById('btn-my-profile-mobile')?.addEventListener('click', handleMyProfile);
@@ -2456,8 +2457,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast(`❌ ${res.message}`, 'error', 3000);
             } else {
                 showToast(`✅ ${res.message}`, 'success', 3000);
+                // Update session if it's the current user
+                const session = JSON.parse(localStorage.getItem('erp_session') || '{}');
+                if (session.username === payload.username) {
+                    session.nama = payload.nama;
+                    session.nama_lengkap = payload.nama_lengkap;
+                    // Note: Role usually isn't changed by normal users, but if it is, we could update it too.
+                    localStorage.setItem('erp_session', JSON.stringify(session));
+                    const nameDisplay = document.getElementById('user-name-display');
+                    if (nameDisplay) nameDisplay.textContent = session.nama_lengkap || session.nama;
+                }
             }
-            loadAdminData();
+            if (typeof loadAdminData === 'function') {
+                loadAdminData();
+            }
         });
     });
 

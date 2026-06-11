@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,17 +12,20 @@
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
 <body>
     <!-- Login Overlay -->
     <div id="login-overlay" class="login-overlay active">
         <div class="login-box">
-            <div class="brand" style="justify-content: center; border: none; margin-bottom: 1rem; flex-direction: column; gap: 10px; padding: 20px 0;">
+            <div class="brand"
+                style="justify-content: center; border: none; margin-bottom: 1rem; flex-direction: column; gap: 10px; padding: 20px 0;">
                 <div class="brand-icon" style="background: transparent; box-shadow: none; width: 80px; height: 80px;">
                     <img src="logo.png" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;">
                 </div>
                 <h2 style="margin: 0; font-size: 1.5rem;">ERP ORION</h2>
             </div>
-            <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">Silakan login dengan akun divisi Anda.</p>
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">Silakan login dengan akun
+                Anda.</p>
             <form id="login-form">
                 <div class="input-group">
                     <label>Username</label>
@@ -31,9 +35,11 @@
                     <label>Password</label>
                     <input type="password" id="login-password" required placeholder="Masukkan password">
                 </div>
-                <button type="submit" class="btn" style="width: 100%; justify-content: center; margin-top: 1rem;">Masuk <i class="fa-solid fa-arrow-right-to-bracket"></i></button>
+                <button type="submit" class="btn" style="width: 100%; justify-content: center; margin-top: 1rem;">Masuk
+                    <i class="fa-solid fa-arrow-right-to-bracket"></i></button>
             </form>
-            <p id="login-error" style="color: var(--danger); text-align: center; margin-top: 1rem; display: none;">Username/Password salah.</p>
+            <p id="login-error" style="color: var(--danger); text-align: center; margin-top: 1rem; display: none;">
+                Username/Password salah.</p>
         </div>
     </div>
 
@@ -46,7 +52,8 @@
             <h2>ERP ORION</h2>
         </div>
 
-        <div class="nav-links-wrapper" style="flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding-right: 5px; margin-bottom: 10px;">
+        <div class="nav-links-wrapper"
+            style="flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding-right: 5px; margin-bottom: 10px;">
             <ul class="nav-links">
                 <li class="nav-item" data-target="dashboard">
                     <i class="fa-solid fa-house"></i>
@@ -89,7 +96,8 @@
                     <span>Finance & Kasir</span>
                 </li>
                 <!-- Submenu Pengaturan -->
-                <li class="nav-item has-submenu admin-only" id="menu-pengaturan-toggle" style="display: none; border-top: 1px solid var(--glass-border); margin-top: 10px; padding-top: 15px;">
+                <li class="nav-item has-submenu admin-only" id="menu-pengaturan-toggle"
+                    style="display: none; border-top: 1px solid var(--glass-border); margin-top: 10px; padding-top: 15px;">
                     <i class="fa-solid fa-cog"></i>
                     <span style="flex: 1;">Pengaturan</span>
                     <i class="fa-solid fa-chevron-down submenu-icon"></i>
@@ -114,20 +122,29 @@
                 </ul>
             </ul>
         </div>
-        <div class="sidebar-profile-container" style="margin-top: auto; padding: 15px; border-top: 1px solid var(--glass-border); flex-shrink: 0;">
-            <div class="user-profile-sidebar" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; border-radius: 10px; transition: background 0.3s;" id="btn-sidebar-profile">
-                <div class="avatar" id="user-avatar-initial" style="width: 35px; height: 35px; min-width: 35px; font-size: 1rem;">A</div>
+        <div class="sidebar-profile-container"
+            style="margin-top: auto; padding: 15px; border-top: 1px solid var(--glass-border); flex-shrink: 0;">
+            <div class="user-profile-sidebar"
+                style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; border-radius: 10px; transition: background 0.3s;"
+                id="btn-sidebar-profile">
+                <div class="avatar" id="user-avatar-initial"
+                    style="width: 35px; height: 35px; min-width: 35px; font-size: 1rem;">A</div>
                 <div class="user-info" style="flex: 1; overflow: hidden;">
-                    <span id="user-name-display" style="font-weight: 500; font-size: 0.9rem; display: block; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">Admin Orion</span>
+                    <span id="user-name-display"
+                        style="font-weight: 500; font-size: 0.9rem; display: block; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">Admin
+                        Orion</span>
                     <span id="user-role-display" style="font-size: 0.75rem; color: var(--text-muted);">Direktur</span>
                 </div>
                 <i class="fa-solid fa-chevron-up" style="font-size: 0.8rem; color: var(--text-muted);"></i>
             </div>
-            <div id="profile-action-menu" class="profile-action-menu" style="display: none; flex-direction: column; gap: 5px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--glass-border);">
-                <button class="btn btn-profile-action" id="btn-my-profile" style="background: transparent; color: var(--text-main); justify-content: flex-start; padding: 8px 12px; font-size: 0.85rem; box-shadow: none;">
+            <div id="profile-action-menu" class="profile-action-menu"
+                style="display: none; flex-direction: column; gap: 5px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--glass-border);">
+                <button class="btn btn-profile-action" id="btn-my-profile"
+                    style="background: transparent; color: var(--text-main); justify-content: flex-start; padding: 8px 12px; font-size: 0.85rem; box-shadow: none;">
                     <i class="fa-solid fa-user" style="width: 20px;"></i> Profil Saya
                 </button>
-                <button class="btn btn-profile-action" id="btn-logout" style="background: transparent; color: var(--danger); justify-content: flex-start; padding: 8px 12px; font-size: 0.85rem; box-shadow: none;">
+                <button class="btn btn-profile-action" id="btn-logout"
+                    style="background: transparent; color: var(--danger); justify-content: flex-start; padding: 8px 12px; font-size: 0.85rem; box-shadow: none;">
                     <i class="fa-solid fa-sign-out-alt" style="width: 20px;"></i> Keluar
                 </button>
             </div>
@@ -176,9 +193,11 @@
         </div>
         <div class="sheet-content">
             <div class="sheet-item" data-target="purchasing"><i class="fa-solid fa-cart-shopping"></i> Purchasing</div>
-            <div class="sheet-item" data-target="po-internal"><i class="fa-solid fa-clipboard-list"></i> Permintaan Belanja</div>
+            <div class="sheet-item" data-target="po-internal"><i class="fa-solid fa-clipboard-list"></i> Permintaan
+                Belanja</div>
             <div class="sheet-item" data-target="bom"><i class="fa-solid fa-flask"></i> PMO & BOM Sampel</div>
-            <div class="sheet-item" data-target="barang-jadi"><i class="fa-solid fa-boxes-stacked"></i> Inventori Barang Jadi</div>
+            <div class="sheet-item" data-target="barang-jadi"><i class="fa-solid fa-boxes-stacked"></i> Inventori Barang
+                Jadi</div>
             <div class="sheet-item" data-target="produksi"><i class="fa-solid fa-industry"></i> Produksi & Gudang</div>
         </div>
     </div>
@@ -189,13 +208,18 @@
             <button class="btn-close-sheet"><i class="fa-solid fa-times"></i></button>
         </div>
         <div class="sheet-content">
-            <div class="sheet-item admin-only" data-target="profil"><i class="fa-solid fa-building"></i> Profil Perusahaan</div>
-            <div class="sheet-item admin-only" data-target="coa"><i class="fa-solid fa-file-invoice"></i> Kategori COA</div>
-            <div class="sheet-item admin-only" data-target="approval"><i class="fa-solid fa-diagram-project"></i> Alur Approval</div>
-            <div class="sheet-item admin-only" data-target="admin"><i class="fa-solid fa-users-gear"></i> Manajemen Akses</div>
+            <div class="sheet-item admin-only" data-target="profil"><i class="fa-solid fa-building"></i> Profil
+                Perusahaan</div>
+            <div class="sheet-item admin-only" data-target="coa"><i class="fa-solid fa-file-invoice"></i> Kategori COA
+            </div>
+            <div class="sheet-item admin-only" data-target="approval"><i class="fa-solid fa-diagram-project"></i> Alur
+                Approval</div>
+            <div class="sheet-item admin-only" data-target="admin"><i class="fa-solid fa-users-gear"></i> Manajemen
+                Akses</div>
             <div class="sheet-divider"></div>
             <div class="sheet-item" id="btn-my-profile-mobile"><i class="fa-solid fa-user"></i> Profil Saya</div>
-            <div class="sheet-item text-danger" id="btn-logout-mobile"><i class="fa-solid fa-sign-out-alt"></i> Keluar</div>
+            <div class="sheet-item text-danger" id="btn-logout-mobile"><i class="fa-solid fa-sign-out-alt"></i> Keluar
+            </div>
         </div>
     </div>
 
@@ -209,20 +233,24 @@
                 <h1 id="page-title-text">Dashboard Overview</h1>
                 <p id="page-subtitle-text">Selamat datang kembali, Tim Operasional.</p>
             </div>
-            
+
             <div class="top-nav-actions">
-                <div class="mobile-logo-header" style="display: none; align-items: center; gap: 10px;">
-                    <div class="logo-icon" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+                <div class="mobile-logo-header" style="display: none; align-items: center; gap: 12px;">
+                    <div class="logo-icon"
+                        style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: white;">
                         <img src="logo.png" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;">
                     </div>
-                    <span style="font-size: 1.2rem; font-weight: 700; letter-spacing: 1px;">ERPORION</span>
+                    <span style="font-size: 1.5rem; font-weight: 600; letter-spacing: 1px; color: #f8fafc;">ERP ORION</span>
                 </div>
                 <div class="header-actions-right" style="display: flex; gap: 15px; align-items: center;">
-                    <div class="header-icon-btn" id="btn-sync" title="Sync Data" style="cursor: pointer; width: 40px; height: 40px; border-radius: 50%; background: var(--bg-glass); display: flex; align-items: center; justify-content: center; border: 1px solid var(--glass-border); transition: all 0.3s;">
+                    <div class="header-icon-btn" id="btn-sync" title="Sync Data"
+                        style="cursor: pointer; width: 40px; height: 40px; border-radius: 50%; background: var(--bg-glass); display: flex; align-items: center; justify-content: center; border: 1px solid var(--glass-border); transition: all 0.3s;">
                         <i class="fa-solid fa-rotate" style="font-size: 1.1rem; color: var(--text-main);"></i>
                     </div>
-                    <div class="header-icon-btn" id="btn-theme-toggle" title="Toggle Tema" style="cursor: pointer; width: 40px; height: 40px; border-radius: 50%; background: var(--bg-glass); display: flex; align-items: center; justify-content: center; border: 1px solid var(--glass-border); transition: all 0.3s;">
-                        <i class="fa-solid fa-moon" id="theme-icon" style="font-size: 1.1rem; color: var(--text-main);"></i>
+                    <div class="header-icon-btn" id="btn-theme-toggle" title="Toggle Tema"
+                        style="cursor: pointer; width: 40px; height: 40px; border-radius: 50%; background: var(--bg-glass); display: flex; align-items: center; justify-content: center; border: 1px solid var(--glass-border); transition: all 0.3s;">
+                        <i class="fa-solid fa-moon" id="theme-icon"
+                            style="font-size: 1.1rem; color: var(--text-main);"></i>
                     </div>
                 </div>
             </div>
@@ -303,10 +331,11 @@
 
         <!-- View: Sales (Penawaran) -->
         <div id="view-sales" class="view">
-             <div class="data-section">
+            <div class="data-section">
                 <div class="section-header">
                     <h3>Penawaran & Sampel (Flow 1)</h3>
-                    <button class="btn" id="btn-add-penawaran" style="background: var(--secondary);"><i class="fa-solid fa-plus"></i> Buat Penawaran</button>
+                    <button class="btn" id="btn-add-penawaran" style="background: var(--secondary);"><i
+                            class="fa-solid fa-plus"></i> Buat Penawaran</button>
                 </div>
                 <div class="table-container">
                     <table>
@@ -338,9 +367,12 @@
                 <div class="section-header">
                     <h3>Data Master Bahan Baku & PO (Flow 2)</h3>
                     <div style="display: flex; gap: 10px;">
-                        <button class="btn" id="btn-grn" style="background: var(--success);"><i class="fa-solid fa-box-open"></i> Terima Barang (GRN)</button>
-                        <button class="btn" id="btn-add-stock" style="background: var(--secondary);"><i class="fa-solid fa-plus"></i> Tambah Bahan</button>
-                        <button class="btn" id="btn-import-stock" style="background: var(--info);"><i class="fa-solid fa-file-import"></i> Import Data</button>
+                        <button class="btn" id="btn-grn" style="background: var(--success);"><i
+                                class="fa-solid fa-box-open"></i> Terima Barang (GRN)</button>
+                        <button class="btn" id="btn-add-stock" style="background: var(--secondary);"><i
+                                class="fa-solid fa-plus"></i> Tambah Bahan</button>
+                        <button class="btn" id="btn-import-stock" style="background: var(--info);"><i
+                                class="fa-solid fa-file-import"></i> Import Data</button>
                         <input type="file" id="file-import-stock" accept=".csv, .xlsx" style="display: none;">
                     </div>
                 </div>
@@ -371,7 +403,8 @@
             <div class="data-section">
                 <div class="section-header">
                     <div style="display: flex; gap: 10px;">
-                        <button class="btn" id="btn-add-po-internal"><i class="fa-solid fa-plus"></i> Buat Pengajuan Belanja</button>
+                        <button class="btn" id="btn-add-po-internal"><i class="fa-solid fa-plus"></i> Buat Pengajuan
+                            Belanja</button>
                     </div>
                 </div>
                 <div class="table-container">
@@ -429,7 +462,8 @@
             <div class="data-section">
                 <div class="section-header">
                     <h3>DB Komposisi & PMO Sampel</h3>
-                    <button class="btn" id="btn-add-bom" style="background: var(--accent);"><i class="fa-solid fa-plus"></i> Buat BOM Baru</button>
+                    <button class="btn" id="btn-add-bom" style="background: var(--accent);"><i
+                            class="fa-solid fa-plus"></i> Buat BOM Baru</button>
                 </div>
                 <div class="table-container">
                     <table>
@@ -454,10 +488,11 @@
 
         <!-- View: Produksi -->
         <div id="view-produksi" class="view">
-             <div class="data-section">
+            <div class="data-section">
                 <div class="section-header">
                     <h3>Jadwal & SPK Produksi (Flow 3)</h3>
-                    <button class="btn" id="btn-run-spk" style="background: var(--secondary);"><i class="fa-solid fa-play"></i> Terbitkan & Selesaikan SPK</button>
+                    <button class="btn" id="btn-run-spk" style="background: var(--secondary);"><i
+                            class="fa-solid fa-play"></i> Terbitkan & Selesaikan SPK</button>
                 </div>
                 <div class="table-container">
                     <table>
@@ -482,7 +517,7 @@
 
         <!-- View: Finance -->
         <div id="view-finance" class="view">
-             <div class="stats-grid">
+            <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-header">
                         <span>Kas Masuk (Hari Ini)</span>
@@ -498,21 +533,22 @@
                     <div class="stat-value">Rp 0</div>
                 </div>
             </div>
-            
+
             <div class="data-section">
                 <div class="section-header">
                     <h3>Petty Cash & Invoicing</h3>
                     <button class="btn" id="btn-add-cash"><i class="fa-solid fa-plus"></i> Mutasi Kas</button>
                 </div>
                 <div class="table-container">
-                     <p style="color: var(--text-muted); text-align: center; padding: 2rem;">Belum ada mutasi kas hari ini.</p>
+                    <p style="color: var(--text-muted); text-align: center; padding: 2rem;">Belum ada mutasi kas hari
+                        ini.</p>
                 </div>
             </div>
         </div>
 
         <!-- View: Admin (User Management) -->
         <div id="view-admin" class="view">
-             <div class="data-section">
+            <div class="data-section">
                 <div class="section-header">
                     <h3>Manajemen Pengguna</h3>
                     <button class="btn" id="btn-add-user"><i class="fa-solid fa-user-plus"></i> Tambah User</button>
@@ -528,7 +564,9 @@
                             </tr>
                         </thead>
                         <tbody id="table-users">
-                            <tr><td colspan="4" style="text-align: center;">Memuat pengguna...</td></tr>
+                            <tr>
+                                <td colspan="4" style="text-align: center;">Memuat pengguna...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -536,7 +574,8 @@
         </div>
 
         <!-- Print Container for PO -->
-        <div id="print-container" class="print-only" style="font-family: Arial, sans-serif; font-size: 12px; color: #000; padding: 20px;">
+        <div id="print-container" class="print-only"
+            style="font-family: Arial, sans-serif; font-size: 12px; color: #000; padding: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
                 <div style="display: flex; gap: 15px; align-items: center;">
                     <img src="logo.png" style="width: 80px; height: 80px; object-fit: contain;">
@@ -548,28 +587,76 @@
                     <p style="margin: 2px 0; font-size: 11px;">BANDUNG-INDONESIA</p>
                 </div>
             </div>
-            
+
             <h2 style="text-align: center; font-size: 18px; margin: 20px 0; letter-spacing: 2px;">PURCHASE ORDER</h2>
 
             <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
                 <div style="width: 50%;">
                     <table style="width: 100%; font-size: 12px; border: none;">
-                        <tr><td style="width: 50px; font-weight: bold; border: none; padding: 2px;">To</td><td style="width: 10px; border: none; padding: 2px;">:</td><td id="print_po_to" style="font-weight: bold; border: none; padding: 2px;">-</td></tr>
-                        <tr><td colspan="3" id="print_po_address" style="border: none; padding: 2px 2px 10px 60px;">-</td></tr>
-                        <tr><td style="font-weight: bold; border: none; padding: 2px;">Attn</td><td style="border: none; padding: 2px;">:</td><td id="print_po_attn" style="border: none; padding: 2px;">-</td></tr>
+                        <tr>
+                            <td style="width: 50px; font-weight: bold; border: none; padding: 2px;">To</td>
+                            <td style="width: 10px; border: none; padding: 2px;">:</td>
+                            <td id="print_po_to" style="font-weight: bold; border: none; padding: 2px;">-</td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" id="print_po_address" style="border: none; padding: 2px 2px 10px 60px;">-
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold; border: none; padding: 2px;">Attn</td>
+                            <td style="border: none; padding: 2px;">:</td>
+                            <td id="print_po_attn" style="border: none; padding: 2px;">-</td>
+                        </tr>
                     </table>
                 </div>
                 <div style="width: 45%;">
                     <table style="width: 100%; font-size: 12px; border: none;">
-                        <tr><td style="width: 120px; border: none; padding: 2px;">No</td><td style="width: 10px; border: none; padding: 2px;">:</td><td id="print_po_no" style="font-weight: bold; background: #cce5ff; border: none; padding: 2px;">-</td></tr>
-                        <tr><td style="border: none; padding: 2px;">Your Enq No</td><td style="border: none; padding: 2px;">:</td><td id="print_po_enq" style="border: none; padding: 2px;">-</td></tr>
-                        <tr><td style="border: none; padding: 2px;">Date</td><td style="border: none; padding: 2px;">:</td><td id="print_po_date" style="font-weight: bold; border: none; padding: 2px;">-</td></tr>
-                        <tr><td style="border: none; padding: 2px;">Revised Date-1</td><td style="border: none; padding: 2px;">:</td><td style="border: none; padding: 2px;">-</td></tr>
-                        <tr><td style="border: none; padding: 2px;">Maker of Brand</td><td style="border: none; padding: 2px;">:</td><td id="print_po_maker" style="border: none; padding: 2px;">-</td></tr>
-                        <tr><td style="border: none; padding: 2px;">Time of Delivery</td><td style="border: none; padding: 2px;">:</td><td id="print_po_delivery" style="border: none; padding: 2px;">-</td></tr>
-                        <tr><td style="border: none; padding: 2px;">Incoterm</td><td style="border: none; padding: 2px;">:</td><td id="print_po_incoterm" style="border: none; padding: 2px;">-</td></tr>
-                        <tr><td style="border: none; padding: 2px;">Term of Payment</td><td style="border: none; padding: 2px;">:</td><td id="print_po_payment" style="border: none; padding: 2px;">-</td></tr>
-                        <tr><td style="border: none; padding: 2px;">Time of Validity</td><td style="border: none; padding: 2px;">:</td><td id="print_po_validity" style="color: blue; border: none; padding: 2px;">-</td></tr>
+                        <tr>
+                            <td style="width: 120px; border: none; padding: 2px;">No</td>
+                            <td style="width: 10px; border: none; padding: 2px;">:</td>
+                            <td id="print_po_no"
+                                style="font-weight: bold; background: #cce5ff; border: none; padding: 2px;">-</td>
+                        </tr>
+                        <tr>
+                            <td style="border: none; padding: 2px;">Your Enq No</td>
+                            <td style="border: none; padding: 2px;">:</td>
+                            <td id="print_po_enq" style="border: none; padding: 2px;">-</td>
+                        </tr>
+                        <tr>
+                            <td style="border: none; padding: 2px;">Date</td>
+                            <td style="border: none; padding: 2px;">:</td>
+                            <td id="print_po_date" style="font-weight: bold; border: none; padding: 2px;">-</td>
+                        </tr>
+                        <tr>
+                            <td style="border: none; padding: 2px;">Revised Date-1</td>
+                            <td style="border: none; padding: 2px;">:</td>
+                            <td style="border: none; padding: 2px;">-</td>
+                        </tr>
+                        <tr>
+                            <td style="border: none; padding: 2px;">Maker of Brand</td>
+                            <td style="border: none; padding: 2px;">:</td>
+                            <td id="print_po_maker" style="border: none; padding: 2px;">-</td>
+                        </tr>
+                        <tr>
+                            <td style="border: none; padding: 2px;">Time of Delivery</td>
+                            <td style="border: none; padding: 2px;">:</td>
+                            <td id="print_po_delivery" style="border: none; padding: 2px;">-</td>
+                        </tr>
+                        <tr>
+                            <td style="border: none; padding: 2px;">Incoterm</td>
+                            <td style="border: none; padding: 2px;">:</td>
+                            <td id="print_po_incoterm" style="border: none; padding: 2px;">-</td>
+                        </tr>
+                        <tr>
+                            <td style="border: none; padding: 2px;">Term of Payment</td>
+                            <td style="border: none; padding: 2px;">:</td>
+                            <td id="print_po_payment" style="border: none; padding: 2px;">-</td>
+                        </tr>
+                        <tr>
+                            <td style="border: none; padding: 2px;">Time of Validity</td>
+                            <td style="border: none; padding: 2px;">:</td>
+                            <td id="print_po_validity" style="color: blue; border: none; padding: 2px;">-</td>
+                        </tr>
                     </table>
                 </div>
             </div>
@@ -580,7 +667,8 @@
                         <th style="border: 1px solid #000; padding: 5px; width: 30px; text-align: center;">No</th>
                         <th style="border: 1px solid #000; padding: 5px; text-align: center;">Part Number</th>
                         <th style="border: 1px solid #000; padding: 5px; text-align: center;">Part Name</th>
-                        <th style="border: 1px solid #000; padding: 5px; text-align: center; width: 80px;">MOQ / PCS</th>
+                        <th style="border: 1px solid #000; padding: 5px; text-align: center; width: 80px;">MOQ / PCS
+                        </th>
                         <th style="border: 1px solid #000; padding: 5px; text-align: center;">Unit Price IDR</th>
                         <th style="border: 1px solid #000; padding: 5px; text-align: center;">Subtotal IDR</th>
                     </tr>
@@ -593,32 +681,34 @@
             <div style="margin-top: 10px;">
                 <p style="margin: 0; font-weight: bold;">Remarks :</p>
                 <div id="print_po_remarks" style="margin-left: 10px; font-size: 11px; white-space: pre-wrap;">
-1. Price is not include VAT (PPN) 11%
-2. Exchange Rate is base on Bank Indonesia Middle Rate (TTM) average of the last quarter
-   Or following customer exchange rate
-   Price will be review every 3 months
-3. Initial Cost
-   - Plastic Tray & Returnable Box as on quotation
-4. Brief of the projects:
-   End User Customer : -
-   Product : -
-   Forecast :
-   SOP : TBC
-   1st PP : TBC
-   Life Time : TBC
-5. PP Price will discuss separately
-6. For detail please refer to cost breakdown
-7. Bank Name                  : -
-8. Name of beneficiary bank   : PT Orion Karya Sejahtera
-9. A/C NO. OF BENEFICIARY     : -
-10. Payment In Advance
+                    1. Price is not include VAT (PPN) 11%
+                    2. Exchange Rate is base on Bank Indonesia Middle Rate (TTM) average of the last quarter
+                    Or following customer exchange rate
+                    Price will be review every 3 months
+                    3. Initial Cost
+                    - Plastic Tray & Returnable Box as on quotation
+                    4. Brief of the projects:
+                    End User Customer : -
+                    Product : -
+                    Forecast :
+                    SOP : TBC
+                    1st PP : TBC
+                    Life Time : TBC
+                    5. PP Price will discuss separately
+                    6. For detail please refer to cost breakdown
+                    7. Bank Name : -
+                    8. Name of beneficiary bank : PT Orion Karya Sejahtera
+                    9. A/C NO. OF BENEFICIARY : -
+                    10. Payment In Advance
                 </div>
             </div>
 
             <div style="margin-top: 50px; display: flex; justify-content: space-between;">
                 <div style="text-align: center; width: 200px;">
-                    <img src="logo.png" style="width: 60px; height: 60px; object-fit: contain; margin-bottom: 5px; border-radius: 50%;">
-                    <p style="margin: 0; text-decoration: underline; font-weight: bold;" id="print_po_pemohon">Von Von</p>
+                    <img src="logo.png"
+                        style="width: 60px; height: 60px; object-fit: contain; margin-bottom: 5px; border-radius: 50%;">
+                    <p style="margin: 0; text-decoration: underline; font-weight: bold;" id="print_po_pemohon">Von Von
+                    </p>
                     <p style="margin: 0;">PT Orion Karya Sejahtera</p>
                 </div>
                 <div style="width: 300px; font-size: 11px;">
@@ -635,12 +725,14 @@
             <div class="login-box" style="max-width: 720px; width: 95vw; max-height: 90vh; overflow-y: auto;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
                     <h2 style="margin:0;">📋 Pengajuan Belanja Baru</h2>
-                    <button type="button" id="btn-close-po-modal" style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;">✕</button>
+                    <button type="button" id="btn-close-po-modal"
+                        style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;">✕</button>
                 </div>
 
                 <form id="po-form">
                     <!-- Info Pemohon (otomatis) -->
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem; padding:1rem; background:rgba(255,255,255,0.04); border-radius:10px; border:1px solid var(--glass-border);">
+                    <div
+                        style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem; padding:1rem; background:rgba(255,255,255,0.04); border-radius:10px; border:1px solid var(--glass-border);">
                         <div>
                             <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">PEMOHON</div>
                             <div id="po-info-pemohon" style="font-weight:600;">-</div>
@@ -689,9 +781,11 @@
 
                     <!-- Tabel Multi-Item -->
                     <div style="margin-bottom:1rem;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
                             <label style="font-weight:600;">Daftar Barang yang Dibeli</label>
-                            <button type="button" id="btn-add-po-item" class="btn" style="padding:0.4rem 0.8rem; font-size:0.8rem;">
+                            <button type="button" id="btn-add-po-item" class="btn"
+                                style="padding:0.4rem 0.8rem; font-size:0.8rem;">
                                 <i class="fa-solid fa-plus"></i> Tambah Item
                             </button>
                         </div>
@@ -699,33 +793,52 @@
                             <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
                                 <thead>
                                     <tr style="background:rgba(255,255,255,0.06);">
-                                        <th style="padding:0.5rem; text-align:left; border-bottom:1px solid var(--glass-border);">Nama Barang</th>
-                                        <th style="padding:0.5rem; text-align:left; border-bottom:1px solid var(--glass-border); width:100px;">Kode</th>
-                                        <th style="padding:0.5rem; text-align:left; border-bottom:1px solid var(--glass-border); width:120px;">Harga Satuan</th>
-                                        <th style="padding:0.5rem; text-align:left; border-bottom:1px solid var(--glass-border); width:80px;">Qty</th>
-                                        <th style="padding:0.5rem; text-align:left; border-bottom:1px solid var(--glass-border); width:90px;">Satuan</th>
-                                        <th style="padding:0.5rem; text-align:right; border-bottom:1px solid var(--glass-border); width:120px;">Subtotal</th>
-                                        <th style="padding:0.5rem; width:36px; border-bottom:1px solid var(--glass-border);"></th>
+                                        <th
+                                            style="padding:0.5rem; text-align:left; border-bottom:1px solid var(--glass-border);">
+                                            Nama Barang</th>
+                                        <th
+                                            style="padding:0.5rem; text-align:left; border-bottom:1px solid var(--glass-border); width:100px;">
+                                            Kode</th>
+                                        <th
+                                            style="padding:0.5rem; text-align:left; border-bottom:1px solid var(--glass-border); width:120px;">
+                                            Harga Satuan</th>
+                                        <th
+                                            style="padding:0.5rem; text-align:left; border-bottom:1px solid var(--glass-border); width:80px;">
+                                            Qty</th>
+                                        <th
+                                            style="padding:0.5rem; text-align:left; border-bottom:1px solid var(--glass-border); width:90px;">
+                                            Satuan</th>
+                                        <th
+                                            style="padding:0.5rem; text-align:right; border-bottom:1px solid var(--glass-border); width:120px;">
+                                            Subtotal</th>
+                                        <th
+                                            style="padding:0.5rem; width:36px; border-bottom:1px solid var(--glass-border);">
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody id="po-items-tbody"></tbody>
                             </table>
                         </div>
-                        <div style="text-align:right; padding:0.75rem 0; border-top:2px solid var(--primary); margin-top:0.5rem;">
+                        <div
+                            style="text-align:right; padding:0.75rem 0; border-top:2px solid var(--primary); margin-top:0.5rem;">
                             <span style="color:var(--text-muted); font-size:0.85rem;">TOTAL ESTIMASI: </span>
-                            <span id="po-total-display" style="font-size:1.25rem; font-weight:700; color:var(--primary);">Rp 0</span>
+                            <span id="po-total-display"
+                                style="font-size:1.25rem; font-weight:700; color:var(--primary);">Rp 0</span>
                         </div>
                     </div>
 
                     <!-- Catatan -->
                     <div class="input-group" style="margin-bottom:1.5rem;">
                         <label>Catatan / Keterangan (opsional)</label>
-                        <textarea id="po_catatan" rows="2" placeholder="Contoh: Untuk kebutuhan produksi bulan ini..." style="width:100%; padding:0.75rem; border-radius:8px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.05); color:white; resize:vertical; font-family:inherit;"></textarea>
+                        <textarea id="po_catatan" rows="2" placeholder="Contoh: Untuk kebutuhan produksi bulan ini..."
+                            style="width:100%; padding:0.75rem; border-radius:8px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.05); color:white; resize:vertical; font-family:inherit;"></textarea>
                     </div>
 
                     <div style="display:flex; gap:10px; margin-top:0.5rem;">
-                        <button type="button" class="btn" id="btn-close-po-modal-footer" style="flex:1; background:var(--bg-glass); justify-content:center;">Batal</button>
-                        <button type="submit" class="btn" style="flex:2; justify-content:center;"><i class="fa-solid fa-paper-plane"></i> Ajukan Belanja</button>
+                        <button type="button" class="btn" id="btn-close-po-modal-footer"
+                            style="flex:1; background:var(--bg-glass); justify-content:center;">Batal</button>
+                        <button type="submit" class="btn" style="flex:2; justify-content:center;"><i
+                                class="fa-solid fa-paper-plane"></i> Ajukan Belanja</button>
                     </div>
                 </form>
             </div>
@@ -736,7 +849,8 @@
             <div class="login-box" style="max-width:680px; width:95vw; max-height:90vh; overflow-y:auto;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
                     <h2 style="margin:0;" id="po-detail-title">Detail Pengajuan Belanja</h2>
-                    <button type="button" id="btn-close-po-detail" style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;">✕</button>
+                    <button type="button" id="btn-close-po-detail"
+                        style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;">✕</button>
                 </div>
                 <div id="po-detail-content"></div>
             </div>
@@ -762,7 +876,8 @@
                     </div>
                     <div class="input-group">
                         <label>Role</label>
-                        <select id="u_role" style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
+                        <select id="u_role"
+                            style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
                             <option value="Admin" style="color: #000;">Admin</option>
                             <option value="Marketing" style="color: #000;">Marketing</option>
                             <option value="Finance / Accounting" style="color: #000;">Finance / Accounting</option>
@@ -772,9 +887,10 @@
                             <option value="Management" style="color: #000;">Management</option>
                         </select>
                     </div>
-                    
+
                     <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
-                        <button type="button" class="btn" id="btn-close-user" style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                        <button type="button" class="btn" id="btn-close-user"
+                            style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
                         <button type="submit" class="btn" style="flex: 1; justify-content: center;">Simpan</button>
                     </div>
                 </form>
@@ -787,7 +903,7 @@
                 <h2 id="modal-title" style="margin-bottom: 1.5rem;">Form Data</h2>
                 <form id="data-form">
                     <input type="hidden" id="f_action" value="save_stock">
-                    
+
                     <div class="input-group">
                         <label>Kode Material</label>
                         <input type="text" id="f_kode" required placeholder="Contoh: RM001">
@@ -818,9 +934,10 @@
                         <label>Spesifikasi</label>
                         <input type="text" id="f_spesifikasi" placeholder="Spesifikasi / Keterangan (Opsional)">
                     </div>
-                    
+
                     <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
-                        <button type="button" class="btn" id="btn-close-modal" style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                        <button type="button" class="btn" id="btn-close-modal"
+                            style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
                         <button type="submit" class="btn" style="flex: 1; justify-content: center;">Simpan</button>
                     </div>
                 </form>
@@ -840,7 +957,9 @@
                     </div>
                     <div class="input-group">
                         <label>Alamat Perusahaan</label>
-                        <textarea id="set_alamat" rows="3" placeholder="Jl. Sudirman No 1..." style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);" required></textarea>
+                        <textarea id="set_alamat" rows="3" placeholder="Jl. Sudirman No 1..."
+                            style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);"
+                            required></textarea>
                     </div>
                     <div class="input-group">
                         <label>Nomor Telepon / Kontak</label>
@@ -858,7 +977,8 @@
                 <button class="btn admin-only" id="btn-add-coa"><i class="fa-solid fa-plus"></i> Tambah COA</button>
             </div>
             <div class="data-table-container" style="padding: 20px; max-width: 800px;">
-                <div id="coaListGroup" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
+                <div id="coaListGroup"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
                     <!-- List COA -->
                 </div>
             </div>
@@ -868,19 +988,29 @@
         <div id="view-approval" class="view">
             <div class="data-section" style="margin-bottom: 2rem;">
 
-                <div style="display: flex; gap: 10px; margin-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; overflow-x: auto;">
-                    <button id="btn-tab-diagram" class="btn" style="background: var(--primary); white-space: nowrap;"><i class="fa-solid fa-diagram-project"></i> Diagram Struktur</button>
-                    <button id="btn-tab-flow" class="btn admin-only" style="background: var(--bg-glass); display: none; white-space: nowrap;"><i class="fa-solid fa-sliders"></i> Pengaturan Rute</button>
-                    <button id="btn-tab-jabatan" class="btn admin-only" style="background: var(--bg-glass); display: none; white-space: nowrap;"><i class="fa-solid fa-users-gear"></i> Daftar Jabatan</button>
+                <div
+                    style="display: flex; gap: 10px; margin-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; overflow-x: auto;">
+                    <button id="btn-tab-diagram" class="btn" style="background: var(--primary); white-space: nowrap;"><i
+                            class="fa-solid fa-diagram-project"></i> Diagram Struktur</button>
+                    <button id="btn-tab-flow" class="btn admin-only"
+                        style="background: var(--bg-glass); display: none; white-space: nowrap;"><i
+                            class="fa-solid fa-sliders"></i> Pengaturan Rute</button>
+                    <button id="btn-tab-jabatan" class="btn admin-only"
+                        style="background: var(--bg-glass); display: none; white-space: nowrap;"><i
+                            class="fa-solid fa-users-gear"></i> Daftar Jabatan</button>
                 </div>
 
                 <!-- Tab Diagram -->
                 <div id="tab-diagram">
-                    <div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--primary); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <div
+                        style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--primary); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
                         <strong>Penjelasan Diagram:</strong><br>
-                        <span style="color: var(--text-muted); font-size: 0.9rem;">Diagram di bawah ini menggambarkan hierarki dan urutan persetujuan. Panah (&#8594;) menunjukkan arah eskalasi pengajuan (Rute biru menandakan rute personal Anda).</span>
+                        <span style="color: var(--text-muted); font-size: 0.9rem;">Diagram di bawah ini menggambarkan
+                            hierarki dan urutan persetujuan. Panah (&#8594;) menunjukkan arah eskalasi pengajuan (Rute
+                            biru menandakan rute personal Anda).</span>
                     </div>
-                    <div id="mermaidContainer" style="overflow: auto; min-height: 50vh; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid var(--glass-border); padding: 20px; text-align: center;">
+                    <div id="mermaidContainer"
+                        style="overflow: auto; min-height: 50vh; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid var(--glass-border); padding: 20px; text-align: center;">
                         <div style="color: var(--text-muted); padding-top: 10vh;">Memuat diagram...</div>
                     </div>
                 </div>
@@ -890,9 +1020,12 @@
                     <div style="display: flex; gap: 20px; flex-wrap: wrap;">
                         <!-- List Tipe Pengajuan -->
                         <div style="flex: 1; min-width: 250px; max-width: 350px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                                 <h3>Tipe Pengajuan</h3>
-                                <button class="btn admin-only" id="btn-add-kategori" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: none;"><i class="fa-solid fa-plus"></i> Baru</button>
+                                <button class="btn admin-only" id="btn-add-kategori"
+                                    style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: none;"><i
+                                        class="fa-solid fa-plus"></i> Baru</button>
                             </div>
                             <div id="kategoriListGroup" style="display: flex; flex-direction: column; gap: 8px;">
                                 <!-- Item Kategori -->
@@ -900,13 +1033,17 @@
                         </div>
 
                         <!-- Builder Area -->
-                        <div style="flex: 2; min-width: 300px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px;">
-                            <div id="flowBuilderEmpty" style="height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+                        <div
+                            style="flex: 2; min-width: 300px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px;">
+                            <div id="flowBuilderEmpty"
+                                style="height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
                                 <span>Pilih tipe pengajuan di sebelah kiri untuk mengatur rutenya.</span>
                             </div>
                             <div id="flowBuilderActive" style="display: none;">
-                                <h3 style="margin-bottom: 20px;">Rute Approval: <span id="activeKategoriTitle" style="color: var(--primary);"></span></h3>
-                                <div id="flowBuilderCards" style="display: flex; flex-wrap: wrap; align-items: center; gap: 15px;">
+                                <h3 style="margin-bottom: 20px;">Rute Approval: <span id="activeKategoriTitle"
+                                        style="color: var(--primary);"></span></h3>
+                                <div id="flowBuilderCards"
+                                    style="display: flex; flex-wrap: wrap; align-items: center; gap: 15px;">
                                     <!-- Cards diinjeksi via JS -->
                                 </div>
                             </div>
@@ -916,12 +1053,16 @@
 
                 <!-- Tab Daftar Jabatan -->
                 <div id="tab-jabatan" style="display: none;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                         <h3>Daftar Jabatan Perusahaan</h3>
-                        <button class="btn admin-only" id="btn-add-jabatan" style="display: none;"><i class="fa-solid fa-plus"></i> Tambah Jabatan</button>
+                        <button class="btn admin-only" id="btn-add-jabatan" style="display: none;"><i
+                                class="fa-solid fa-plus"></i> Tambah Jabatan</button>
                     </div>
-                    <div style="background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px;">
-                        <div id="masterJabatanList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
+                    <div
+                        style="background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px;">
+                        <div id="masterJabatanList"
+                            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
                             <!-- List Jabatan Master dari JS -->
                         </div>
                     </div>
@@ -937,25 +1078,32 @@
                     <input type="hidden" id="p_no_penawaran">
                     <div class="input-group">
                         <label>Customer</label>
-                        <input type="text" id="p_customer" list="customer-list" required placeholder="Nama Customer / Pilih dari History">
+                        <input type="text" id="p_customer" list="customer-list" required
+                            placeholder="Nama Customer / Pilih dari History">
                     </div>
-                    <div class="input-group" style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-top: 15px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div class="input-group"
+                        style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-top: 15px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                             <label style="color: var(--warning);">Rincian Item Penawaran</label>
-                            <button type="button" class="btn" id="btn-add-p-item" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;"><i class="fa-solid fa-plus"></i> Tambah Item</button>
+                            <button type="button" class="btn" id="btn-add-p-item"
+                                style="padding: 0.4rem 0.8rem; font-size: 0.8rem;"><i class="fa-solid fa-plus"></i>
+                                Tambah Item</button>
                         </div>
                         <div id="p-items-container">
                             <!-- Items will be injected here -->
                         </div>
-                        <div style="text-align: right; margin-top: 10px; font-weight: bold; color: var(--text-main); font-size: 1.1rem;">
+                        <div
+                            style="text-align: right; margin-top: 10px; font-weight: bold; color: var(--text-main); font-size: 1.1rem;">
                             Total Harga: Rp <span id="p_total_harga_display">0</span>
                         </div>
                         <input type="hidden" id="p_total_harga" value="0">
                     </div>
-                    
+
                     <div class="input-group" style="margin-top: 15px;">
                         <label>Narasi / Deskripsi / Catatan Tambahan</label>
-                        <textarea id="p_narasi" rows="4" placeholder="Misal: Harga sudah termasuk ongkos kirim..." style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);"></textarea>
+                        <textarea id="p_narasi" rows="4" placeholder="Misal: Harga sudah termasuk ongkos kirim..."
+                            style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);"></textarea>
                     </div>
                     <div class="input-group">
                         <label>Down Payment (DP)</label>
@@ -963,7 +1111,8 @@
                     </div>
                     <div class="input-group">
                         <label>Status Penawaran</label>
-                        <select id="p_status" style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
+                        <select id="p_status"
+                            style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
                             <option value="Penawaran" style="color: #000;">Penawaran</option>
                             <option value="Rejected" style="color: #000;">Rejected</option>
                             <option value="Approved" style="color: #000;">Approved</option>
@@ -971,9 +1120,10 @@
                             <option value="Finish" style="color: #000;">Finish</option>
                         </select>
                     </div>
-                    
+
                     <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
-                        <button type="button" class="btn" id="btn-close-penawaran" style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                        <button type="button" class="btn" id="btn-close-penawaran"
+                            style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
                         <button type="submit" class="btn" style="flex: 1; justify-content: center;">Simpan</button>
                     </div>
                 </form>
@@ -987,7 +1137,8 @@
                 <form id="produksi-form">
                     <div class="input-group">
                         <label>Pilih Barang Jadi (Dari BOM)</label>
-                        <select id="spk_kode_jadi" required style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
+                        <select id="spk_kode_jadi" required
+                            style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
                             <option value="" disabled selected>-- Pilih Barang Jadi --</option>
                         </select>
                     </div>
@@ -995,27 +1146,34 @@
                         <label>Qty Produksi (Masal)</label>
                         <input type="text" class="number-format" id="spk_qty_jadi" required placeholder="10">
                     </div>
-                    <div class="input-group" style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-top: 15px;">
+                    <div class="input-group"
+                        style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-top: 15px;">
                         <label style="color: var(--warning);">Estimasi Penggunaan Bahan Baku (Auto Deduct)</label>
-                        <div id="spk-bahan-container" style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; font-size: 0.9rem; color: #ccc;">
+                        <div id="spk-bahan-container"
+                            style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; font-size: 0.9rem; color: #ccc;">
                             Pilih barang dan isi Qty untuk melihat estimasi...
                         </div>
                         <div style="text-align: right; margin-top: 10px; font-weight: bold; color: var(--text-main);">
                             Total Estimasi Biaya: Rp <span id="spk_total_biaya">0</span>
                         </div>
                     </div>
-                    
-                    <div class="input-group" style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-top: 15px;">
+
+                    <div class="input-group"
+                        style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-top: 15px;">
                         <label style="color: var(--info);">Otorisasi Pengambilan Gudang</label>
                         <div style="display: flex; gap: 10px;">
-                            <input type="text" id="spk_peminta" required placeholder="Nama Kru Produksi (Peminta)" style="flex: 1;">
-                            <input type="text" id="spk_pemberi" required placeholder="Nama Kru Gudang (Penyetuju)" style="flex: 1;">
+                            <input type="text" id="spk_peminta" required placeholder="Nama Kru Produksi (Peminta)"
+                                style="flex: 1;">
+                            <input type="text" id="spk_pemberi" required placeholder="Nama Kru Gudang (Penyetuju)"
+                                style="flex: 1;">
                         </div>
                     </div>
-                    
+
                     <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
-                        <button type="button" class="btn" id="btn-close-produksi" style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
-                        <button type="submit" class="btn" style="flex: 1; justify-content: center;">Terbitkan SPK</button>
+                        <button type="button" class="btn" id="btn-close-produksi"
+                            style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                        <button type="submit" class="btn" style="flex: 1; justify-content: center;">Terbitkan
+                            SPK</button>
                     </div>
                 </form>
             </div>
@@ -1036,16 +1194,21 @@
                     </div>
                     <div class="input-group">
                         <label>Gambar Produk / Proses (Opsional)</label>
-                        <input type="file" id="bom_gambar" accept="image/*" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 10px; padding: 0.5rem; width: 100%; color: var(--text-main);">
+                        <input type="file" id="bom_gambar" accept="image/*"
+                            style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 10px; padding: 0.5rem; width: 100%; color: var(--text-main);">
                         <div id="bom_gambar_preview" style="margin-top: 10px; display: none;">
                             <img src="" style="max-width: 100%; border-radius: 10px; max-height: 200px;">
                         </div>
                     </div>
-                    
-                    <div class="input-group" style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-top: 15px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+
+                    <div class="input-group"
+                        style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-top: 15px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                             <label style="color: var(--primary); margin: 0;">Rincian Material</label>
-                            <button type="button" class="btn" id="btn-add-material" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;"><i class="fa-solid fa-plus"></i> Tambah</button>
+                            <button type="button" class="btn" id="btn-add-material"
+                                style="padding: 0.3rem 0.6rem; font-size: 0.8rem;"><i class="fa-solid fa-plus"></i>
+                                Tambah</button>
                         </div>
                         <div id="bom-materials-container">
                             <!-- Dynamic materials will go here -->
@@ -1055,18 +1218,23 @@
                         </div>
                     </div>
 
-                    <div class="input-group" style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-top: 15px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div class="input-group"
+                        style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-top: 15px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                             <label style="color: var(--secondary); margin: 0;">Rincian Proses</label>
-                            <button type="button" class="btn" id="btn-add-proses" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: var(--secondary);"><i class="fa-solid fa-plus"></i> Tambah</button>
+                            <button type="button" class="btn" id="btn-add-proses"
+                                style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: var(--secondary);"><i
+                                    class="fa-solid fa-plus"></i> Tambah</button>
                         </div>
                         <div id="bom-proses-container">
                             <!-- Dynamic processes will go here -->
                         </div>
                     </div>
-                    
+
                     <div style="display: flex; gap: 10px; margin-top: 2rem;">
-                        <button type="button" class="btn" id="btn-close-bom" style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                        <button type="button" class="btn" id="btn-close-bom"
+                            style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
                         <button type="submit" class="btn" style="flex: 1; justify-content: center;">Simpan BOM</button>
                     </div>
                 </form>
@@ -1081,14 +1249,18 @@
                     <input type="hidden" id="pay_ref">
                     <input type="hidden" id="pay_customer">
                     <input type="hidden" id="pay_total">
-                    <p style="color: var(--text-muted); margin-bottom: 15px;">Referensi: <strong id="pay_ref_display" style="color: var(--text-main);"></strong></p>
+                    <p style="color: var(--text-muted); margin-bottom: 15px;">Referensi: <strong id="pay_ref_display"
+                            style="color: var(--text-main);"></strong></p>
                     <div class="input-group">
                         <label>Nominal Pembayaran (DP/Cicilan/Lunas)</label>
-                        <input type="text" id="pay_nominal" class="number-format" placeholder="Contoh: 5.000.000" required>
+                        <input type="text" id="pay_nominal" class="number-format" placeholder="Contoh: 5.000.000"
+                            required>
                     </div>
                     <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
-                        <button type="button" class="btn" id="btn-close-payment" style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
-                        <button type="submit" class="btn" style="flex: 1; justify-content: center;">Catat Pembayaran</button>
+                        <button type="button" class="btn" id="btn-close-payment"
+                            style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                        <button type="submit" class="btn" style="flex: 1; justify-content: center;">Catat
+                            Pembayaran</button>
                     </div>
                 </form>
             </div>
@@ -1101,11 +1273,14 @@
                     <i class="fa-solid fa-right-from-bracket"></i>
                 </div>
                 <h2 style="margin-bottom: 1rem;">Konfirmasi Logout</h2>
-                <p style="color: var(--text-muted); margin-bottom: 2rem;">Yakin ingin keluar dari aplikasi ERP Orion?</p>
-                
+                <p style="color: var(--text-muted); margin-bottom: 2rem;">Yakin ingin keluar dari aplikasi ERP Orion?
+                </p>
+
                 <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
-                    <button type="button" class="btn" id="btn-cancel-logout" style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
-                    <button type="button" class="btn" id="btn-confirm-logout" style="flex: 1; background: var(--danger); justify-content: center;">Ya, Keluar</button>
+                    <button type="button" class="btn" id="btn-cancel-logout"
+                        style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                    <button type="button" class="btn" id="btn-confirm-logout"
+                        style="flex: 1; background: var(--danger); justify-content: center;">Ya, Keluar</button>
                 </div>
             </div>
         </div>
@@ -1114,10 +1289,12 @@
 
     <!-- Print Container (Hidden from screen) -->
     <div id="print-area">
-        <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
+        <div
+            style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
             <div>
                 <h1 id="print_company_name" style="margin: 0; color: #000; font-size: 1.8rem;">NAMA PERUSAHAAN</h1>
-                <p id="print_company_address" style="margin: 5px 0 0 0; color: #333; font-size: 0.9rem; max-width: 300px;"></p>
+                <p id="print_company_address"
+                    style="margin: 5px 0 0 0; color: #333; font-size: 0.9rem; max-width: 300px;"></p>
                 <p id="print_company_phone" style="margin: 5px 0 0 0; color: #333; font-size: 0.9rem;"></p>
             </div>
             <div style="text-align: right;">
@@ -1149,8 +1326,10 @@
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="3" style="border: 1px solid #000; padding: 8px; text-align: right; font-weight: bold;">Grand Total:</td>
-                    <td style="border: 1px solid #000; padding: 8px; text-align: right; font-weight: bold;" id="print_total"></td>
+                    <td colspan="3" style="border: 1px solid #000; padding: 8px; text-align: right; font-weight: bold;">
+                        Grand Total:</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: right; font-weight: bold;"
+                        id="print_total"></td>
                 </tr>
             </tfoot>
         </table>
@@ -1236,7 +1415,8 @@
                     font-weight: 500;
                     cursor: pointer;
                     transition: all 0.2s;
-                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">
+                " onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+                    onmouseout="this.style.background='rgba(255,255,255,0.06)'">
                     Batal
                 </button>
                 <button id="confirm-dialog-ok" style="
@@ -1251,7 +1431,8 @@
                     cursor: pointer;
                     transition: all 0.2s;
                     box-shadow: 0 4px 15px rgba(239,68,68,0.35);
-                " onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(239,68,68,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 15px rgba(239,68,68,0.35)'">
+                " onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(239,68,68,0.5)'"
+                    onmouseout="this.style.transform='';this.style.boxShadow='0 4px 15px rgba(239,68,68,0.35)'">
                     Ya, Hapus
                 </button>
             </div>
@@ -1259,10 +1440,20 @@
     </div>
     <style>
         @keyframes confirmPop {
-            from { transform: scale(0.85); opacity: 0; }
-            to   { transform: scale(1);    opacity: 1; }
+            from {
+                transform: scale(0.85);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
-        #confirm-dialog-overlay.active { display: flex !important; }
+
+        #confirm-dialog-overlay.active {
+            display: flex !important;
+        }
     </style>
 
     <!-- Lightbox Image Viewer -->
@@ -1280,30 +1471,67 @@
         animation: fadeInLightbox 0.2s ease;
     ">
         <style>
-            @keyframes fadeInLightbox { from { opacity:0; } to { opacity:1; } }
-            @keyframes scaleInLightbox { 
-                0% { opacity:0; transform: scale(0.5) translateY(20px); } 
-                60% { transform: scale(1.05) translateY(0); }
-                100% { opacity:1; transform: scale(1) translateY(0); } 
+            @keyframes fadeInLightbox {
+                from {
+                    opacity: 0;
+                }
+
+                to {
+                    opacity: 1;
+                }
             }
-            @keyframes fadeOutLightbox { from { opacity:1; } to { opacity:0; } }
-            #lightbox-overlay.active { display: flex !important; animation: fadeInLightbox 0.3s ease forwards; }
-            #lightbox-overlay.closing { animation: fadeOutLightbox 0.3s ease forwards; }
+
+            @keyframes scaleInLightbox {
+                0% {
+                    opacity: 0;
+                    transform: scale(0.5) translateY(20px);
+                }
+
+                60% {
+                    transform: scale(1.05) translateY(0);
+                }
+
+                100% {
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                }
+            }
+
+            @keyframes fadeOutLightbox {
+                from {
+                    opacity: 1;
+                }
+
+                to {
+                    opacity: 0;
+                }
+            }
+
+            #lightbox-overlay.active {
+                display: flex !important;
+                animation: fadeInLightbox 0.3s ease forwards;
+            }
+
+            #lightbox-overlay.closing {
+                animation: fadeOutLightbox 0.3s ease forwards;
+            }
+
             #lightbox-img {
                 max-width: 90vw;
                 max-height: 80vh;
                 border-radius: 12px;
-                box-shadow: 0 25px 80px rgba(0,0,0,0.8);
+                box-shadow: 0 25px 80px rgba(0, 0, 0, 0.8);
                 object-fit: contain;
-                animation: scaleInLightbox 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+                animation: scaleInLightbox 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
                 cursor: zoom-out;
             }
+
             #lightbox-close {
                 position: fixed;
                 top: 20px;
                 right: 24px;
-                background: rgba(255,255,255,0.12);
-                border: 1px solid rgba(255,255,255,0.2);
+                background: rgba(255, 255, 255, 0.12);
+                border: 1px solid rgba(255, 255, 255, 0.2);
                 color: #fff;
                 width: 44px;
                 height: 44px;
@@ -1316,18 +1544,24 @@
                 transition: background 0.2s, transform 0.2s;
                 z-index: 100000;
             }
-            #lightbox-close:hover { background: rgba(239,68,68,0.7); transform: scale(1.1); }
+
+            #lightbox-close:hover {
+                background: rgba(239, 68, 68, 0.7);
+                transform: scale(1.1);
+            }
+
             #lightbox-caption {
-                color: rgba(255,255,255,0.7);
+                color: rgba(255, 255, 255, 0.7);
                 font-size: 0.85rem;
                 margin-top: 14px;
                 text-align: center;
                 letter-spacing: 0.02em;
             }
+
             #lightbox-open-new {
                 margin-top: 12px;
-                background: rgba(255,255,255,0.1);
-                border: 1px solid rgba(255,255,255,0.2);
+                background: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
                 color: #fff;
                 padding: 7px 18px;
                 border-radius: 20px;
@@ -1339,7 +1573,10 @@
                 align-items: center;
                 gap: 6px;
             }
-            #lightbox-open-new:hover { background: rgba(255,255,255,0.2); }
+
+            #lightbox-open-new:hover {
+                background: rgba(255, 255, 255, 0.2);
+            }
         </style>
         <button id="lightbox-close" title="Tutup (Esc)"><i class="fa-solid fa-xmark"></i></button>
         <img id="lightbox-img" src="" alt="Gambar">
@@ -1360,7 +1597,8 @@
                     <input type="text" id="jab_name" required placeholder="Contoh: Staff Purchasing">
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
-                    <button type="button" class="btn" id="btn-close-jabatan" style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                    <button type="button" class="btn" id="btn-close-jabatan"
+                        style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
                     <button type="submit" class="btn" style="flex: 1; justify-content: center;">Simpan</button>
                 </div>
             </form>
@@ -1373,13 +1611,16 @@
             <form id="atasan-form">
                 <div class="input-group">
                     <label>Role/Jabatan untuk tahapan ini</label>
-                    <input type="text" id="atasan_input" list="role-datalist" required placeholder="Contoh: Manager Operasional" style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
+                    <input type="text" id="atasan_input" list="role-datalist" required
+                        placeholder="Contoh: Manager Operasional"
+                        style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
                     <datalist id="role-datalist">
                         <!-- Diisi via JS -->
                     </datalist>
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
-                    <button type="button" class="btn" id="btn-close-atasan" style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                    <button type="button" class="btn" id="btn-close-atasan"
+                        style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
                     <button type="submit" class="btn" style="flex: 1; justify-content: center;">Tambahkan</button>
                 </div>
             </form>
@@ -1396,7 +1637,8 @@
                     <input type="text" id="kat_name" required placeholder="Contoh: Pengajuan Lembur">
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
-                    <button type="button" class="btn" id="btn-close-kategori" style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                    <button type="button" class="btn" id="btn-close-kategori"
+                        style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
                     <button type="submit" class="btn" style="flex: 1; justify-content: center;">Simpan</button>
                 </div>
             </form>
@@ -1414,7 +1656,8 @@
                     <input type="text" id="coa_name" required placeholder="Contoh: Biaya Transportasi">
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
-                    <button type="button" class="btn" id="btn-close-coa" style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                    <button type="button" class="btn" id="btn-close-coa"
+                        style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
                     <button type="submit" class="btn" style="flex: 1; justify-content: center;">Simpan</button>
                 </div>
             </form>
@@ -1428,7 +1671,8 @@
             <form id="petty-cash-form">
                 <div class="input-group">
                     <label>Jenis Transaksi</label>
-                    <select id="pc_jenis" required style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
+                    <select id="pc_jenis" required
+                        style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
                         <option value="Keluar">Uang Keluar</option>
                         <option value="Masuk">Uang Masuk</option>
                     </select>
@@ -1443,13 +1687,15 @@
                 </div>
                 <div class="input-group">
                     <label>Kategori COA / Pos Akuntansi</label>
-                    <input type="text" id="pc_coa" list="coa-datalist" required placeholder="Contoh: Biaya Listrik" style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
+                    <input type="text" id="pc_coa" list="coa-datalist" required placeholder="Contoh: Biaya Listrik"
+                        style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
                     <datalist id="coa-datalist">
                         <!-- Diisi via JS -->
                     </datalist>
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
-                    <button type="button" class="btn" id="btn-close-petty-cash" style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                    <button type="button" class="btn" id="btn-close-petty-cash"
+                        style="flex: 1; background: var(--bg-glass); justify-content: center;">Batal</button>
                     <button type="submit" class="btn" style="flex: 1; justify-content: center;">Simpan Mutasi</button>
                 </div>
             </form>
@@ -1476,4 +1722,5 @@
     <script src="js/api.js"></script>
     <script src="js/app.js"></script>
 </body>
+
 </html>
