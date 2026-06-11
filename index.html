@@ -72,7 +72,7 @@
                 <ul class="submenu" id="submenu-produk">
                     <li class="nav-item" data-target="purchasing">
                         <i class="fa-solid fa-cart-shopping"></i>
-                        <span>Purchasing</span>
+                        <span>Bahan Baku</span>
                     </li>
                     <li class="nav-item" data-target="po-internal">
                         <i class="fa-solid fa-clipboard-list"></i>
@@ -192,7 +192,7 @@
             <button class="btn-close-sheet"><i class="fa-solid fa-times"></i></button>
         </div>
         <div class="sheet-content">
-            <div class="sheet-item" data-target="purchasing"><i class="fa-solid fa-cart-shopping"></i> Purchasing</div>
+            <div class="sheet-item" data-target="purchasing"><i class="fa-solid fa-cart-shopping"></i> Bahan Baku</div>
             <div class="sheet-item" data-target="po-internal"><i class="fa-solid fa-clipboard-list"></i> Permintaan
                 Belanja</div>
             <div class="sheet-item" data-target="bom"><i class="fa-solid fa-flask"></i> PMO & BOM Sampel</div>
@@ -364,8 +364,14 @@
         <div id="view-purchasing" class="view">
             <div class="data-section">
                 <div class="section-header">
-                    <h3>Data Master Bahan Baku & PO (Flow 2)</h3>
-                    <div style="display: flex; gap: 10px;">
+                    <!-- <h3>Data Master Bahan Baku & PO (Flow 2)</h3> -->
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input type="text" id="search-bahan-baku" placeholder="Cari material..."
+                            style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main); min-width: 150px;">
+                        <select id="filter-gudang"
+                            style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main); min-width: 150px;">
+                            <option value="">Semua Gudang</option>
+                        </select>
                         <button class="btn" id="btn-grn" style="background: var(--success);"><i
                                 class="fa-solid fa-box-open"></i> Terima Barang (GRN)</button>
                         <button class="btn" id="btn-add-stock" style="background: var(--secondary);"><i
@@ -392,6 +398,17 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                <div class="pagination-controls"
+                    style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                    <div style="font-size: 0.9rem; color: var(--text-muted);" id="pagination-info-bahan-baku">
+                        Menampilkan 0 data</div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn" id="btn-prev-bahan-baku" style="padding: 0.4rem 0.8rem;"><i
+                                class="fa-solid fa-chevron-left"></i> Prev</button>
+                        <button class="btn" id="btn-next-bahan-baku" style="padding: 0.4rem 0.8rem;">Next <i
+                                class="fa-solid fa-chevron-right"></i></button>
+                    </div>
                 </div>
             </div>
         </div>
