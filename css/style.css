@@ -43,6 +43,31 @@ body.light-mode {
   --sidebar-bg: rgba(255, 255, 255, 0.85);
 }
 
+/* Light mode specific overrides */
+body.light-mode .brand h2 {
+  background: linear-gradient(to right, var(--primary), #1e293b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+body.light-mode .top-nav-actions {
+  background: rgba(255, 255, 255, 0.95) !important;
+}
+
+body.light-mode .bottom-nav {
+  background: var(--primary) !important;
+}
+
+body.light-mode .bottom-nav-item {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+body.light-mode .bottom-nav-item.active {
+  color: #ffffff;
+}
+
+
 * {
   margin: 0;
   padding: 0;
