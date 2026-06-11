@@ -416,7 +416,7 @@ function getPOInternal() {
   // Auto-create sheet with correct headers if not exist
   if (!sheet) {
     sheet = ss.insertSheet('DB PO Internal');
-    sheet.appendRow(['No PO', 'Tanggal', 'Pemohon', 'Items', 'Total Estimasi', 'Status', 'Catatan', 'Disetujui Oleh', 'Tanggal Approve']);
+    sheet.appendRow(['No PO', 'Tanggal', 'Pemohon', 'Items', 'Total Estimasi', 'Status', 'Catatan', 'Disetujui Oleh', 'Tanggal Approve', 'Info Tambahan']);
   }
   
   const values = sheet.getDataRange().getDisplayValues();
@@ -445,7 +445,7 @@ function createPOInternal(payload) {
   
   if (!sheet) {
     sheet = ss.insertSheet('DB PO Internal');
-    sheet.appendRow(['No PO', 'Tanggal', 'Pemohon', 'Items', 'Total Estimasi', 'Status', 'Catatan', 'Disetujui Oleh', 'Tanggal Approve']);
+    sheet.appendRow(['No PO', 'Tanggal', 'Pemohon', 'Items', 'Total Estimasi', 'Status', 'Catatan', 'Disetujui Oleh', 'Tanggal Approve', 'Info Tambahan']);
   }
   
   const items = payload.items || [];
@@ -487,6 +487,17 @@ function createPOInternal(payload) {
   const noPO = 'POI-' + Date.now();
   const tanggal = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy HH:mm');
   
+  const infoTambahan = {
+    po_to: payload.po_to || '',
+    po_attn: payload.po_attn || '',
+    po_enq_no: payload.po_enq_no || '',
+    po_maker: payload.po_maker || '',
+    po_delivery: payload.po_delivery || '',
+    po_incoterm: payload.po_incoterm || '',
+    po_payment_term: payload.po_payment_term || '',
+    po_validity: payload.po_validity || ''
+  };
+  
   sheet.appendRow([
     noPO,
     tanggal,
@@ -496,7 +507,8 @@ function createPOInternal(payload) {
     'Menunggu Approval',
     payload.catatan || '',
     '',
-    ''
+    '',
+    JSON.stringify(infoTambahan)
   ]);
   
   return { status: 'success', message: 'Pengajuan belanja berhasil dikirim!', no_po: noPO };

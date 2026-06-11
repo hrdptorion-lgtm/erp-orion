@@ -88,6 +88,7 @@ body::after {
 .sidebar {
   width: var(--sidebar-width);
   height: 100vh;
+  max-height: 100vh;
   background: var(--sidebar-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -106,6 +107,7 @@ body::after {
   margin-bottom: 3rem;
   padding-bottom: 1.5rem;
   border-bottom: 1px solid var(--glass-border);
+  flex-shrink: 0;
 }
 
 .brand-icon {
@@ -131,11 +133,35 @@ body::after {
   -webkit-text-fill-color: transparent;
 }
 
+.nav-links-wrapper {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 5px; /* Prevent scrollbar overlapping content */
+  margin-bottom: 10px;
+}
+
 .nav-links {
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+/* Custom Scrollbar for nav-links-wrapper */
+.nav-links-wrapper::-webkit-scrollbar {
+  width: 4px;
+}
+.nav-links-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+.nav-links-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+.nav-links-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .nav-item {
@@ -218,7 +244,9 @@ body::after {
   justify-content: space-between;
   align-items: center;
   margin: -2rem -3rem 3rem -3rem;
-  padding: 2rem 3rem 1.5rem 3rem;
+  padding: 7px 3rem 0 3rem;
+  height: 97px;
+  box-sizing: border-box;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -686,6 +714,11 @@ tbody tr:hover {
 @keyframes spin { 100% { transform: rotate(360deg); } }
 .spin { animation: spin 1s linear infinite; }
 
+/* Hide global FAB on Desktop */
+#global-fab-wrapper {
+  display: none !important;
+}
+
 @media (max-width: 768px) {
   .sidebar {
     display: none !important;
@@ -741,7 +774,7 @@ tbody tr:hover {
     bottom: 85px;
     right: 20px;
     z-index: 1050;
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     align-items: flex-end;
   }

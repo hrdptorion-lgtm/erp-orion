@@ -882,6 +882,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (item.status === 'Ditolak') { badgeClass = 'badge-danger'; badgeIcon = '❌'; }
 
                 let actionBtns = `<button class="btn btn-detail-po" data-no="${item.no_po}" style="padding:0.35rem 0.7rem; font-size:0.78rem; background:rgba(255,255,255,0.08); margin-right:4px;" title="Lihat Detail"><i class="fa-solid fa-eye"></i></button>`;
+                actionBtns += `<button class="btn btn-print-po" data-item='${JSON.stringify(item).replace(/'/g, "&apos;")}' style="padding:0.35rem 0.7rem; font-size:0.78rem; background:var(--info); margin-right:4px;" title="Print PO"><i class="fa-solid fa-print"></i></button>`;
 
                 if (item.status === 'Menunggu Approval' && isAtasan) {
                     actionBtns += `<button class="btn btn-approve-po" data-no="${item.no_po}" style="padding:0.35rem 0.7rem; font-size:0.78rem; margin-right:4px;" title="Approve"><i class="fa-solid fa-check"></i></button>`;
@@ -911,6 +912,15 @@ document.addEventListener('DOMContentLoaded', () => {
             tbody.querySelectorAll('.btn-detail-po').forEach(btn => {
                 btn.addEventListener('click', () => openPODetail(btn.getAttribute('data-no'), response.data));
             });
+            tbody.querySelectorAll('.btn-print-po').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const itemStr = e.currentTarget.getAttribute('data-item');
+                    if(itemStr) {
+                        const item = JSON.parse(itemStr);
+                        printPOInternal(item);
+                    }
+                });
+            });
             tbody.querySelectorAll('.btn-approve-po').forEach(btn => {
                 btn.addEventListener('click', () => updatePOStatusAction(btn.getAttribute('data-no'), 'Disetujui (Sedang Dibelikan)'));
             });
@@ -924,6 +934,52 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.addEventListener('click', () => deletePOInternal(btn.getAttribute('data-no')));
             });
         }
+    }
+
+    function printPOInternal(item) {
+        let info = {};
+        try {
+            info = typeof item.info_tambahan === 'string' ? JSON.parse(item.info_tambahan) : (item.info_tambahan || {});
+        } catch (e) {}
+
+        document.getElementById('print_po_no').textContent = item.no_po || '-';
+        document.getElementById('print_po_date').textContent = item.tanggal ? item.tanggal.split(' ')[0] : '-';
+        
+        document.getElementById('print_po_to').textContent = info.po_to || '-';
+        document.getElementById('print_po_attn').textContent = info.po_attn || '-';
+        document.getElementById('print_po_enq').textContent = info.po_enq_no || '-';
+        document.getElementById('print_po_maker').textContent = info.po_maker || '-';
+        document.getElementById('print_po_delivery').textContent = info.po_delivery || '-';
+        document.getElementById('print_po_incoterm').textContent = info.po_incoterm || '-';
+        document.getElementById('print_po_payment').textContent = info.po_payment_term || '-';
+        document.getElementById('print_po_validity').textContent = info.po_validity || '-';
+
+        document.getElementById('print_po_pemohon').textContent = item.pemohon || '-';
+        document.getElementById('print_po_ack').textContent = item.disetujui_oleh || '-';
+
+        let items = [];
+        try {
+            items = typeof item.items_parsed === 'object' ? item.items_parsed : JSON.parse(item.items || '[]');
+        } catch (e) {}
+
+        const tbody = document.getElementById('po-table-body');
+        if (tbody) {
+            tbody.innerHTML = '';
+            items.forEach((it, i) => {
+                const sub = (it.qty || 0) * (it.harga || 0);
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="border: 1px solid #000; padding: 5px; text-align: center;">${i + 1}</td>
+                        <td style="border: 1px solid #000; padding: 5px; text-align: center;">${it.kode || '-'}</td>
+                        <td style="border: 1px solid #000; padding: 5px; font-weight: bold;">${it.nama || '-'}</td>
+                        <td style="border: 1px solid #000; padding: 5px; text-align: center;">${it.qty || 0}</td>
+                        <td style="border: 1px solid #000; padding: 5px; text-align: right;">${parseInt(it.harga || 0).toLocaleString('id-ID')}</td>
+                        <td style="border: 1px solid #000; padding: 5px; text-align: right;">${sub.toLocaleString('id-ID')}</td>
+                    </tr>
+                `;
+            });
+        }
+        window.print();
     }
 
     async function deletePOInternal(noPO) {
@@ -1159,6 +1215,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const payload = {
             pemohon: user.nama || user.username || 'System',
+            po_to: document.getElementById('po_to')?.value || '',
+            po_attn: document.getElementById('po_attn')?.value || '',
+            po_enq_no: document.getElementById('po_enq_no')?.value || '',
+            po_maker: document.getElementById('po_maker')?.value || '',
+            po_delivery: document.getElementById('po_delivery')?.value || '',
+            po_incoterm: document.getElementById('po_incoterm')?.value || '',
+            po_payment_term: document.getElementById('po_payment_term')?.value || '',
+            po_validity: document.getElementById('po_validity')?.value || '',
             items,
             catatan: document.getElementById('po_catatan')?.value || ''
         };
