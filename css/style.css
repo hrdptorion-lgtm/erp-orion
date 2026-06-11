@@ -840,6 +840,17 @@ tbody tr:hover {
 }
 
 @media (max-width: 768px) {
+  /* Mobile Performance Optimizations */
+  * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  
+  .data-section, .stat-card, .login-box, .top-nav-actions {
+    background: var(--bg-main) !important;
+    border: 1px solid var(--glass-border) !important;
+  }
+
   body {
     width: 100vw;
     max-width: 100vw;
