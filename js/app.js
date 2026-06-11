@@ -2429,6 +2429,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('u_password').value = '';
         document.getElementById('u_password').required = !data; // required for new user
 
+        const roleSelect = document.getElementById('u_role');
+        if (title === 'Profil Saya') {
+            roleSelect.setAttribute('disabled', 'true');
+        } else {
+            roleSelect.removeAttribute('disabled');
+        }
+
         userModal.classList.add('active');
     }
 
@@ -3184,7 +3191,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (sessionRole) {
-            graphDef += `\n  classDef highlight fill:rgba(59, 130, 246, 0.4),stroke:#3b82f6,stroke-width:2px,color:#fff;\n`;
+            graphDef += `\n  classDef highlight fill:#3b82f666,stroke:#3b82f6,stroke-width:2px,color:#fff;\n`;
             
             allApprovalData._order.forEach(kat => {
                 const pipeline = allApprovalData[kat] || [];
@@ -3216,7 +3223,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         container.innerHTML = `<div class="mermaid">${graphDef}</div>`;
         try {
-            mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+            const renderPromise = mermaid.run ? mermaid.run({ querySelector: '.mermaid' }) : mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+            if (renderPromise && renderPromise.catch) {
+                renderPromise.catch(error => {
+                    console.error('Mermaid render error (promise):', error);
+                    container.innerHTML = '<div style="color:var(--danger); padding-top: 10vh;">Gagal me-render diagram. Ada kesalahan sintaks.</div>';
+                });
+            }
         } catch (error) {
             console.error('Mermaid render error:', error);
             container.innerHTML = '<div style="color:var(--danger); padding-top: 10vh;">Gagal me-render diagram.</div>';
