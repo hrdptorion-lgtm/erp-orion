@@ -1440,7 +1440,7 @@ async function loadPenawaranData() {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                     <td>${item.no_penawaran || '-'}</td>
-                    <td>${item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID') : '-'}</td>
+                    <td>${item.tanggal && !isNaN(new Date(item.tanggal).getTime()) ? new Date(item.tanggal).toLocaleDateString('id-ID') : '-'}</td>
                     <td style="font-weight: 500;">${item.customer}</td>
                     <td>${item.narasi || '-'}</td>
                     <td>Rp ${parseInt(item.total_harga).toLocaleString('id-ID')}</td>
@@ -1449,7 +1449,11 @@ async function loadPenawaranData() {
                     <td style="white-space: nowrap;">
                         <button class="btn btn-print-penawaran" data-item='${JSON.stringify(item)}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: var(--info);" title="Print / Ekspor PDF"><i class="fa-solid fa-print"></i></button>
                         <button class="btn btn-edit-penawaran" data-item='${JSON.stringify(item)}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>
-                        <button class="btn btn-delete-penawaran" data-no="${item.no_penawaran}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger); display: inline-flex;"><i class="fa-solid fa-trash"></i></button>
+                        <button class="btn btn-delete-penawaran" data-no="${item.no_penawaran}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger); display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-trash"></i></button>
+                        ${item.status === 'Approved' ? `
+                            <button class="btn btn-spk-penawaran" data-item='${JSON.stringify(item)}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: var(--success);" title="Lanjut ke SPK Produksi"><i class="fa-solid fa-industry"></i> SPK</button>
+                            <button class="btn btn-po-penawaran" data-item='${JSON.stringify(item)}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: var(--warning);" title="Buat Permintaan Barang (PO Internal) untuk Komponen Kurang"><i class="fa-solid fa-cart-shopping"></i> PR Barang</button>
+                        ` : ''}
                     </td>
                 `;
             tbody.appendChild(tr);
@@ -1517,6 +1521,67 @@ async function loadPenawaranData() {
                     showToast(res.status === 'success' ? `✅ ${res.message}` : `❌ ${res.message}`, res.status === 'success' ? 'success' : 'error', 3000);
                     if (res.status === 'success') loadPenawaranData();
                 }
+            });
+        });
+
+        // Bind SPK
+        document.querySelectorAll('.btn-spk-penawaran').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const item = JSON.parse(e.currentTarget.getAttribute('data-item'));
+                document.getElementById('produksi-form').reset();
+                
+                let partNames = '';
+                try {
+                    const rincian = typeof item.rincian_item === 'string' ? JSON.parse(item.rincian_item) : item.rincian_item;
+                    if(Array.isArray(rincian)) partNames = rincian.map(x => x.part_name || x.nama || '').filter(Boolean).join(', ');
+                } catch(err){}
+                
+                const selectKode = document.getElementById('spk_kode_jadi');
+                if(selectKode) {
+                    const option = document.createElement('option');
+                    option.value = 'Custom';
+                    option.text = partNames || 'Dari Penawaran ' + item.no_penawaran;
+                    selectKode.add(option);
+                    selectKode.value = 'Custom';
+                }
+                
+                const qtyInput = document.getElementById('spk_qty_jadi');
+                if(qtyInput) qtyInput.value = '1';
+                
+                const pemintaInput = document.getElementById('spk_peminta');
+                if(pemintaInput) pemintaInput.value = item.customer;
+
+                document.getElementById('produksi-modal-title').textContent = 'SPK Produksi (Referensi Penawaran: ' + item.no_penawaran + ')';
+                document.getElementById('produksi-modal').classList.add('active');
+            });
+        });
+
+        // Bind PO Internal
+        document.querySelectorAll('.btn-po-penawaran').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const item = JSON.parse(e.currentTarget.getAttribute('data-item'));
+                const poFormEl = document.getElementById('po-form');
+                if(poFormEl) poFormEl.reset();
+                const poItemsTbodyEl = document.getElementById('po-items-tbody');
+                if(poItemsTbodyEl) poItemsTbodyEl.innerHTML = '';
+                addPOItemRow();
+                calculatePOTotal();
+
+                const session = localStorage.getItem('erp_session');
+                const user = session ? JSON.parse(session) : {};
+                const pemohonEl = document.getElementById('po-info-pemohon');
+                if(pemohonEl) pemohonEl.textContent = user.nama || user.username || '-';
+                
+                const tanggalEl = document.getElementById('po-info-tanggal');
+                if(tanggalEl) {
+                    const now = new Date();
+                    tanggalEl.textContent = now.toLocaleString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                }
+
+                const catEl = document.getElementById('po_catatan');
+                if(catEl) catEl.value = `Permintaan Barang Mentah (Komponen Kurang) untuk Penawaran: ${item.no_penawaran} - ${item.customer}`;
+
+                document.getElementById('po-modal').classList.add('active');
             });
         });
 
