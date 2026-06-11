@@ -2378,7 +2378,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td style="font-weight: 500;">${user.username}</td>
-                    <td>${user.nama}</td>
+                    <td>${user.nama_lengkap || user.nama || ''}</td>
                     <td><span class="badge badge-success">${user.role}</span></td>
                     <td>
                         <button class="btn btn-edit-user" data-user='${JSON.stringify(user)}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>
@@ -2406,12 +2406,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         confirmText: 'Ya, Hapus Akun'
                     });
                     if (ok) {
-                        userData = userData.filter(u => u.username !== username);
-                        renderAdminTables();
-                        
                         window.ERPAPI.request('delete_user', { username }).then(res => {
                             showToast(res.status === 'success' ? `✅ ${res.message}` : `❌ ${res.message}`, res.status === 'success' ? 'success' : 'error', 3000);
-                            if (res.status !== 'success') loadAdminData();
+                            loadAdminData();
                         });
                     }
                 });
@@ -2426,7 +2423,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('user-modal-title').textContent = title;
         document.getElementById('u_username').value = data ? data.username : '';
         document.getElementById('u_username').readOnly = !!data;
-        document.getElementById('u_nama').value = data ? data.nama : '';
+        document.getElementById('u_nama').value = data ? (data.nama_lengkap || data.nama || '') : '';
         document.getElementById('u_role').value = data ? data.role : 'Staff Purchasing';
         document.getElementById('u_password').value = '';
         document.getElementById('u_password').required = !data; // required for new user
@@ -2447,27 +2444,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const payload = {
             username: document.getElementById('u_username').value,
             password: document.getElementById('u_password').value,
+            nama_lengkap: document.getElementById('u_nama').value,
             nama: document.getElementById('u_nama').value,
             role: document.getElementById('u_role').value
         };
 
-        const existingIdx = userData.findIndex(u => u.username === payload.username);
-        if (existingIdx !== -1) {
-            userData[existingIdx] = { ...userData[existingIdx], ...payload };
-        } else {
-            userData.push(payload);
-        }
-        
-        renderAdminTables();
         userModal.classList.remove('active');
 
         window.ERPAPI.request('save_user', payload).then(res => {
             if (res.status !== 'success') {
                 showToast(`❌ ${res.message}`, 'error', 3000);
-                loadAdminData();
             } else {
                 showToast(`✅ ${res.message}`, 'success', 3000);
             }
+            loadAdminData();
         });
     });
 
