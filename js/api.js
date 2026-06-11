@@ -52,6 +52,11 @@ class ERPAPI {
                     localStorage.setItem(`erp_cache_${action}`, JSON.stringify(jsonResponse));
                 }
 
+                if (jsonResponse.status === 'error' && jsonResponse.message && jsonResponse.message.includes('Action tidak dikenali')) {
+                    console.warn(`[API] Action ${action} belum di-deploy di server. Menggunakan mock data.`);
+                    return ERPAPI.getMockData(action);
+                }
+
                 return jsonResponse;
             } catch (parseErr) {
                 console.error('[API] Gagal parse response JSON:', parseErr);
@@ -132,9 +137,28 @@ class ERPAPI {
                         rincian_item: [{ nama: 'Jasa Pemasangan', qty: 1, harga: 8000000 }],
                         narasi: 'Termasuk garansi pemasangan 1 bulan.',
                         total_harga: 8000000, dp: 8000000
+                    },
+                    {
+                        no_penawaran: 'PNW-20260603', tanggal: '11/06/2026', customer: 'PT MUTIARA GERHANA ABADI \n Mutiara Gading Timur 2 Blok S3 No. 25 \n RT 007 RW 028 Mustikajaya', status: 'Penawaran',
+                        rincian_item: [],
+                        narasi: '',
+                        total_harga: 0, dp: 0
                     }
                 ]
             };
+        } else if (action === 'get_customers') {
+            return {
+                status: 'success',
+                data: [
+                    { id_customer: 'CUST-001', nama_customer: 'PT Klien Sukses' },
+                    { id_customer: 'CUST-002', nama_customer: 'CV Maju Jaya' },
+                    { id_customer: 'CUST-003', nama_customer: 'PT MUTIARA GERHANA ABADI, Mutiara Gading Timur 2 Blok S3 No. 25, RT 007 RW 028 Mustikajaya' }
+                ]
+            };
+        } else if (action === 'save_customer') {
+            return { status: 'success', message: 'Data Customer berhasil disimpan (Simulasi).' };
+        } else if (action === 'delete_customer') {
+            return { status: 'success', message: 'Data Customer berhasil dihapus (Simulasi).' };
         } else if (action === 'save_penawaran') {
             return { status: 'success', message: 'Data Penawaran berhasil disimpan (Simulasi).' };
         } else if (action === 'delete_penawaran') {
@@ -154,6 +178,17 @@ class ERPAPI {
                 data: [
                     { kode_material: 'RM001', nama_material: 'Material A', stok: 50 },
                     { kode_material: 'RM002', nama_material: 'Material B', stok: 10 }
+                ]
+            };
+        } else if (action === 'get_barang_jadi') {
+            return {
+                status: 'success',
+                data: [
+                    { kode_barang: 'FG001', nama_barang: 'Pintu Besi Minimalis', stok: 15, harga_jual: 1250000, lokasi_gudang: 'Gudang A - Zona Finished Goods' },
+                    { kode_barang: 'FG002', nama_barang: 'Pagar Besi Dorong 3m', stok: 8, harga_jual: 2750000, lokasi_gudang: 'Gudang A - Zona Finished Goods' },
+                    { kode_barang: 'FG003', nama_barang: 'Rak Gudang 5 Tingkat', stok: 12, harga_jual: 1850000, lokasi_gudang: 'Gudang B - Zona Display' },
+                    { kode_barang: 'FG004', nama_barang: 'Jendela Aluminium Sliding', stok: 20, harga_jual: 950000, lokasi_gudang: 'Gudang B - Zona Display' },
+                    { kode_barang: 'FG005', nama_barang: 'Teralis Jendela Custom', stok: 25, harga_jual: 850000, lokasi_gudang: 'Gudang C - Zona Siap Kirim' }
                 ]
             };
         } else if (action === 'get_bom') {

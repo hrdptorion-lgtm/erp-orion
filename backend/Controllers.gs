@@ -691,11 +691,151 @@ function getPenawaran() {
   return { status: 'success', data: data };
 }
 
+function getCustomers() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Customer');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Customer tidak ditemukan.' };
+  
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length <= 1) return { status: 'success', data: [] };
+  
+  const headers = values[0];
+  const data = values.slice(1).map(row => {
+    let obj = {};
+    headers.forEach((h, i) => {
+      obj[String(h).toLowerCase().replace(/ /g, '_')] = row[i];
+    });
+    return obj;
+  });
+  
+  return { status: 'success', data: data };
+}
+
+function saveCustomer(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Customer');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Customer tidak ditemukan.' };
+
+  const values = sheet.getDataRange().getDisplayValues();
+  if (payload.id) {
+    // Edit
+    for (let i = 1; i < values.length; i++) {
+      if (String(values[i][0]).trim() === String(payload.id).trim()) {
+        sheet.getRange(i + 1, 2).setValue(payload.nama || '');
+        sheet.getRange(i + 1, 3).setValue(payload.alamat || '');
+        return { status: 'success', message: 'Customer berhasil diupdate.' };
+      }
+    }
+  }
+
+  // Tambah baru
+  const newCustId = 'CUST-' + Date.now();
+  sheet.appendRow([newCustId, payload.nama || '', payload.alamat || '', new Date().toLocaleDateString('id-ID')]);
+  return { status: 'success', message: 'Customer baru berhasil ditambahkan.' };
+}
+
+function deleteCustomer(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Customer');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Customer tidak ditemukan.' };
+  
+  const values = sheet.getDataRange().getDisplayValues();
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][0]).trim() === String(payload.id).trim()) {
+      sheet.deleteRow(i + 1);
+      return { status: 'success', message: 'Customer berhasil dihapus.' };
+    }
+  }
+  return { status: 'error', message: 'Customer tidak ditemukan.' };
+}
+
 function savePenawaran(payload) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Penawaran');
   if (!sheet) return { status: 'error', message: 'Sheet DB Penawaran tidak ditemukan.' };
-  const noDoc = 'PEN-' + Date.now();
-  sheet.appendRow([noDoc, payload.customer || '', payload.item || '', payload.qty || 0, payload.harga || 0, new Date().toLocaleDateString('id-ID'), 'Draft']);
+  
+  const values = sheet.getDataRange().getDisplayValues();
+
+  // Generate OKS-MM-YYYY-XXX No Penawaran
+  let noDoc = payload.no_penawaran;
+  if (!noDoc) {
+    const today = new Date();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    const prefix = `OKS-${mm}-${yyyy}-`;
+    
+    let maxCounter = 0;
+    for (let i = 1; i < values.length; i++) {
+      const existingNo = String(values[i][0]).trim();
+      if (existingNo.startsWith(prefix)) {
+        const parts = existingNo.split('-');
+        if (parts.length === 4) {
+          const counter = parseInt(parts[3], 10);
+          if (!isNaN(counter) && counter > maxCounter) {
+            maxCounter = counter;
+          }
+        }
+      }
+    }
+    const newCounter = String(maxCounter + 1).padStart(3, '0');
+    noDoc = `${prefix}${newCounter}`;
+  }
+
+  // Logic untuk mencatat Customer baru
+  if (payload.customer && payload.customer.trim() !== '') {
+    const custSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Customer');
+    if (custSheet) {
+      const custValues = custSheet.getDataRange().getDisplayValues();
+      let isExist = false;
+      for (let i = 1; i < custValues.length; i++) {
+        if (String(custValues[i][1]).trim().toLowerCase() === String(payload.customer).trim().toLowerCase()) {
+          isExist = true;
+          break;
+        }
+      }
+      if (!isExist) {
+        const newCustId = 'CUST-' + Date.now();
+        custSheet.appendRow([newCustId, payload.customer.trim(), '-', new Date().toLocaleDateString('id-ID')]);
+      }
+    }
+  }
+
+  let rincianStr = '';
+  if (typeof payload.rincian_item === 'string') {
+      rincianStr = payload.rincian_item;
+  } else if (payload.rincian_item) {
+      rincianStr = JSON.stringify(payload.rincian_item);
+  }
+  
+  let infoStr = '';
+  if (typeof payload.info_tambahan === 'string') {
+      infoStr = payload.info_tambahan;
+  } else if (payload.info_tambahan) {
+      infoStr = JSON.stringify(payload.info_tambahan);
+  }
+
+  // Edit if exists
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][0]).trim() === noDoc) {
+      sheet.getRange(i + 1, 2).setValue(new Date().toLocaleDateString('id-ID'));
+      sheet.getRange(i + 1, 3).setValue(payload.customer || '');
+      sheet.getRange(i + 1, 4).setValue(rincianStr);
+      sheet.getRange(i + 1, 5).setValue(payload.total_harga || 0);
+      sheet.getRange(i + 1, 6).setValue(payload.dp || 0);
+      sheet.getRange(i + 1, 7).setValue(payload.status || 'Penawaran');
+      sheet.getRange(i + 1, 8).setValue(payload.narasi || '');
+      sheet.getRange(i + 1, 9).setValue(infoStr);
+      return { status: 'success', message: 'Penawaran berhasil diupdate.', no_doc: noDoc };
+    }
+  }
+
+  sheet.appendRow([
+    noDoc, 
+    new Date().toLocaleDateString('id-ID'), 
+    payload.customer || '', 
+    rincianStr, 
+    payload.total_harga || 0, 
+    payload.dp || 0, 
+    payload.status || 'Penawaran', 
+    payload.narasi || '',
+    infoStr
+  ]);
   return { status: 'success', message: 'Penawaran berhasil disimpan.', no_doc: noDoc };
 }
 
@@ -1023,14 +1163,20 @@ function saveBOM(payload) {
     prosesFinal = oldRincianProses;
   }
 
-  const rowData = [
-    payload.kode_barang,
-    payload.nama_barang || (rowIndex !== -1 ? values[rowIndex-1][findHeaderIndex('Nama Barang')] : ''),
-    payload.total_biaya || (rowIndex !== -1 ? values[rowIndex-1][findHeaderIndex('Total Biaya Material')] : ''),
-    JSON.stringify(payload.rincian_material) || (rowIndex !== -1 ? values[rowIndex-1][findHeaderIndex('Rincian Material')] : ''),
-    typeof prosesFinal === 'string' ? prosesFinal : JSON.stringify(prosesFinal),
-    finalGambarUrl
-  ];
+  const rincianMaterialStr = (typeof payload.rincian_material === 'string') ? payload.rincian_material : JSON.stringify(payload.rincian_material || []);
+  const rincianProsesStr = typeof prosesFinal === 'string' ? prosesFinal : JSON.stringify(prosesFinal || []);
+  
+  const rowData = [];
+  headers.forEach((h, idx) => {
+    const hLow = String(h).toLowerCase().trim();
+    if (hLow === 'kode barang jadi') rowData[idx] = payload.kode_barang;
+    else if (hLow === 'nama barang') rowData[idx] = payload.nama_barang || (rowIndex !== -1 ? values[rowIndex-1][idx] : '');
+    else if (hLow === 'rincian material') rowData[idx] = rincianMaterialStr || (rowIndex !== -1 ? values[rowIndex-1][idx] : '');
+    else if (hLow === 'total biaya material') rowData[idx] = payload.total_biaya || (rowIndex !== -1 ? values[rowIndex-1][idx] : '');
+    else if (hLow === 'rincian proses') rowData[idx] = rincianProsesStr || (rowIndex !== -1 ? values[rowIndex-1][idx] : '');
+    else if (hLow === 'gambar') rowData[idx] = finalGambarUrl;
+    else rowData[idx] = (rowIndex !== -1 ? values[rowIndex-1][idx] : '');
+  });
 
   if (rowIndex !== -1) {
     sheet.getRange(rowIndex, 1, 1, rowData.length).setValues([rowData]);
@@ -1049,4 +1195,37 @@ function manualAuthDriveApp() {
   } else {
     Logger.log("Tidak ada file di Drive, tetapi otorisasi berhasil.");
   }
+}
+
+// FUNGSI PERBAIKAN DATA BOM (Jalankan sekali saja jika Rincian Material hilang / NaN)
+function fixBOMSwappedData() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB BOM');
+  if (!sheet) return;
+  
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0];
+  
+  const normalize = (value) => String(value || '').trim().toLowerCase();
+  const findHeaderIndex = (headerName) => headers.findIndex(h => normalize(h) === normalize(headerName));
+  const materialIdx = findHeaderIndex('Rincian Material');
+  const totalBiayaIdx = findHeaderIndex('Total Biaya Material');
+  
+  if (materialIdx === -1 || totalBiayaIdx === -1) return;
+  
+  let fixedCount = 0;
+  for (let i = 1; i < values.length; i++) {
+    const matVal = String(values[i][materialIdx]);
+    const biayaVal = String(values[i][totalBiayaIdx]);
+    
+    // Jika biaya berupa JSON string (mengandung '[' atau '{') dan material berupa angka,
+    // berarti datanya tertukar!
+    if ((biayaVal.includes('[') || biayaVal.includes('{')) && !isNaN(parseInt(matVal))) {
+      // Tukar kembali
+      sheet.getRange(i + 1, materialIdx + 1).setValue(biayaVal);
+      sheet.getRange(i + 1, totalBiayaIdx + 1).setValue(matVal);
+      fixedCount++;
+    }
+  }
+  
+  SpreadsheetApp.getUi().alert(`Berhasil memperbaiki ${fixedCount} data BOM yang tertukar!`);
 }

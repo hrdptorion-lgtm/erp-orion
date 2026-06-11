@@ -84,7 +84,7 @@
                     </li>
                     <li class="nav-item" data-target="barang-jadi">
                         <i class="fa-solid fa-boxes-stacked"></i>
-                        <span>Inventori Barang Jadi</span>
+                        <span>Barang Jadi</span>
                     </li>
                     <li class="nav-item" data-target="produksi">
                         <i class="fa-solid fa-industry"></i>
@@ -110,6 +110,10 @@
                     <li class="nav-item admin-only" data-target="coa">
                         <i class="fa-solid fa-file-invoice"></i>
                         <span>Kategori COA</span>
+                    </li>
+                    <li class="nav-item admin-only" data-target="customer">
+                        <i class="fa-solid fa-users"></i>
+                        <span>Master Customer</span>
                     </li>
                     <li class="nav-item admin-only" data-target="approval">
                         <i class="fa-solid fa-diagram-project"></i>
@@ -597,10 +601,9 @@
                     <img src="logo.png" style="width: 80px; height: 80px; object-fit: contain;">
                 </div>
                 <div style="text-align: right; max-width: 300px;">
-                    <h3 style="margin: 0; font-size: 14px;">PT. ORION KARYA SEJAHTERA</h3>
-                    <p style="margin: 2px 0; font-size: 11px;">Jl. Kopo Bihbul No.45, Sayati</p>
-                    <p style="margin: 2px 0; font-size: 11px;">Kec. Margahayu, Kabupaten Bandung, Jawa Barat 40228</p>
-                    <p style="margin: 2px 0; font-size: 11px;">BANDUNG-INDONESIA</p>
+                    <h3 id="print_po_company_name" style="margin: 0; font-size: 14px; text-transform: uppercase;">NAMA PERUSAHAAN</h3>
+                    <p id="print_po_company_address" style="margin: 2px 0; font-size: 11px; white-space: pre-wrap;"></p>
+                    <p id="print_po_company_phone" style="margin: 2px 0; font-size: 11px;"></p>
                 </div>
             </div>
 
@@ -962,9 +965,6 @@
 
         <!-- View: Profil Perusahaan -->
         <div id="view-profil" class="view">
-            <div class="header-actions">
-                <h2>Profil Perusahaan</h2>
-            </div>
             <div class="data-table-container" style="padding: 20px; max-width: 600px;">
                 <form id="settings-form">
                     <div class="input-group">
@@ -1086,9 +1086,41 @@
             </div>
         </div>
 
+        <!-- View: Master Customer -->
+        <div id="view-customer" class="view">
+            <div class="data-section">
+                <div class="section-header">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input type="text" id="search-customer" placeholder="Cari nama atau ID..."
+                            style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main); min-width: 200px;">
+                        <button class="btn admin-only" id="btn-add-customer"><i class="fa-solid fa-plus"></i> Tambah
+                            Customer</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID Customer</th>
+                                <th>Nama Customer</th>
+                                <th>Alamat / Keterangan</th>
+                                <th>Tanggal Daftar</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-customer">
+                            <tr>
+                                <td colspan="5" style="text-align: center;">Memuat data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- Penawaran Modal Overlay -->
         <div id="penawaran-modal" class="login-overlay">
-            <div class="login-box" style="max-width: 500px;">
+            <div class="login-box" style="max-width: 800px;">
                 <h2 id="penawaran-modal-title" style="margin-bottom: 1.5rem;">Form Penawaran</h2>
                 <form id="penawaran-form">
                     <input type="hidden" id="p_no_penawaran">
@@ -1096,6 +1128,40 @@
                         <label>Customer</label>
                         <input type="text" id="p_customer" list="customer-list" required
                             placeholder="Nama Customer / Pilih dari History">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                        <div class="input-group">
+                            <label>Attn</label>
+                            <input type="text" id="p_attn" placeholder="Nama PIC">
+                        </div>
+                        <div class="input-group">
+                            <label>Your Enq No</label>
+                            <input type="text" id="p_enq_no" placeholder="No Enquiry">
+                        </div>
+                        <div class="input-group">
+                            <label>Revised Date-1</label>
+                            <input type="text" id="p_rev_date" placeholder="Misal: 10-Jun-26">
+                        </div>
+                        <div class="input-group">
+                            <label>Maker of Brand</label>
+                            <input type="text" id="p_maker" placeholder="Brand">
+                        </div>
+                        <div class="input-group">
+                            <label>Time of Delivery</label>
+                            <input type="text" id="p_delivery" placeholder="1-2 Month After PO">
+                        </div>
+                        <div class="input-group">
+                            <label>Incoterm</label>
+                            <input type="text" id="p_incoterm" placeholder="Franco">
+                        </div>
+                        <div class="input-group">
+                            <label>Term of Payment</label>
+                            <input type="text" id="p_payment" placeholder="Net 30 Days">
+                        </div>
+                        <div class="input-group">
+                            <label>Time of Validity</label>
+                            <input type="text" id="p_validity" placeholder="Until Further Revision">
+                        </div>
                     </div>
                     <div class="input-group"
                         style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-top: 15px;">
@@ -1304,69 +1370,143 @@
     </main>
 
     <!-- Print Container (Hidden from screen) -->
-    <div id="print-area">
-        <div
-            style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
-            <div>
-                <h1 id="print_company_name" style="margin: 0; color: #000; font-size: 1.8rem;">NAMA PERUSAHAAN</h1>
-                <p id="print_company_address"
-                    style="margin: 5px 0 0 0; color: #333; font-size: 0.9rem; max-width: 300px;"></p>
-                <p id="print_company_phone" style="margin: 5px 0 0 0; color: #333; font-size: 0.9rem;"></p>
+    <div id="print-area" class="print-only" style="font-family: Arial, sans-serif; font-size: 11px; color: #000; padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <img src="logo.png" style="width: 100px; height: 100px; object-fit: contain;">
             </div>
-            <div style="text-align: right;">
-                <h2 style="margin: 0; color: #000; font-size: 1.5rem;">SURAT PENAWARAN</h2>
+            <div style="text-align: right; max-width: 350px;">
+                <h3 id="print_company_name" style="margin: 0; font-size: 14px; text-transform: uppercase;">PT. ORION KARYA SEJAHTERA</h3>
+                <p id="print_company_address" style="margin: 2px 0; font-size: 11px; white-space: pre-wrap;"></p>
+                <p id="print_company_phone" style="margin: 2px 0; font-size: 11px;"></p>
             </div>
         </div>
 
-        <table style="width: 100%; margin-top: 10px;">
-            <tr>
-                <td style="width: 60%;"><strong>Customer:</strong> <span id="print_customer"></span></td>
-                <td style="width: 40%; text-align: right;">
-                    <strong>No Referensi:</strong> <span id="print_no"></span><br>
-                    <strong>Tanggal:</strong> <span id="print_tanggal"></span>
-                </td>
-            </tr>
-        </table>
+        <h2 style="text-align: center; font-size: 18px; margin: 20px 0; letter-spacing: 2px;">QUOTATION</h2>
 
-        <table style="width: 100%; margin-top: 30px; border-collapse: collapse; font-size: 0.9rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+            <div style="width: 45%;">
+                <table style="width: 100%; border: none;">
+                    <tr>
+                        <td style="width: 40px; font-weight: bold; border: none; padding: 2px; vertical-align: top;">To</td>
+                        <td style="width: 10px; border: none; padding: 2px; vertical-align: top;">:</td>
+                        <td style="font-weight: bold; border: none; padding: 2px;" id="print_to_customer">-</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="border: none;"></td>
+                        <td id="print_to_address" style="border: none; padding: 2px 2px 10px 2px; white-space: pre-wrap;">-</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: bold; border: none; padding: 2px;">Attn</td>
+                        <td style="border: none; padding: 2px;">:</td>
+                        <td id="print_to_attn" style="border: none; padding: 2px;">-</td>
+                    </tr>
+                </table>
+            </div>
+            <div style="width: 50%;">
+                <table style="width: 100%; border: none;">
+                    <tr>
+                        <td style="width: 120px; border: none; padding: 2px;">No</td>
+                        <td style="width: 10px; border: none; padding: 2px;">:</td>
+                        <td id="print_no" style="font-weight: bold; border: none; padding: 2px; background-color: #b3cde3;">-</td>
+                    </tr>
+                    <tr>
+                        <td style="border: none; padding: 2px;">Your Enq No</td>
+                        <td style="border: none; padding: 2px;">:</td>
+                        <td id="print_enq_no" style="border: none; padding: 2px;">-</td>
+                    </tr>
+                    <tr>
+                        <td style="border: none; padding: 2px;">Date</td>
+                        <td style="border: none; padding: 2px;">:</td>
+                        <td id="print_tanggal" style="font-weight: bold; border: none; padding: 2px;">-</td>
+                    </tr>
+                    <tr>
+                        <td style="border: none; padding: 2px;">Revised Date-1</td>
+                        <td style="border: none; padding: 2px;">:</td>
+                        <td id="print_rev_date" style="border: none; padding: 2px;">-</td>
+                    </tr>
+                    <tr>
+                        <td style="border: none; padding: 2px;">Maker of Brand</td>
+                        <td style="border: none; padding: 2px;">:</td>
+                        <td id="print_maker" style="border: none; padding: 2px;">-</td>
+                    </tr>
+                    <tr>
+                        <td style="border: none; padding: 2px;">Time of Delivery</td>
+                        <td style="border: none; padding: 2px;">:</td>
+                        <td id="print_delivery" style="border: none; padding: 2px;">-</td>
+                    </tr>
+                    <tr>
+                        <td style="border: none; padding: 2px;">Incoterm</td>
+                        <td style="border: none; padding: 2px;">:</td>
+                        <td id="print_incoterm" style="border: none; padding: 2px;">-</td>
+                    </tr>
+                    <tr>
+                        <td style="border: none; padding: 2px;">Term of Payment</td>
+                        <td style="border: none; padding: 2px;">:</td>
+                        <td id="print_payment" style="border: none; padding: 2px;">-</td>
+                    </tr>
+                    <tr>
+                        <td style="border: none; padding: 2px;">Time of Validity</td>
+                        <td style="border: none; padding: 2px;">:</td>
+                        <td id="print_validity" style="color: blue; font-weight: bold; border: none; padding: 2px;">-</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" style="border: none; padding: 2px; font-size: 9px; font-style: italic;">This Quotation is subject to change with or without notice</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <p style="font-weight: bold; text-decoration: underline; margin-bottom: 5px;">MODEL</p>
+        
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">
             <thead>
-                <tr style="background: #f0f0f0;">
-                    <th style="border: 1px solid #000; padding: 8px; text-align: left;">Keterangan Item</th>
-                    <th style="border: 1px solid #000; padding: 8px; text-align: center;">Qty</th>
-                    <th style="border: 1px solid #000; padding: 8px; text-align: right;">Harga Satuan</th>
-                    <th style="border: 1px solid #000; padding: 8px; text-align: right;">Subtotal</th>
+                <tr>
+                    <th colspan="3" style="border: none;"></th>
+                    <th style="border: 1px solid #000; background-color: #e0e0e0; text-align: center; padding: 4px;">MOQ</th>
+                    <th colspan="2" style="border: none;"></th>
+                </tr>
+                <tr style="background-color: #d0d0d0; border-top: 1px solid #000; border-bottom: 1px solid #000;">
+                    <th style="padding: 4px; border: none;">No</th>
+                    <th style="padding: 4px; border: none;">Part Number</th>
+                    <th style="padding: 4px; border: none;">Part Name</th>
+                    <th style="padding: 4px; border: none; color: blue;">PCS</th>
+                    <th style="padding: 4px; border: none;">Unit Price USD</th>
+                    <th style="padding: 4px; border: none;">Unit Price IDR</th>
                 </tr>
             </thead>
             <tbody id="print-items-tbody">
                 <!-- Items Injected Here -->
             </tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="3" style="border: 1px solid #000; padding: 8px; text-align: right; font-weight: bold;">
-                        Grand Total:</td>
-                    <td style="border: 1px solid #000; padding: 8px; text-align: right; font-weight: bold;"
-                        id="print_total"></td>
-                </tr>
-            </tfoot>
         </table>
 
-        <div style="margin-top: 30px;">
-            <p style="font-weight: bold; margin-bottom: 5px;">Keterangan / Narasi:</p>
-            <p id="print_narasi" style="white-space: pre-wrap; margin: 0;"></p>
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+            <table style="border-collapse: collapse; font-size: 11px; width: 300px;">
+                <tr>
+                    <td style="border: 1px solid #000; padding: 4px; background-color: #e0e0e0; text-align: center; width: 50%;">Currency rate</td>
+                    <td style="border: 1px solid #000; padding: 4px; text-align: center;">-</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #000; padding: 4px; background-color: #e0e0e0; text-align: center;">Refer to BI Rate</td>
+                    <td style="border: 1px solid #000; padding: 4px; text-align: center;">-</td>
+                </tr>
+            </table>
         </div>
 
-        <div style="margin-top: 60px; display: flex; justify-content: space-between;">
-            <div style="text-align: center; width: 200px;">
-                <p>Disetujui Oleh,</p>
-                <br><br><br>
-                <p style="border-bottom: 1px solid #000;"></p>
-                <p style="margin:0;">(Customer)</p>
+        <div style="margin-bottom: 40px; font-size: 11px; line-height: 1.4;">
+            <p style="margin: 0;">Remarks :</p>
+            <div id="print_narasi" style="white-space: pre-wrap; margin-left: 10px;"></div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; font-size: 11px;">
+            <div>
+                <p style="margin: 0; text-decoration: underline; margin-top: 50px;">Von Von</p>
+                <p id="print_ttd_company" style="margin: 0;">PT Orion Karya Sejahtera</p>
             </div>
-            <div style="text-align: center; width: 200px;">
-                <p>Hormat Kami,</p>
-                <br><br><br>
-                <p style="border-bottom: 1px solid #000;"></p>
-                <p style="margin:0;">(Management)</p>
+            <div>
+                <p style="margin: 0;">Acknowledged by,</p>
+                <p id="print_ttd_customer" style="margin: 0; font-weight: bold;">-</p>
+                <p style="margin: 0; margin-top: 50px;">Date :</p>
             </div>
         </div>
     </div>
@@ -1716,6 +1856,30 @@
                 </div>
             </form>
         </div>
+        <!-- Customer Modal Overlay -->
+        <div id="customer-modal" class="login-overlay">
+            <div class="login-box" style="max-width: 400px;">
+                <h2 id="customer-modal-title" style="margin-bottom: 1.5rem;">Form Customer</h2>
+                <form id="customer-form">
+                    <input type="hidden" id="c_id">
+                    <div class="input-group">
+                        <label>Nama Customer</label>
+                        <input type="text" id="c_nama" required placeholder="PT Contoh Abadi">
+                    </div>
+                    <div class="input-group" style="margin-top: 15px;">
+                        <label>Alamat / Keterangan</label>
+                        <textarea id="c_alamat" rows="3" placeholder="Jl. Raya Kemerdekaan..."
+                            style="width:100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; resize: vertical;"></textarea>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="button" class="btn" id="btn-close-customer-modal"
+                            style="flex: 1; background: transparent; border: 1px solid var(--glass-border);">Batal</button>
+                        <button type="submit" class="btn" style="flex: 1; background: var(--primary);">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
