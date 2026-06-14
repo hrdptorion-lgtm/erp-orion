@@ -74,7 +74,8 @@ body.light-mode .bottom-nav-item.active {
   font-family: 'Outfit', sans-serif;
 }
 
-html, body {
+html,
+body {
   width: 100%;
   height: 100%;
   height: 100dvh;
@@ -120,9 +121,7 @@ body::after {
   width: var(--sidebar-width);
   height: 100vh;
   max-height: 100vh;
-  background: var(--sidebar-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(15, 23, 42, 0.85); /* Increased opacity to compensate for removed blur */
   border-right: 1px solid var(--glass-border);
   padding: 2rem 1.5rem;
   display: flex;
@@ -337,8 +336,7 @@ body::after {
 }
 
 .stat-card {
-  background: var(--card-bg);
-  backdrop-filter: blur(10px);
+  background: rgba(15, 23, 42, 0.7);
   border: 1px solid var(--glass-border);
   border-radius: 20px;
   padding: 1.5rem;
@@ -416,8 +414,7 @@ body::after {
 
 /* Data Table Container */
 .data-section {
-  background: var(--card-bg);
-  backdrop-filter: blur(10px);
+  background: rgba(15, 23, 42, 0.7); /* Increased opacity */
   border: 1px solid var(--glass-border);
   border-radius: 20px;
   padding: 1.5rem;
@@ -449,8 +446,8 @@ body::after {
 }
 
 /* Hide detail action buttons from UI (row click already triggers them) */
-button.btn-detail-po, 
-button.btn-detail-bom, 
+button.btn-detail-po,
+button.btn-detail-bom,
 button.btn-detail-penawaran,
 button.btn-detail-stock {
   display: none !important;
@@ -486,10 +483,6 @@ th {
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-}
-
-tr {
-  transition: background 0.3s ease;
 }
 
 tbody tr {
@@ -558,6 +551,11 @@ tbody tr:hover {
   }
 }
 
+/* Overlays */
+.sheet-overlay, .lightbox-overlay, .modal-overlay {
+  display: none;
+}
+
 /* Login Overlay */
 .login-overlay {
   position: fixed;
@@ -565,9 +563,7 @@ tbody tr:hover {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(10, 14, 23, 0.6);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(10, 14, 23, 0.95);
   z-index: 9999;
   display: flex;
   align-items: center;
@@ -583,9 +579,7 @@ tbody tr:hover {
 }
 
 .login-box {
-  background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(15, 23, 42, 0.9);
   border: 1px solid var(--glass-border);
   padding: 3rem 2.5rem;
   border-radius: 24px;
@@ -820,13 +814,9 @@ tbody tr:hover {
 .sheet-overlay {
   display: none;
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
-  z-index: 1001;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
 }
 
 .sheet-overlay.active {
@@ -852,13 +842,16 @@ tbody tr:hover {
 }
 
 @media (max-width: 768px) {
+
   /* Mobile Performance Optimizations */
   * {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
-  
-  .stat-card, .login-box, .top-nav-actions {
+
+  .stat-card,
+  .login-box,
+  .top-nav-actions {
     background: var(--bg-main) !important;
     border: 1px solid var(--glass-border) !important;
   }
@@ -871,8 +864,8 @@ tbody tr:hover {
     background: transparent !important;
     border-radius: 0 !important;
   }
-  
-  .data-section .section-header, 
+
+  .data-section .section-header,
   .data-section .pagination-controls {
     padding: 0 1rem;
   }
@@ -918,7 +911,7 @@ tbody tr:hover {
     padding: 1rem;
     margin: 0;
     background: rgba(10, 14, 23, 0.95);
-    backdrop-filter: blur(10px);
+
     border-bottom: 1px solid var(--glass-border);
   }
 
@@ -1012,7 +1005,7 @@ tbody tr:hover {
 
   .fab-label {
     background: var(--bg-glass);
-    backdrop-filter: blur(10px);
+
     padding: 5px 12px;
     border-radius: 8px;
     font-size: 0.85rem;
@@ -1044,8 +1037,7 @@ tbody tr:hover {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(3px);
+    background: rgba(0, 0, 0, 0.85);
     z-index: 1040;
   }
 
