@@ -8,9 +8,47 @@
     <meta name="description" content="Aplikasi Enterprise Resource Planning PT Orion Karya Sejahtera">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="logo.png" type="image/png">
+    
+    <!-- Preconnect for Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="css/style.css">
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tom Select for Smart Dropdowns -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <style>
+        .ts-wrapper.single .ts-control, .ts-control {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid var(--glass-border) !important;
+            border-radius: 8px !important;
+            color: white !important;
+            padding: 0.8rem !important;
+        }
+        .ts-control > input {
+            color: white !important;
+        }
+        .ts-wrapper.single .ts-control .item {
+            color: white !important;
+        }
+        .ts-dropdown {
+            background: #1e1e24 !important; /* Darker background to match theme */
+            border: 1px solid var(--glass-border) !important;
+            border-radius: 8px !important;
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important;
+        }
+        .ts-dropdown .option {
+            padding: 10px !important;
+            color: white !important;
+        }
+        .ts-dropdown .active {
+            background-color: var(--primary) !important;
+            color: white !important;
+        }
+    </style>
 </head>
 
 <body>
@@ -392,6 +430,7 @@
                                 <th>Kode Material</th>
                                 <th>Nama Material</th>
                                 <th>Stok Saat Ini</th>
+                                <th>Harga Satuan</th>
                                 <th>Lokasi Gudang</th>
                                 <th>Aksi</th>
                             </tr>
@@ -465,11 +504,12 @@
                                 <th>Stok</th>
                                 <th>Harga Jual</th>
                                 <th>Lokasi Gudang</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="table-barang-jadi">
                             <tr>
-                                <td colspan="5" style="text-align: center;">Memuat data...</td>
+                                <td colspan="6" style="text-align: center;">Memuat data...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -523,11 +563,12 @@
                                 <th>Barang Jadi</th>
                                 <th>Qty Produksi</th>
                                 <th>Status</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="table-produksi">
                             <tr>
-                                <td colspan="5" style="text-align: center;">Memuat data...</td>
+                                <td colspan="6" style="text-align: center;">Memuat data...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -601,7 +642,8 @@
                     <img src="logo.png" style="width: 80px; height: 80px; object-fit: contain;">
                 </div>
                 <div style="text-align: right; max-width: 300px;">
-                    <h3 id="print_po_company_name" style="margin: 0; font-size: 14px; text-transform: uppercase;">NAMA PERUSAHAAN</h3>
+                    <h3 id="print_po_company_name" style="margin: 0; font-size: 14px; text-transform: uppercase;">NAMA
+                        PERUSAHAAN</h3>
                     <p id="print_po_company_address" style="margin: 2px 0; font-size: 11px; white-space: pre-wrap;"></p>
                     <p id="print_po_company_phone" style="margin: 2px 0; font-size: 11px;"></p>
                 </div>
@@ -875,6 +917,50 @@
             </div>
         </div>
 
+        <!-- Stock Detail Modal -->
+        <div id="stock-detail-modal" class="login-overlay">
+            <div class="login-box" style="max-width:600px; width:95vw; max-height:90vh; overflow-y:auto;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                    <h2 style="margin:0;">Detail Bahan Baku</h2>
+                    <button type="button" id="btn-close-stock-detail" style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;">✕</button>
+                </div>
+                <div id="stock-detail-content"></div>
+            </div>
+        </div>
+
+        <!-- Customer Detail Modal -->
+        <div id="customer-detail-modal" class="login-overlay">
+            <div class="login-box" style="max-width:600px; width:95vw; max-height:90vh; overflow-y:auto;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                    <h2 style="margin:0;">Detail Customer</h2>
+                    <button type="button" id="btn-close-customer-detail" style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;">✕</button>
+                </div>
+                <div id="customer-detail-content"></div>
+            </div>
+        </div>
+
+        <!-- Barang Jadi Detail Modal -->
+        <div id="barang-jadi-detail-modal" class="login-overlay">
+            <div class="login-box" style="max-width:600px; width:95vw; max-height:90vh; overflow-y:auto;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                    <h2 style="margin:0;">Detail Barang Jadi</h2>
+                    <button type="button" id="btn-close-barang-jadi-detail" style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;">✕</button>
+                </div>
+                <div id="barang-jadi-detail-content"></div>
+            </div>
+        </div>
+
+        <!-- SPK Produksi Detail Modal -->
+        <div id="spk-detail-modal" class="login-overlay">
+            <div class="login-box" style="max-width:600px; width:95vw; max-height:90vh; overflow-y:auto;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                    <h2 style="margin:0;">Detail SPK Produksi</h2>
+                    <button type="button" id="btn-close-spk-detail" style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;">✕</button>
+                </div>
+                <div id="spk-detail-content"></div>
+            </div>
+        </div>
+
 
         <!-- User Modal Overlay -->
         <div id="user-modal" class="login-overlay">
@@ -1118,16 +1204,98 @@
             </div>
         </div>
 
-        <!-- Penawaran Modal Overlay -->
+        <!-- Detail Penawaran Modal -->
+        <div id="detail-penawaran-modal" class="login-overlay">
+            <div class="login-box" style="max-width: 800px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                    <h2 id="detail-modal-title" style="margin: 0; font-size: 1.5rem;">Detail Penawaran</h2>
+                    <button class="btn" style="background: none; color: #fff; font-size: 1.2rem; cursor: pointer;" onclick="document.getElementById('detail-penawaran-modal').classList.remove('active')"><i class="fa-solid fa-times"></i></button>
+                </div>
+                
+                <div style="display: flex; gap: 10px; align-items: center; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <label style="margin: 0; font-weight: bold; width: 120px;">Ubah Status:</label>
+                    <select id="detail_status" style="flex: 1; padding: 0.5rem; border-radius: 6px; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid var(--glass-border);">
+                        <option value="Draft" style="color:#000">Draft</option>
+                        <option value="Penawaran" style="color:#000">Penawaran</option>
+                        <option value="Proses" style="color:#000">Proses</option>
+                        <option value="Approved" style="color:#000">Approved</option>
+                        <option value="Rejected" style="color:#000">Rejected</option>
+                        <option value="Finish" style="color:#000">Finish</option>
+                    </select>
+                    <button id="btn-update-detail-status" class="btn btn-primary" style="padding: 0.5rem 1rem;">Simpan</button>
+                </div>
+
+                <div id="detail-action-produksi" style="display: none; justify-content: flex-end; gap: 10px; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border);">
+                    <button id="btn-detail-spk" class="btn btn-success"><i class="fa-solid fa-industry"></i> Lanjut SPK Produksi</button>
+                    <button id="btn-detail-po" class="btn btn-warning"><i class="fa-solid fa-cart-shopping"></i> PR Barang</button>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; font-size: 0.95rem;">
+                    <div>
+                        <p style="margin: 0 0 5px 0; color: #aaa;">Customer</p>
+                        <p id="detail_customer" style="margin: 0; font-weight: 600;">-</p>
+                    </div>
+                    <div>
+                        <p style="margin: 0 0 5px 0; color: #aaa;">Tanggal</p>
+                        <p id="detail_tanggal" style="margin: 0; font-weight: 600;">-</p>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <p style="margin: 0 0 5px 0; color: #aaa;">Narasi / Keterangan</p>
+                    <p id="detail_narasi" style="margin: 0; background: rgba(0,0,0,0.1); padding: 10px; border-radius: 6px; white-space: pre-wrap;">-</p>
+                </div>
+
+                <h4 style="margin-bottom: 10px; color: var(--primary);">Rincian Item</h4>
+                <div class="table-responsive" style="margin-bottom: 1.5rem;">
+                    <table class="glass-table">
+                        <thead>
+                            <tr>
+                                <th>Item / Part Name</th>
+                                <th style="text-align: right;">Qty</th>
+                                <th style="text-align: right;">Harga Satuan</th>
+                                <th style="text-align: right;">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail_items_tbody">
+                            <tr><td colspan="4" style="text-align:center;">Tidak ada item</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="detail_bom_check_wrapper" style="display: none; margin-bottom: 1.5rem; padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.2); border-left: 4px solid var(--info);">
+                    <h4 style="margin: 0 0 10px 0; color: var(--info);"><i class="fa-solid fa-boxes-stacked"></i> Status Kesiapan Produksi (BOM Check)</h4>
+                    <div id="detail_bom_check_container" style="font-size: 0.9rem;">
+                        <p style="margin:0; color:#aaa;">Memeriksa ketersediaan stok material...</p>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end;">
+                    <div style="width: 300px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: #ccc;">Down Payment (DP)</span>
+                            <strong id="detail_dp">Rp 0</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 1.2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+                            <span style="color: var(--primary);">Grand Total</span>
+                            <strong id="detail_total_harga" style="color: var(--primary);">Rp 0</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+                <!-- Penawaran Modal Overlay -->
         <div id="penawaran-modal" class="login-overlay">
             <div class="login-box" style="max-width: 800px;">
                 <h2 id="penawaran-modal-title" style="margin-bottom: 1.5rem;">Form Penawaran</h2>
                 <form id="penawaran-form">
                     <input type="hidden" id="p_no_penawaran">
                     <div class="input-group">
-                        <label>Customer</label>
-                        <input type="text" id="p_customer" list="customer-list" required
-                            placeholder="Nama Customer / Pilih dari History">
+                        <label>Customer <span style="color:var(--danger)">*</span></label>
+                        <select id="p_customer" required style="width: 100%; border:1px solid var(--glass-border); padding:0.8rem; background:rgba(255,255,255,0.05); color:#fff; border-radius:10px;">
+                            <option value="">Pilih atau ketik nama Customer...</option>
+                        </select>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
                         <div class="input-group">
@@ -1140,7 +1308,7 @@
                         </div>
                         <div class="input-group">
                             <label>Revised Date-1</label>
-                            <input type="text" id="p_rev_date" placeholder="Misal: 10-Jun-26">
+                            <input type="date" id="p_rev_date">
                         </div>
                         <div class="input-group">
                             <label>Maker of Brand</label>
@@ -1370,13 +1538,15 @@
     </main>
 
     <!-- Print Container (Hidden from screen) -->
-    <div id="print-area" class="print-only" style="font-family: Arial, sans-serif; font-size: 11px; color: #000; padding: 20px;">
+    <div id="print-area" class="print-only"
+        style="font-family: Arial, sans-serif; font-size: 11px; color: #000; padding: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
             <div style="display: flex; gap: 15px; align-items: center;">
                 <img src="logo.png" style="width: 100px; height: 100px; object-fit: contain;">
             </div>
             <div style="text-align: right; max-width: 350px;">
-                <h3 id="print_company_name" style="margin: 0; font-size: 14px; text-transform: uppercase;">PT. ORION KARYA SEJAHTERA</h3>
+                <h3 id="print_company_name" style="margin: 0; font-size: 14px; text-transform: uppercase;">PT. ORION
+                    KARYA SEJAHTERA</h3>
                 <p id="print_company_address" style="margin: 2px 0; font-size: 11px; white-space: pre-wrap;"></p>
                 <p id="print_company_phone" style="margin: 2px 0; font-size: 11px;"></p>
             </div>
@@ -1388,13 +1558,15 @@
             <div style="width: 45%;">
                 <table style="width: 100%; border: none;">
                     <tr>
-                        <td style="width: 40px; font-weight: bold; border: none; padding: 2px; vertical-align: top;">To</td>
+                        <td style="width: 40px; font-weight: bold; border: none; padding: 2px; vertical-align: top;">To
+                        </td>
                         <td style="width: 10px; border: none; padding: 2px; vertical-align: top;">:</td>
                         <td style="font-weight: bold; border: none; padding: 2px;" id="print_to_customer">-</td>
                     </tr>
                     <tr>
                         <td colspan="2" style="border: none;"></td>
-                        <td id="print_to_address" style="border: none; padding: 2px 2px 10px 2px; white-space: pre-wrap;">-</td>
+                        <td id="print_to_address"
+                            style="border: none; padding: 2px 2px 10px 2px; white-space: pre-wrap;">-</td>
                     </tr>
                     <tr>
                         <td style="font-weight: bold; border: none; padding: 2px;">Attn</td>
@@ -1408,7 +1580,8 @@
                     <tr>
                         <td style="width: 120px; border: none; padding: 2px;">No</td>
                         <td style="width: 10px; border: none; padding: 2px;">:</td>
-                        <td id="print_no" style="font-weight: bold; border: none; padding: 2px; background-color: #b3cde3;">-</td>
+                        <td id="print_no"
+                            style="font-weight: bold; border: none; padding: 2px; background-color: #b3cde3;">-</td>
                     </tr>
                     <tr>
                         <td style="border: none; padding: 2px;">Your Enq No</td>
@@ -1448,22 +1621,25 @@
                     <tr>
                         <td style="border: none; padding: 2px;">Time of Validity</td>
                         <td style="border: none; padding: 2px;">:</td>
-                        <td id="print_validity" style="color: blue; font-weight: bold; border: none; padding: 2px;">-</td>
+                        <td id="print_validity" style="color: blue; font-weight: bold; border: none; padding: 2px;">-
+                        </td>
                     </tr>
                     <tr>
-                        <td colspan="3" style="border: none; padding: 2px; font-size: 9px; font-style: italic;">This Quotation is subject to change with or without notice</td>
+                        <td colspan="3" style="border: none; padding: 2px; font-size: 9px; font-style: italic;">This
+                            Quotation is subject to change with or without notice</td>
                     </tr>
                 </table>
             </div>
         </div>
 
         <p style="font-weight: bold; text-decoration: underline; margin-bottom: 5px;">MODEL</p>
-        
+
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">
             <thead>
                 <tr>
                     <th colspan="3" style="border: none;"></th>
-                    <th style="border: 1px solid #000; background-color: #e0e0e0; text-align: center; padding: 4px;">MOQ</th>
+                    <th style="border: 1px solid #000; background-color: #e0e0e0; text-align: center; padding: 4px;">MOQ
+                    </th>
                     <th colspan="2" style="border: none;"></th>
                 </tr>
                 <tr style="background-color: #d0d0d0; border-top: 1px solid #000; border-bottom: 1px solid #000;">
@@ -1483,11 +1659,14 @@
         <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
             <table style="border-collapse: collapse; font-size: 11px; width: 300px;">
                 <tr>
-                    <td style="border: 1px solid #000; padding: 4px; background-color: #e0e0e0; text-align: center; width: 50%;">Currency rate</td>
+                    <td
+                        style="border: 1px solid #000; padding: 4px; background-color: #e0e0e0; text-align: center; width: 50%;">
+                        Currency rate</td>
                     <td style="border: 1px solid #000; padding: 4px; text-align: center;">-</td>
                 </tr>
                 <tr>
-                    <td style="border: 1px solid #000; padding: 4px; background-color: #e0e0e0; text-align: center;">Refer to BI Rate</td>
+                    <td style="border: 1px solid #000; padding: 4px; background-color: #e0e0e0; text-align: center;">
+                        Refer to BI Rate</td>
                     <td style="border: 1px solid #000; padding: 4px; text-align: center;">-</td>
                 </tr>
             </table>
@@ -1884,6 +2063,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
     <!-- BOM Datalist for Autocomplete -->
     <datalist id="bom-items-list"></datalist>
     <datalist id="customer-list"></datalist>

@@ -257,9 +257,9 @@ function getStock() {
   const headers = values[0];
   const kodeIdx = headers.findIndex(h => /kode/i.test(h));
   const namaIdx = headers.findIndex(h => /nama/i.test(h));
-  const stokIdx = headers.findIndex(h => /stok|stock/i.test(h));
+  const stokIdx = headers.findIndex(h => /^stok$|^stock$/i.test(String(h).trim()));
   const hargaIdx = headers.findIndex(h => /harga/i.test(h));
-  const satuanIdx = headers.findIndex(h => /satuan/i.test(h));
+  const satuanIdx = headers.findIndex(h => /^satuan$/i.test(String(h).trim()));
   const lokasiIdx = headers.findIndex(h => /lokasi/i.test(h));
   const spesifikasiIdx = headers.findIndex(h => /spesifikasi/i.test(h));
   
@@ -345,6 +345,21 @@ function getBarangJadi() {
     return obj;
   });
   return { status: 'success', data: data };
+}
+
+function deleteBarangJadi(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Master Barang Jadi');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Master Barang Jadi tidak ditemukan.' };
+  const values = sheet.getDataRange().getDisplayValues();
+  const headers = values[0];
+  const kodeIdx = headers.findIndex(h => /kode/i.test(h));
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][kodeIdx]).trim() === String(payload.kode).trim()) {
+      sheet.deleteRow(i + 1);
+      return { status: 'success', message: 'Data Barang Jadi berhasil dihapus.' };
+    }
+  }
+  return { status: 'error', message: 'Data Barang Jadi tidak ditemukan.' };
 }
 
 // ==========================================
@@ -1185,6 +1200,36 @@ function saveBOM(payload) {
   }
 
   return { status: 'success', message: 'Data BOM berhasil disimpan.' };
+}
+
+function deleteBOM(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB BOM');
+  if (!sheet) return { status: 'error', message: 'Sheet DB BOM tidak ditemukan.' };
+  const values = sheet.getDataRange().getDisplayValues();
+  const headers = values[0];
+  const kodeIdx = headers.findIndex(h => /kode/i.test(h));
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][kodeIdx]).trim() === String(payload.kode_barang).trim()) {
+      sheet.deleteRow(i + 1);
+      return { status: 'success', message: 'Data BOM berhasil dihapus.' };
+    }
+  }
+  return { status: 'error', message: 'Data BOM tidak ditemukan.' };
+}
+
+function deleteSPK(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Jadwal Produksi');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Jadwal Produksi tidak ditemukan.' };
+  const values = sheet.getDataRange().getDisplayValues();
+  const headers = values[0];
+  const noSPKIdx = headers.findIndex(h => /no.*spk/i.test(h));
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][noSPKIdx]).trim() === String(payload.no_spk).trim()) {
+      sheet.deleteRow(i + 1);
+      return { status: 'success', message: 'SPK Produksi berhasil dihapus.' };
+    }
+  }
+  return { status: 'error', message: 'SPK Produksi tidak ditemukan.' };
 }
 
 function manualAuthDriveApp() {

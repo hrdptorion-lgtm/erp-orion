@@ -613,9 +613,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const bahanBakuRowsPerPage = 10;
 
     // Purchasing - Load Stock
-    async function loadPurchasingData() {
+    async function loadPurchasingData(isBackgroundSync = false) {
         const tbody = document.getElementById('table-bahan-baku');
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+        if (!isBackgroundSync) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+        }
 
         const response = await window.ERPAPI.request('get_stock');
 
@@ -718,23 +720,38 @@ document.addEventListener('DOMContentLoaded', () => {
         tbody.innerHTML = '';
 
         if (paginatedData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Tidak ada data yang cocok.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Tidak ada data yang cocok.</td></tr>';
         } else {
             paginatedData.forEach(item => {
                 const tr = document.createElement('tr');
                 const isKritis = item.stok < 10;
+                let actionBtns = `<button class="btn btn-edit-stock" data-kode="${item.kode}" data-nama="${item.nama}" data-stok="${item.stok}" data-satuan="${item.satuan || ''}" data-lokasi="${item.lokasi}" data-harga="${item.harga || 0}" data-spesifikasi="${item.spesifikasi || ''}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>`;
+                
+                const session = localStorage.getItem('erp_session');
+                const user = session ? JSON.parse(session) : {};
+                const isAdmin = ['Admin', 'Super Admin', 'Management', 'Direktur'].some(r => (user.role || '').toLowerCase().includes(r.toLowerCase()));
+                
+                if (isAdmin) {
+                    actionBtns += `<button class="btn btn-delete-stock" data-kode="${item.kode}" data-nama="${item.nama}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger); display: inline-flex;"><i class="fa-solid fa-trash"></i></button>`;
+                }
+
                 tr.innerHTML = `
                     <td>${item.kode}</td>
                     <td style="font-weight: 500;">${item.nama}</td>
                     <td>
                         <span class="badge ${isKritis ? 'badge-warning' : 'badge-success'}">${parseInt(item.stok || 0).toLocaleString('id-ID')} ${item.satuan || ''}</span>
                     </td>
+                    <td>Rp ${parseInt(item.harga || 0).toLocaleString('id-ID')}</td>
                     <td>${item.lokasi}</td>
-                    <td>
-                        <button class="btn btn-edit-stock" data-kode="${item.kode}" data-nama="${item.nama}" data-stok="${item.stok}" data-satuan="${item.satuan || ''}" data-lokasi="${item.lokasi}" data-harga="${item.harga || 0}" data-spesifikasi="${item.spesifikasi || ''}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>
-                        <button class="btn btn-delete-stock" data-kode="${item.kode}" data-nama="${item.nama}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger); display: inline-flex;"><i class="fa-solid fa-trash"></i></button>
-                    </td>
+                    <td>${actionBtns}</td>
                 `;
+                tr.style.cursor = 'pointer';
+                tr.querySelectorAll('button').forEach(btn => {
+                    btn.addEventListener('click', e => e.stopPropagation());
+                });
+                tr.addEventListener('click', () => {
+                    openStockDetail(item);
+                });
                 tbody.appendChild(tr);
             });
         }
@@ -776,12 +793,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     confirmText: 'Ya, Hapus'
                 });
                 if (ok) {
-                    stockData = stockData.filter(s => s.kode !== kode);
+                    bahanBakuData = bahanBakuData.filter(s => s.kode !== kode);
                     renderPurchasingTable();
 
                     window.ERPAPI.request('delete_stock', { kode }).then(res => {
                         showToast(res.status === 'success' ? `✅ ${res.message}` : `❌ ${res.message}`, res.status === 'success' ? 'success' : 'error', 3000);
-                        if (res.status !== 'success') loadPurchasingData();
+                        if (res.status !== 'success') loadPurchasingData(true);
+                        else loadPurchasingData(true);
                     });
                 }
             });
@@ -826,11 +844,11 @@ dataForm?.addEventListener('submit', (e) => {
         user_nama: user.nama
     };
 
-    const existingIdx = stockData.findIndex(s => s.kode === payload.kode);
+    const existingIdx = bahanBakuData.findIndex(s => s.kode === payload.kode);
     if (existingIdx !== -1) {
-        stockData[existingIdx] = { ...stockData[existingIdx], ...payload };
+        bahanBakuData[existingIdx] = { ...bahanBakuData[existingIdx], ...payload };
     } else {
-        stockData.push(payload);
+        bahanBakuData.push(payload);
     }
 
     renderPurchasingTable();
@@ -839,9 +857,10 @@ dataForm?.addEventListener('submit', (e) => {
     window.ERPAPI.request('save_stock', payload).then(res => {
         if (res.status !== 'success') {
             showToast(`❌ ${res.message}`, 'error', 3000);
-            loadPurchasingData();
+            loadPurchasingData(true);
         } else {
             showToast(`✅ ${res.message}`, 'success', 3000);
+            loadPurchasingData(true);
         }
     });
 });
@@ -937,10 +956,12 @@ async function loadPOStockData() {
     }
 }
 
-async function loadPOInternalData() {
+async function loadPOInternalData(isBackgroundSync = false) {
     const tbody = document.getElementById('table-po-internal');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+    if (!isBackgroundSync) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+    }
 
     await loadPOStockData();
 
@@ -1023,7 +1044,7 @@ async function loadPOInternalData() {
             btn.addEventListener('click', () => updatePOStatusAction(btn.getAttribute('data-no'), 'Selesai (Barang Diterima)'));
         });
         tbody.querySelectorAll('.btn-delete-po').forEach(btn => {
-            btn.addEventListener('click', () => deletePOInternal(btn.getAttribute('data-no')));
+            btn.addEventListener('click', (e) => deletePOInternal(btn.getAttribute('data-no'), e.currentTarget.closest('tr')));
         });
     }
 }
@@ -1078,22 +1099,28 @@ function printPOInternal(item) {
     window.print();
 }
 
-async function deletePOInternal(noPO) {
+async function deletePOInternal(noPO, trElement = null) {
     const ok = await showConfirm({
         title: 'Hapus Pengajuan Belanja',
         message: `Hapus pengajuan <strong style="color:#fff">${noPO}</strong>?<br><span style="font-size:0.82rem;color:rgba(255,255,255,0.4);">Data akan dihapus permanen dan tidak bisa dikembalikan.</span>`,
         icon: '🗑️',
-        type: 'danger',
-        confirmText: 'Ya, Hapus'
+        confirmText: 'Ya, Hapus',
+        cancelText: 'Batal'
     });
     if (!ok) return;
-    const res = await window.ERPAPI.request('delete_po_internal', { no_po: noPO });
-    if (res.status === 'success') {
-        showToast?.(`🗑️ ${noPO} berhasil dihapus.`, 'success', 3000);
-        loadPOInternalData();
-    } else {
-        showToast?.(`❌ ${res.message}`, 'error', 4000);
-    }
+
+    if (trElement) trElement.style.display = 'none';
+    if (typeof showToast !== 'undefined') showToast('Menghapus PO Internal...', 'info', 2000);
+
+    window.ERPAPI.request('delete_po_internal', { no_po: noPO }).then(res => {
+        if (res.status === 'success') {
+            showToast?.(`🗑️ ${noPO} berhasil dihapus.`, 'success', 3000);
+            loadPOInternalData(true);
+        } else {
+            showToast?.(`❌ ${res.message}`, 'error', 4000);
+            loadPOInternalData(true); // Revert
+        }
+    });
 }
 
 function openPODetail(noPO, allData) {
@@ -1324,42 +1351,80 @@ poForm?.addEventListener('submit', async (e) => {
     };
 
     const btnSubmit = poForm.querySelector('button[type="submit"]');
-    const oldHtml = btnSubmit.innerHTML;
-    btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengajukan...';
-    btnSubmit.disabled = true;
-
-    const res = await window.ERPAPI.request('create_po_internal', payload);
-
-    btnSubmit.innerHTML = oldHtml;
-    btnSubmit.disabled = false;
-
-    if (res.status === 'success') {
-        poModal.classList.remove('active');
-        showToast?.(`✅ ${res.message}`, 'success', 4000);
-        loadPOInternalData();
-    } else {
-        showToast?.(`❌ ${res.message}`, 'error', 5000);
+    if (btnSubmit) {
+        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengajukan...';
+        btnSubmit.disabled = true;
     }
+
+    poModal.classList.remove('active');
+    if (typeof showToast !== 'undefined') showToast('Sinkronisasi PO Internal ke server...', 'info', 3000);
+
+    // Optimistic insert
+    const tbody = document.getElementById('table-po-internal');
+    if (tbody) {
+        const tr = document.createElement('tr');
+        tr.style.opacity = '0.6';
+        tr.innerHTML = `
+            <td><i class="fa-solid fa-spinner fa-spin"></i></td>
+            <td>Hari ini</td>
+            <td style="font-weight: 500;">${payload.pemohon}</td>
+            <td>${payload.po_to}</td>
+            <td>${items.length}</td>
+            <td><span class="badge badge-warning">Menyimpan...</span></td>
+            <td></td>
+        `;
+        tbody.insertBefore(tr, tbody.firstChild);
+    }
+
+    window.ERPAPI.request('create_po_internal', payload).then(res => {
+        if (btnSubmit) {
+            btnSubmit.innerHTML = 'Kirim Pengajuan PO Internal';
+            btnSubmit.disabled = false;
+        }
+
+        if (res.status === 'success') {
+            showToast?.(`✅ ${res.message}`, 'success', 4000);
+            loadPOInternalData(true);
+        } else {
+            showToast?.(`❌ ${res.message}`, 'error', 5000);
+            loadPOInternalData(true);
+        }
+    });
 });
 
 
 
 // Flow: Inventori Barang Jadi
-async function loadBarangJadiData() {
+async function loadBarangJadiData(isBackgroundSync = false) {
     const tbody = document.getElementById('table-barang-jadi');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+    if (!isBackgroundSync) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+    }
 
     const response = await window.ERPAPI.request('get_barang_jadi');
     if (response.status === 'success' && response.data) {
         tbody.innerHTML = '';
         if (response.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Belum ada data barang jadi.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Belum ada data barang jadi.</td></tr>';
             return;
         }
+
+        const session = localStorage.getItem('erp_session');
+        const user = session ? JSON.parse(session) : {};
+        const isAdmin = ['Admin', 'Super Admin', 'Management', 'Direktur'].some(r => (user.role || '').toLowerCase().includes(r.toLowerCase()));
+
         response.data.forEach(item => {
             const tr = document.createElement('tr');
             const isKritis = parseInt(item.stok) < 5;
+            
+            let actionBtns = '';
+            if (isAdmin) {
+                actionBtns = `<button class="btn btn-delete-barang-jadi" data-kode="${item.kode_barang || item.kode}" data-nama="${item.nama_barang || item.nama}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--danger);"><i class="fa-solid fa-trash"></i></button>`;
+            } else {
+                actionBtns = '-';
+            }
+
             tr.innerHTML = `
                     <td style="font-weight: 500;">${item.kode_barang || item.kode || '-'}</td>
                     <td>${item.nama_barang || item.nama || '-'}</td>
@@ -1368,14 +1433,51 @@ async function loadBarangJadiData() {
                     </td>
                     <td>Rp ${parseInt(item.harga_jual || 0).toLocaleString('id-ID')}</td>
                     <td>${item.lokasi_gudang || item.lokasi || '-'}</td>
+                    <td>${actionBtns}</td>
                 `;
-            tbody.appendChild(tr);
+                tr.style.cursor = 'pointer';
+                tr.querySelectorAll('button').forEach(btn => {
+                    btn.addEventListener('click', e => e.stopPropagation());
+                });
+                tr.addEventListener('click', () => {
+                    openBarangJadiDetail(item);
+                });
+                tbody.appendChild(tr);
+
+            if (isAdmin) {
+                const btnDel = tr.querySelector('.btn-delete-barang-jadi');
+                if (btnDel) {
+                    btnDel.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const kode = btnDel.getAttribute('data-kode');
+                        const nama = btnDel.getAttribute('data-nama');
+                        const ok = await showConfirm({
+                            title: 'Hapus Barang Jadi',
+                            message: `Yakin ingin menghapus Barang Jadi <strong>${nama} (${kode})</strong>?`,
+                            icon: '🗑️', confirmText: 'Ya, Hapus', cancelText: 'Batal'
+                        });
+                        if (!ok) return;
+                        
+                        tr.style.display = 'none';
+                        if (typeof showToast !== 'undefined') showToast('Menghapus Barang Jadi...', 'info');
+                        window.ERPAPI.request('delete_barang_jadi', { kode: kode }).then(res => {
+                            if (res.status === 'success') {
+                                if (typeof showToast !== 'undefined') showToast(`✅ ${nama} dihapus`, 'success');
+                                loadBarangJadiData(true);
+                            } else {
+                                if (typeof showToast !== 'undefined') showToast('❌ Gagal menghapus Barang Jadi', 'error');
+                                loadBarangJadiData(true);
+                            }
+                        });
+                    });
+                }
+            }
         });
     }
 }
 
 // Flow 1: Penawaran
-async function loadPenawaranData() {
+async function loadPenawaranData(isBackgroundSync = false) {
     // Fetch BOM and Stock for datalist
     const [bomRes, stockRes] = await Promise.all([
         window.ERPAPI.request('get_bom'),
@@ -1397,32 +1499,52 @@ async function loadPenawaranData() {
 
     const tbody = document.getElementById('table-penawaran');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+    
+    if (!isBackgroundSync) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+    }
 
     const response = await window.ERPAPI.request('get_penawaran');
     const custRes = await window.ERPAPI.request('get_customers');
     
     if (response.status === 'success' && response.data) {
-        // Populate Customer Datalist from DB Customer
-        const customerList = document.getElementById('customer-list');
-        if (customerList) {
-            customerList.innerHTML = '';
+        const customerSelect = document.getElementById('p_customer');
+        if (customerSelect) {
+            // Store selected value if any
+            const prevValue = customerSelect.tomselect ? customerSelect.tomselect.getValue() : customerSelect.value;
             
+            if (customerSelect.tomselect) {
+                customerSelect.tomselect.destroy();
+            }
+            
+            customerSelect.innerHTML = '<option value="">Pilih atau ketik nama Customer...</option>';
+            
+            let customers = [];
             if (custRes.status === 'success' && custRes.data) {
-                // Gunakan data dari get_customers (DB Customer)
-                custRes.data.forEach(c => {
-                    const option = document.createElement('option');
-                    option.value = c.nama_customer;
-                    customerList.appendChild(option);
-                });
+                customers = custRes.data.map(c => c.nama_customer);
             } else {
-                // Fallback: ekstrak dari history penawaran
-                const uniqueCustomers = [...new Set(response.data.map(item => item.customer).filter(Boolean))];
-                uniqueCustomers.forEach(cust => {
-                    const option = document.createElement('option');
-                    option.value = cust;
-                    customerList.appendChild(option);
-                });
+                customers = [...new Set(response.data.map(item => item.customer).filter(Boolean))];
+            }
+            
+            customers.forEach(cust => {
+                const option = document.createElement('option');
+                option.value = cust;
+                option.textContent = cust;
+                customerSelect.appendChild(option);
+            });
+            
+            new TomSelect('#p_customer', {
+                create: true,
+                sortField: {
+                    field: 'text',
+                    direction: 'asc'
+                },
+                maxOptions: 50
+            });
+            
+            if (prevValue && customerSelect.tomselect) {
+                customerSelect.tomselect.addOption({value: prevValue, text: prevValue});
+                customerSelect.tomselect.setValue(prevValue);
             }
         }
 
@@ -1437,25 +1559,45 @@ async function loadPenawaranData() {
             else if (item.status === 'Rejected') badgeClass = 'badge-danger';
             else if (item.status === 'Proses') badgeClass = 'badge-info';
 
+            const session = localStorage.getItem('erp_session');
+            const user = session ? JSON.parse(session) : {};
+            const isAdmin = ['Admin', 'Super Admin', 'Management', 'Direktur'].some(r => (user.role || '').toLowerCase().includes(r.toLowerCase()));
+
+            let actionBtns = `<button class="btn btn-print-penawaran" data-item='${JSON.stringify(item)}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: var(--info);" title="Print / Ekspor PDF"><i class="fa-solid fa-print"></i></button>
+                              <button class="btn btn-edit-penawaran" data-item='${JSON.stringify(item)}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>`;
+            
+            if (isAdmin) {
+                actionBtns += `<button class="btn btn-delete-penawaran" data-no="${item.no_penawaran}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger); display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-trash"></i></button>`;
+            }
+            
+            if (item.status === 'Approved') {
+                actionBtns += `<button class="btn btn-spk-penawaran" data-item='${JSON.stringify(item)}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: var(--success);" title="Lanjut ke SPK Produksi"><i class="fa-solid fa-industry"></i> SPK</button>
+                               <button class="btn btn-po-penawaran" data-item='${JSON.stringify(item)}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: var(--warning);" title="Buat Permintaan Barang (PO Internal) untuk Komponen Kurang"><i class="fa-solid fa-cart-shopping"></i> PR Barang</button>`;
+            }
+
             const tr = document.createElement('tr');
+            tr.style.cursor = 'pointer';
             tr.innerHTML = `
                     <td>${item.no_penawaran || '-'}</td>
-                    <td>${item.tanggal && !isNaN(new Date(item.tanggal).getTime()) ? new Date(item.tanggal).toLocaleDateString('id-ID') : '-'}</td>
+                    <td>${item.tanggal || '-'}</td>
                     <td style="font-weight: 500;">${item.customer}</td>
                     <td>${item.narasi || '-'}</td>
-                    <td>Rp ${parseInt(item.total_harga).toLocaleString('id-ID')}</td>
-                    <td>Rp ${parseInt(item.dp).toLocaleString('id-ID')}</td>
+                    <td>Rp ${ (parseInt(String(item.total_harga || '0').replace(/\D/g, '')) || 0).toLocaleString('id-ID') }</td>
+                    <td>Rp ${ (parseInt(String(item.down_payment || item.dp || '0').replace(/\D/g, '')) || 0).toLocaleString('id-ID') }</td>
                     <td><span class="badge ${badgeClass}">${item.status || 'Penawaran'}</span></td>
-                    <td style="white-space: nowrap;">
-                        <button class="btn btn-print-penawaran" data-item='${JSON.stringify(item)}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: var(--info);" title="Print / Ekspor PDF"><i class="fa-solid fa-print"></i></button>
-                        <button class="btn btn-edit-penawaran" data-item='${JSON.stringify(item)}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>
-                        <button class="btn btn-delete-penawaran" data-no="${item.no_penawaran}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger); display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-trash"></i></button>
-                        ${item.status === 'Approved' ? `
-                            <button class="btn btn-spk-penawaran" data-item='${JSON.stringify(item)}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: var(--success);" title="Lanjut ke SPK Produksi"><i class="fa-solid fa-industry"></i> SPK</button>
-                            <button class="btn btn-po-penawaran" data-item='${JSON.stringify(item)}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: var(--warning);" title="Buat Permintaan Barang (PO Internal) untuk Komponen Kurang"><i class="fa-solid fa-cart-shopping"></i> PR Barang</button>
-                        ` : ''}
-                    </td>
+                    <td style="white-space: nowrap;">${actionBtns}</td>
                 `;
+            
+            // Prevent row click when clicking buttons
+            tr.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', e => e.stopPropagation());
+            });
+
+            // Open detail on row click
+            tr.addEventListener('click', () => {
+                openDetailPenawaran(item);
+            });
+
             tbody.appendChild(tr);
         });
 
@@ -1465,10 +1607,15 @@ async function loadPenawaranData() {
                 const item = JSON.parse(e.currentTarget.getAttribute('data-item'));
                 document.getElementById('penawaran-modal-title').textContent = 'Edit Penawaran';
                 document.getElementById('p_no_penawaran').value = item.no_penawaran;
-                document.getElementById('p_customer').value = item.customer;
-                document.getElementById('p_total_harga').value = item.total_harga;
-                document.getElementById('p_total_harga_display').textContent = parseInt(item.total_harga).toLocaleString('id-ID');
-                document.getElementById('p_dp').value = item.dp;
+                const custSelect = document.getElementById('p_customer');
+                if (custSelect && custSelect.tomselect) {
+                    custSelect.tomselect.addOption({value: item.customer, text: item.customer});
+                    custSelect.tomselect.setValue(item.customer);
+                } else if (custSelect) {
+                    custSelect.value = item.customer;
+                }
+                document.getElementById('p_total_harga_display').textContent = (parseInt(String(item.total_harga || '0').replace(/[^0-9]/g, '')) || 0).toLocaleString('id-ID');
+                document.getElementById('p_dp').value = formatRibuan(parseInt(String(item.down_payment || item.dp || '0').replace(/[^0-9]/g, '')) || 0);
                 document.getElementById('p_narasi').value = item.narasi || '';
                 document.getElementById('p_status').value = item.status || 'Penawaran';
                 
@@ -1513,22 +1660,57 @@ async function loadPenawaranData() {
                     title: 'Hapus Penawaran',
                     message: `Yakin ingin menghapus penawaran <strong style="color:#fff">${no_penawaran}</strong>?<br><span style="font-size:0.82rem;color:rgba(255,255,255,0.4);">Data akan dihapus permanen.</span>`,
                     icon: '📄',
-                    type: 'danger',
-                    confirmText: 'Ya, Hapus'
+                    confirmText: 'Ya, Hapus',
+                    cancelText: 'Batal'
                 });
+                
                 if (ok) {
-                    const res = await window.ERPAPI.request('delete_penawaran', { no_penawaran });
-                    showToast(res.status === 'success' ? `✅ ${res.message}` : `❌ ${res.message}`, res.status === 'success' ? 'success' : 'error', 3000);
-                    if (res.status === 'success') loadPenawaranData();
+                    // Optimistic Delete
+                    const tr = e.currentTarget.closest('tr');
+                    if (tr) tr.style.display = 'none'; // Hide immediately
+                    if (typeof showToast !== 'undefined') showToast('Menghapus penawaran di background...', 'info', 2000);
+
+                    // Run async background sync without await blocking
+                    window.ERPAPI.request('delete_penawaran', { no_penawaran }).then(res => {
+                        if (res.status === 'success') {
+                            if (typeof showToast !== 'undefined') showToast('✅ Penawaran berhasil dihapus', 'success', 2000);
+                            loadPenawaranData(true);
+                        } else {
+                            alert('Gagal hapus: ' + res.message);
+                            loadPenawaranData(true); // Revert table to show the row again
+                        }
+                    });
                 }
             });
         });
 
         // Bind SPK
         document.querySelectorAll('.btn-spk-penawaran').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', async (e) => {
                 const item = JSON.parse(e.currentTarget.getAttribute('data-item'));
                 document.getElementById('produksi-form').reset();
+                const selectKode = document.getElementById('spk_kode_jadi');
+                
+                if (cachedBOMData.length === 0 || cachedInventoryData.length === 0) {
+                    if (selectKode) selectKode.innerHTML = '<option value="" disabled selected>Memuat data BOM...</option>';
+                    const [resBom, resInv] = await Promise.all([
+                        window.ERPAPI.request('get_bom'),
+                        window.ERPAPI.request('get_inventory')
+                    ]);
+                    if (resInv.status === 'success' && resInv.data) cachedInventoryData = resInv.data;
+                    if (resBom.status === 'success' && resBom.data) {
+                        cachedBOMData = resBom.data;
+                        if (selectKode) {
+                            selectKode.innerHTML = '<option value="" disabled selected>-- Pilih Barang Jadi --</option>';
+                            resBom.data.forEach(bom => {
+                                const opt = document.createElement('option');
+                                opt.value = bom.kode_barang;
+                                opt.textContent = `${bom.kode_barang} - ${bom.nama_barang}`;
+                                selectKode.appendChild(opt);
+                            });
+                        }
+                    }
+                }
                 
                 let partNames = '';
                 try {
@@ -1536,17 +1718,44 @@ async function loadPenawaranData() {
                     if(Array.isArray(rincian)) partNames = rincian.map(x => x.part_name || x.nama || '').filter(Boolean).join(', ');
                 } catch(err){}
                 
-                const selectKode = document.getElementById('spk_kode_jadi');
                 if(selectKode) {
-                    const option = document.createElement('option');
-                    option.value = 'Custom';
-                    option.text = partNames || 'Dari Penawaran ' + item.no_penawaran;
-                    selectKode.add(option);
-                    selectKode.value = 'Custom';
+                    if (selectKode.tomselect) {
+                        selectKode.tomselect.destroy();
+                    }
+                    
+                    let matchedBom = cachedBOMData.find(b => String(b.nama_barang).trim().toLowerCase() === String(partNames).trim().toLowerCase());
+                    if (matchedBom) {
+                        selectKode.value = matchedBom.kode_barang;
+                    } else {
+                        let existingCustom = Array.from(selectKode.options).find(o => o.value === 'Custom');
+                        if (!existingCustom) {
+                            const option = document.createElement('option');
+                            option.value = 'Custom';
+                            option.text = partNames || 'Dari Penawaran ' + item.no_penawaran;
+                            selectKode.add(option);
+                        } else {
+                            existingCustom.text = partNames || 'Dari Penawaran ' + item.no_penawaran;
+                        }
+                        selectKode.value = 'Custom';
+                    }
+                    
+                    new TomSelect('#spk_kode_jadi', {
+                        create: true,
+                        sortField: {
+                            field: 'text',
+                            direction: 'asc'
+                        },
+                        maxOptions: 50
+                    });
                 }
                 
                 const qtyInput = document.getElementById('spk_qty_jadi');
                 if(qtyInput) qtyInput.value = '1';
+                
+                // Trigger calculation explicitly after setting values
+                if (typeof calculateSPKEstimasi === 'function') {
+                    calculateSPKEstimasi();
+                }
                 
                 const pemintaInput = document.getElementById('spk_peminta');
                 if(pemintaInput) pemintaInput.value = item.customer;
@@ -1720,25 +1929,38 @@ function calculatePenawaranTotal() {
 }
 
 function addPenawaranItemRow(itemData = {}) {
-    const pNumber = itemData.part_number || '';
     const pName = itemData.part_name || '';
     const pMoq = itemData.moq_pcs || 1;
-    const pUsd = itemData.price_usd || '';
     const pIdr = itemData.price_idr || 0;
 
     const div = document.createElement('div');
     div.className = 'p-item-row';
     div.style.display = 'grid';
-    div.style.gridTemplateColumns = '1.5fr 2fr 1fr 1fr 1.5fr auto';
+    div.style.gridTemplateColumns = '3fr 1fr 2fr auto';
     div.style.gap = '10px';
     div.style.marginBottom = '10px';
     div.style.alignItems = 'center';
+
+    const list = document.getElementById('bom-items-list');
+    let optionsHtml = '<option value="">Pilih Produk / Item</option>';
+    let found = false;
+    if (list) {
+        Array.from(list.options).forEach(opt => {
+            const isSelected = opt.value === pName;
+            if (isSelected) found = true;
+            optionsHtml += `<option value="${opt.value}" data-harga="${opt.getAttribute('data-harga') || 0}" ${isSelected ? 'selected' : ''}>${opt.value}</option>`;
+        });
+    }
+    if (pName && !found) {
+        optionsHtml += `<option value="${pName}" selected>${pName}</option>`;
+    }
+
     div.innerHTML = `
-            <input type="text" class="pi-part-number" placeholder="Part Number" value="${pNumber}" style="padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
-            <input type="text" list="bom-items-list" class="pi-part-name" placeholder="Part Name" value="${pName}" required style="padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
-            <input type="text" class="pi-moq number-format" placeholder="MOQ (PCS)" value="${pMoq ? formatRibuan(pMoq) : ''}" required style="padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
-            <input type="text" class="pi-usd number-format" placeholder="USD Price" value="${pUsd ? formatRibuan(pUsd) : ''}" style="padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
-            <input type="text" class="pi-idr number-format" placeholder="IDR Price" value="${pIdr ? formatRibuan(pIdr) : ''}" required style="padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            <select class="pi-part-name" required style="padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+                ${optionsHtml}
+            </select>
+            <input type="text" class="pi-moq number-format" placeholder="Qty (PCS)" value="${pMoq ? formatRibuan(pMoq) : ''}" required style="padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            <input type="text" class="pi-idr number-format" placeholder="Harga (Rp)" value="${pIdr ? formatRibuan(pIdr) : ''}" required style="padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
             <button type="button" class="btn btn-remove-p-row" style="background: var(--danger); padding: 0.6rem;"><i class="fa-solid fa-trash"></i></button>
         `;
     div.querySelector('.btn-remove-p-row').addEventListener('click', () => {
@@ -1749,22 +1971,31 @@ function addPenawaranItemRow(itemData = {}) {
     div.querySelector('.pi-moq').addEventListener('input', calculatePenawaranTotal);
     div.querySelector('.pi-idr').addEventListener('input', calculatePenawaranTotal);
 
-    // Auto-fill IDR and Name if selecting from BOM sample
-    div.querySelector('.pi-part-name').addEventListener('input', (e) => {
-        const val = e.target.value;
-        const list = document.getElementById('bom-items-list');
-        if (list) {
-            const options = Array.from(list.options);
-            const match = options.find(opt => opt.value === val);
-            if (match) {
-                const hrg = match.getAttribute('data-harga');
-                const kode = match.getAttribute('data-kode');
-                if (hrg) {
-                    div.querySelector('.pi-idr').value = formatRibuan(hrg);
-                }
-                if (kode) {
-                    div.querySelector('.pi-part-number').value = kode;
-                }
+    const inputName = div.querySelector('.pi-part-name');
+    inputName.addEventListener('change', (e) => {
+        const selectedOpt = inputName.options[inputName.selectedIndex];
+        if (selectedOpt && selectedOpt.getAttribute('data-harga')) {
+            const hg = parseInt(selectedOpt.getAttribute('data-harga')) || 0;
+            div.querySelector('.pi-idr').value = formatRibuan(hg);
+            calculatePenawaranTotal();
+        }
+    });
+    
+    // Initialize Tom Select
+    new TomSelect(inputName, {
+        create: true,
+        sortField: {
+            field: 'text',
+            direction: 'asc'
+        },
+        maxOptions: 50,
+        onChange: function(value) {
+            const selectedOpt = this.options[value];
+            // Using dataset or matching from original datalist logic
+            const listOpt = Array.from(document.getElementById('bom-items-list')?.options || []).find(o => o.value === value);
+            if (listOpt && listOpt.getAttribute('data-harga')) {
+                const hg = parseInt(listOpt.getAttribute('data-harga')) || 0;
+                div.querySelector('.pi-idr').value = formatRibuan(hg);
                 calculatePenawaranTotal();
             }
         }
@@ -1780,6 +2011,11 @@ document.getElementById('btn-add-penawaran')?.addEventListener('click', () => {
     document.getElementById('penawaran-form').reset();
     document.getElementById('penawaran-modal-title').textContent = 'Buat Penawaran Baru';
     document.getElementById('p_no_penawaran').value = '';
+    
+    // Set default date to today
+    const pRevDate = document.getElementById('p_rev_date');
+    if (pRevDate) pRevDate.value = new Date().toISOString().split('T')[0];
+    
     pItemsContainer.innerHTML = '';
     addPenawaranItemRow();
     penawaranModal.classList.add('active');
@@ -1794,10 +2030,10 @@ penawaranForm?.addEventListener('submit', async (e) => {
 
     const items = [];
     pItemsContainer.querySelectorAll('.p-item-row').forEach(row => {
-        const part_number = row.querySelector('.pi-part-number').value;
+        const part_number = '';
         const part_name = row.querySelector('.pi-part-name').value;
         const moq_pcs = parseInt(String(row.querySelector('.pi-moq').value).replace(/\D/g, '')) || 0;
-        const price_usd = parseInt(String(row.querySelector('.pi-usd').value).replace(/\D/g, '')) || 0;
+        const price_usd = 0;
         const price_idr = parseInt(String(row.querySelector('.pi-idr').value).replace(/\D/g, '')) || 0;
         if (part_name) items.push({ part_number, part_name, moq_pcs, price_usd, price_idr });
     });
@@ -1822,22 +2058,66 @@ penawaranForm?.addEventListener('submit', async (e) => {
         }
     };
 
-    const btnSubmit = penawaranForm.querySelector('button[type="submit"]');
-    const oldHtml = btnSubmit.innerHTML;
-    btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
-    btnSubmit.disabled = true;
+    const isEdit = !!payload.no_penawaran;
+    
+    // Close modal instantly for optimistic UI
+    penawaranModal.classList.remove('active');
+    if (typeof showToast !== 'undefined') showToast('Sinkronisasi data ke server di background...', 'info', 3000);
 
-    const res = await window.ERPAPI.request('save_penawaran', payload);
-
-    btnSubmit.innerHTML = oldHtml;
-    btnSubmit.disabled = false;
-
-    if (res.status === 'success') {
-        penawaranModal.classList.remove('active');
-        loadPenawaranData(); // Reload table
-    } else {
-        alert(res.message);
+    const tbody = document.getElementById('table-penawaran');
+    if (tbody) {
+        if (!isEdit) {
+            // Optimistic Add
+            const tr = document.createElement('tr');
+            tr.style.opacity = '0.6';
+            tr.innerHTML = `
+                <td><i class="fa-solid fa-spinner fa-spin"></i></td>
+                <td>Hari ini</td>
+                <td style="font-weight: 500;">${payload.customer}</td>
+                <td>${payload.narasi || '-'}</td>
+                <td>Rp ${payload.total_harga.toLocaleString('id-ID')}</td>
+                <td>Rp ${payload.dp.toLocaleString('id-ID')}</td>
+                <td><span class="badge badge-warning">Menyimpan...</span></td>
+                <td></td>
+            `;
+            tbody.insertBefore(tr, tbody.firstChild);
+        } else {
+            // Optimistic Edit
+            const rows = tbody.querySelectorAll('.btn-delete-penawaran');
+            const targetRow = Array.from(rows).find(btn => btn.getAttribute('data-no') === payload.no_penawaran)?.closest('tr');
+            if (targetRow) {
+                targetRow.style.opacity = '0.5';
+                const cells = targetRow.querySelectorAll('td');
+                if (cells.length > 6) {
+                    cells[2].textContent = payload.customer;
+                    cells[4].textContent = 'Rp ' + payload.total_harga.toLocaleString('id-ID');
+                    cells[6].innerHTML = '<span class="badge badge-warning">Mengubah...</span>';
+                }
+            }
+        }
     }
+
+    const btnSubmit = penawaranForm.querySelector('button[type="submit"]');
+    if (btnSubmit) {
+        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+        btnSubmit.disabled = true;
+    }
+
+    // Run async background sync without await blocking
+    window.ERPAPI.request('save_penawaran', payload).then(res => {
+        if (btnSubmit) {
+            btnSubmit.innerHTML = 'Simpan';
+            btnSubmit.disabled = false;
+        }
+        
+        if (res.status === 'success') {
+            if (typeof showToast !== 'undefined') showToast('✅ Data berhasil tersinkronisasi!', 'success', 3000);
+            loadPenawaranData(true); // Background reload
+        } else {
+            alert('Gagal sinkronisasi: ' + res.message);
+            loadPenawaranData(true); // Revert table
+        }
+    });
 });
 
 const paymentModal = document.getElementById('payment-modal');
@@ -1886,9 +2166,12 @@ document.getElementById('btn-grn')?.addEventListener('click', async () => {
 });
 
 // --- BOM & PMO Sampel Logic ---
-async function loadBOMData() {
+async function loadBOMData(isBackgroundSync = false) {
     const tbody = document.getElementById('table-bom');
     if (!tbody) return;
+    if (!isBackgroundSync) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+    }
 
     const render = (response) => {
         if (response.status === 'success') {
@@ -1901,6 +2184,8 @@ async function loadBOMData() {
             const session = localStorage.getItem('erp_session');
             const user = session ? JSON.parse(session) : {};
             const canEdit = ['Admin', 'Management', 'Produksi', 'Super', 'Super Admin'].some(r => (user.role || '').includes(r));
+
+            const isAdmin = ['Admin', 'Super Admin', 'Management', 'Direktur'].some(r => (user.role || '').toLowerCase().includes(r.toLowerCase()));
 
             response.data.forEach((item, itemIdx) => {
                 const tr = document.createElement('tr');
@@ -1925,7 +2210,10 @@ async function loadBOMData() {
 
                 let actionBtns = `<button class="btn btn-detail-bom" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: var(--accent);"><i class="fa-solid fa-eye"></i> Detail</button>`;
                 if (canEdit) {
-                    actionBtns += `<button class="btn btn-edit-bom" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex;"><i class="fa-solid fa-pen"></i> Edit</button>`;
+                    actionBtns += `<button class="btn btn-edit-bom" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>`;
+                }
+                if (isAdmin) {
+                    actionBtns += `<button class="btn btn-delete-bom" data-kode="${item.kode_barang}" data-nama="${item.nama_barang}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--danger);"><i class="fa-solid fa-trash"></i></button>`;
                 }
 
                 tr.innerHTML = `
@@ -1941,6 +2229,32 @@ async function loadBOMData() {
                 if (canEdit) {
                     tr.querySelector('.btn-edit-bom').addEventListener('click', () => openBOMEdit(item));
                 }
+                if (isAdmin) {
+                    const btnDel = tr.querySelector('.btn-delete-bom');
+                    btnDel.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const kode = btnDel.getAttribute('data-kode');
+                        const nama = btnDel.getAttribute('data-nama');
+                        const ok = await showConfirm({
+                            title: 'Hapus BOM',
+                            message: `Yakin ingin menghapus BOM <strong>${nama} (${kode})</strong>?`,
+                            icon: '🗑️', confirmText: 'Ya, Hapus', cancelText: 'Batal'
+                        });
+                        if (!ok) return;
+                        
+                        tr.style.display = 'none';
+                        if (typeof showToast !== 'undefined') showToast('Menghapus BOM...', 'info');
+                        window.ERPAPI.request('delete_bom', { kode_barang: kode }).then(res => {
+                            if (res.status === 'success') {
+                                if (typeof showToast !== 'undefined') showToast(`✅ ${nama} dihapus`, 'success');
+                                loadBOMData(true);
+                            } else {
+                                if (typeof showToast !== 'undefined') showToast('❌ Gagal menghapus BOM', 'error');
+                                loadBOMData(true);
+                            }
+                        });
+                    });
+                }
             });
         } else {
             tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger);">Error: ${response.message}</td></tr>`;
@@ -1951,7 +2265,9 @@ async function loadBOMData() {
     if (cached) {
         render(cached);
     } else {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+        if (!isBackgroundSync) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+        }
     }
 
     // Fetch Stock for datalist concurrently
@@ -2377,60 +2693,150 @@ bomForm?.addEventListener('submit', async (e) => {
     }
 
     const btnSubmit = bomForm.querySelector('button[type="submit"]');
-    const oldHtml = btnSubmit.innerHTML;
-    btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
-    btnSubmit.disabled = true;
+    if (btnSubmit) {
+        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+        btnSubmit.disabled = true;
+    }
 
-    try {
-        // Use longer timeout for BOM save (up to 120 seconds) since it involves image uploads
-        const res = await window.ERPAPI.request('save_bom', payload, 120000);
+    // Optimistic UI: Close modal and add/update row
+    bomModal.classList.remove('active');
+    showToast('Sinkronisasi data BOM ke server di background...', 'info', 3000);
+    
+    const tbody = document.getElementById('table-bom');
+    if (tbody) {
+        const isEdit = bomForm.dataset.mode === 'edit';
+        if (!isEdit) {
+            const tr = document.createElement('tr');
+            tr.style.opacity = '0.6';
+            tr.innerHTML = `
+                <td><i class="fa-solid fa-spinner fa-spin"></i></td>
+                <td>${namaBOM}</td>
+                <td><span class="badge badge-warning">Menyimpan...</span></td>
+                <td>Rp ${parseInt(totalBiaya).toLocaleString('id-ID')}</td>
+                <td></td>
+            `;
+            tbody.insertBefore(tr, tbody.firstChild);
+        } else {
+            // Edit mode optimistic
+            const rows = tbody.querySelectorAll('tr');
+            const targetRow = Array.from(rows).find(row => {
+                const cell = row.querySelector('td:first-child');
+                return cell && cell.textContent.trim() === kodeBOM;
+            });
+            if (targetRow) {
+                targetRow.style.opacity = '0.5';
+                const cells = targetRow.querySelectorAll('td');
+                if (cells.length > 3) {
+                    cells[1].textContent = namaBOM;
+                    cells[3].textContent = 'Rp ' + parseInt(totalBiaya).toLocaleString('id-ID');
+                }
+            }
+        }
+    }
 
-        btnSubmit.innerHTML = oldHtml;
-        btnSubmit.disabled = false;
+    // Async background save
+    window.ERPAPI.request('save_bom', payload, 120000).then(res => {
+        if (btnSubmit) {
+            btnSubmit.innerHTML = 'Simpan Komposisi BOM';
+            btnSubmit.disabled = false;
+        }
 
         console.log('[BOM SUBMIT] Response dari server:', res);
 
         if (res.status === 'success') {
-            showToast('✅ Data BOM berhasil disimpan!', 'success', 3000);
-            bomModal.classList.remove('active');
-            await loadBOMData(); // Reload table
+            showToast('✅ Data BOM berhasil disinkronisasi!', 'success', 3000);
+            loadBOMData(true); // Background reload
         } else {
             const errorMsg = res.message || 'Terjadi kesalahan saat menyimpan data';
-            showToast('❌ Gagal: ' + errorMsg, 'error', 5000);
+            showToast('❌ Gagal sinkronisasi: ' + errorMsg, 'error', 5000);
+            loadBOMData(true); // Revert table
             console.error('[BOM SUBMIT] Error response:', res);
         }
-    } catch (error) {
-        btnSubmit.innerHTML = oldHtml;
-        btnSubmit.disabled = false;
-
+    }).catch(error => {
+        if (btnSubmit) {
+            btnSubmit.innerHTML = 'Simpan Komposisi BOM';
+            btnSubmit.disabled = false;
+        }
         console.error('[BOM SUBMIT] Exception:', error);
         showToast('❌ Koneksi gagal: ' + error.message, 'error', 5000);
-    }
+        loadBOMData(true); // Revert table
+    });
 });
 
 // Flow 3: SPK Auto-Deduct
-async function loadProduksiData() {
+async function loadProduksiData(isBackgroundSync = false) {
     const tbody = document.getElementById('table-produksi');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+    if (!isBackgroundSync) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+    }
 
     const response = await window.ERPAPI.request('get_produksi');
     if (response.status === 'success' && response.data) {
         tbody.innerHTML = '';
         if (response.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Belum ada SPK Produksi.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Belum ada SPK Produksi.</td></tr>';
             return;
         }
+
+        const session = localStorage.getItem('erp_session');
+        const user = session ? JSON.parse(session) : {};
+        const isAdmin = ['Admin', 'Super Admin', 'Management', 'Direktur'].some(r => (user.role || '').toLowerCase().includes(r.toLowerCase()));
+
         response.data.forEach(item => {
             const tr = document.createElement('tr');
+            
+            let actionBtns = '';
+            if (isAdmin) {
+                actionBtns = `<button class="btn btn-delete-spk" data-no="${item.no_spk}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--danger);"><i class="fa-solid fa-trash"></i></button>`;
+            } else {
+                actionBtns = '-';
+            }
+
             tr.innerHTML = `
                     <td>${item.no_spk || '-'}</td>
                     <td>${item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID') : '-'}</td>
                     <td style="font-weight: 500;">${item.kode_barang}</td>
                     <td>${item.qty}</td>
                     <td><span class="badge badge-success">${item.status}</span></td>
+                    <td>${actionBtns}</td>
                 `;
-            tbody.appendChild(tr);
+                tr.style.cursor = 'pointer';
+                tr.querySelectorAll('button').forEach(btn => {
+                    btn.addEventListener('click', e => e.stopPropagation());
+                });
+                tr.addEventListener('click', () => {
+                    openSPKDetail(item);
+                });
+                tbody.appendChild(tr);
+
+            if (isAdmin) {
+                const btnDel = tr.querySelector('.btn-delete-spk');
+                if (btnDel) {
+                    btnDel.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const noSPK = btnDel.getAttribute('data-no');
+                        const ok = await showConfirm({
+                            title: 'Hapus SPK Produksi',
+                            message: `Yakin ingin menghapus <strong>${noSPK}</strong>?`,
+                            icon: '🗑️', confirmText: 'Ya, Hapus', cancelText: 'Batal'
+                        });
+                        if (!ok) return;
+                        
+                        tr.style.display = 'none';
+                        if (typeof showToast !== 'undefined') showToast('Menghapus SPK...', 'info');
+                        window.ERPAPI.request('delete_spk', { no_spk: noSPK }).then(res => {
+                            if (res.status === 'success') {
+                                if (typeof showToast !== 'undefined') showToast(`✅ ${noSPK} dihapus`, 'success');
+                                loadProduksiData(true);
+                            } else {
+                                if (typeof showToast !== 'undefined') showToast('❌ Gagal menghapus SPK', 'error');
+                                loadProduksiData(true);
+                            }
+                        });
+                    });
+                }
+            }
         });
     }
 }
@@ -2463,14 +2869,31 @@ document.getElementById('btn-run-spk')?.addEventListener('click', async () => {
 
     if (resBom.status === 'success' && resBom.data) {
         cachedBOMData = resBom.data;
-        select.innerHTML = '<option value="" disabled selected>-- Pilih Barang Jadi --</option>';
+        
+        if (select.tomselect) {
+            select.tomselect.destroy();
+        }
+        
+        select.innerHTML = '<option value="">-- Pilih Barang Jadi --</option>';
         resBom.data.forEach(bom => {
             const opt = document.createElement('option');
             opt.value = bom.kode_barang;
             opt.textContent = `${bom.kode_barang} - ${bom.nama_barang}`;
             select.appendChild(opt);
         });
+        
+        new TomSelect('#spk_kode_jadi', {
+            create: true,
+            sortField: {
+                field: 'text',
+                direction: 'asc'
+            },
+            maxOptions: 50
+        });
     } else {
+        if (select.tomselect) {
+            select.tomselect.destroy();
+        }
         select.innerHTML = '<option value="" disabled selected>Gagal memuat BOM</option>';
     }
 });
@@ -2491,7 +2914,13 @@ function calculateSPKEstimasi() {
     }
 
     const bom = cachedBOMData.find(b => b.kode_barang === kode);
-    if (!bom) return;
+    if (!bom) {
+        container.innerHTML = '<span style="color:var(--warning);"><i class="fa-solid fa-circle-info"></i> Produk Custom atau tidak ada di BOM. Estimasi penggunaan material tidak tersedia.</span>';
+        totalDisp.textContent = '0';
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = 'Terbitkan SPK';
+        return;
+    }
 
     let matArray = [];
     try {
@@ -2578,21 +3007,43 @@ produksiForm?.addEventListener('submit', async (e) => {
     };
 
     const btnSubmit = produksiForm.querySelector('button[type="submit"]');
-    const oldHtml = btnSubmit.innerHTML;
-    btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
-    btnSubmit.disabled = true;
-
-    const res = await window.ERPAPI.request('save_spk', payload);
-
-    btnSubmit.innerHTML = oldHtml;
-    btnSubmit.disabled = false;
-
-    if (res.status === 'success') {
-        produksiModal.classList.remove('active');
-        loadProduksiData(); // Reload table
-    } else {
-        alert(res.message);
+    if (btnSubmit) {
+        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+        btnSubmit.disabled = true;
     }
+
+    produksiModal.classList.remove('active');
+    if (typeof showToast !== 'undefined') showToast('Sinkronisasi SPK ke server...', 'info', 3000);
+
+    // Optimistic Add
+    const tbody = document.getElementById('table-produksi');
+    if (tbody) {
+        const tr = document.createElement('tr');
+        tr.style.opacity = '0.6';
+        tr.innerHTML = `
+            <td><i class="fa-solid fa-spinner fa-spin"></i></td>
+            <td>Hari ini</td>
+            <td style="font-weight: 500;">${kode}</td>
+            <td>${qty}</td>
+            <td><span class="badge badge-warning">Menyimpan...</span></td>
+        `;
+        tbody.insertBefore(tr, tbody.firstChild);
+    }
+
+    window.ERPAPI.request('save_spk', payload).then(res => {
+        if (btnSubmit) {
+            btnSubmit.innerHTML = 'Terbitkan SPK';
+            btnSubmit.disabled = false;
+        }
+
+        if (res.status === 'success') {
+            showToast?.(`✅ SPK Berhasil Terbit`, 'success', 3000);
+            loadProduksiData(true); // Reload table background
+        } else {
+            alert('Gagal: ' + res.message);
+            loadProduksiData(true); // Revert table
+        }
+    });
 });
 
 // Flow 5: Invoice
@@ -3482,10 +3933,12 @@ function renderMermaidDiagram() {
 // --- MASTER CUSTOMER ---
 let customerData = [];
 
-async function loadCustomerData() {
+async function loadCustomerData(isBackgroundSync = false) {
     const tbody = document.getElementById('table-customer');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+    if (!isBackgroundSync) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+    }
 
     const response = await window.ERPAPI.request('get_customers');
     if (response.status === 'success' && response.data) {
@@ -3513,16 +3966,30 @@ function renderCustomerTable() {
 
     filtered.forEach(c => {
         const tr = document.createElement('tr');
+        let actionBtns = `<button class="btn btn-edit-customer" data-id="${c.id_customer}" data-nama="${c.nama_customer}" data-alamat="${c.alamat_keterangan || c['alamat_/_keterangan'] || ''}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>`;
+        
+        const session = localStorage.getItem('erp_session');
+        const user = session ? JSON.parse(session) : {};
+        const isAdmin = ['Admin', 'Super Admin', 'Management', 'Direktur'].some(r => (user.role || '').toLowerCase().includes(r.toLowerCase()));
+        
+        if (isAdmin) {
+            actionBtns += `<button class="btn btn-delete-customer" data-id="${c.id_customer}" data-nama="${c.nama_customer}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger); display: inline-flex;"><i class="fa-solid fa-trash"></i></button>`;
+        }
+
         tr.innerHTML = `
             <td>${c.id_customer || '-'}</td>
             <td style="font-weight: 500;">${c.nama_customer || '-'}</td>
             <td>${c.alamat_keterangan || c['alamat_/_keterangan'] || '-'}</td>
             <td>${c.tanggal_terdaftar || '-'}</td>
-            <td>
-                <button class="btn btn-edit-customer" data-id="${c.id_customer}" data-nama="${c.nama_customer}" data-alamat="${c.alamat_keterangan || c['alamat_/_keterangan'] || ''}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>
-                <button class="btn btn-delete-customer" data-id="${c.id_customer}" data-nama="${c.nama_customer}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger); display: inline-flex;"><i class="fa-solid fa-trash"></i></button>
-            </td>
+            <td>${actionBtns}</td>
         `;
+        tr.style.cursor = 'pointer';
+        tr.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', e => e.stopPropagation());
+        });
+        tr.addEventListener('click', () => {
+            openCustomerDetail(c);
+        });
         tbody.appendChild(tr);
     });
 
@@ -3544,17 +4011,24 @@ function renderCustomerTable() {
             const ok = await showConfirm({
                 title: 'Hapus Customer',
                 message: `Yakin ingin menghapus customer <strong>${nama}</strong>?<br><span style="font-size:0.8rem; color:rgba(255,255,255,0.5);">Aksi ini tidak dapat dibatalkan.</span>`,
-                icon: '🗑️', type: 'danger', confirmText: 'Hapus'
+                icon: '🗑️', confirmText: 'Hapus', cancelText: 'Batal'
             });
             if (ok) {
-                showToast('Menghapus Customer...', 'info');
-                const res = await window.ERPAPI.request('delete_customer', { id });
-                if (res.status === 'success') {
-                    showToast('Customer berhasil dihapus!', 'success');
-                    loadCustomerData();
-                } else {
-                    showToast(res.message || 'Gagal menghapus customer', 'danger');
-                }
+                // Optimistic Delete
+                const tr = e.currentTarget.closest('tr');
+                if (tr) tr.style.display = 'none';
+
+                if (typeof showToast !== 'undefined') showToast('Menghapus Customer di background...', 'info');
+                
+                window.ERPAPI.request('delete_customer', { id }).then(res => {
+                    if (res.status === 'success') {
+                        if (typeof showToast !== 'undefined') showToast('✅ Customer berhasil dihapus!', 'success');
+                        loadCustomerData(true);
+                    } else {
+                        if (typeof showToast !== 'undefined') showToast('❌ Gagal: ' + (res.message || 'Gagal menghapus customer'), 'danger');
+                        loadCustomerData(true); // Revert
+                    }
+                });
             }
         });
     });
@@ -3583,14 +4057,305 @@ document.getElementById('customer-form')?.addEventListener('submit', async e => 
         alamat: document.getElementById('c_alamat').value
     };
     
-    showToast('Menyimpan Customer...', 'info');
-    const res = await window.ERPAPI.request('save_customer', payload);
-    if(res.status === 'success') {
-        showToast('Customer berhasil disimpan!', 'success');
-        loadCustomerData();
+    // Optimistic Save
+    const isEdit = !!payload.id;
+    const tbody = document.getElementById('table-customer');
+    if (tbody) {
+        if (!isEdit) {
+            const tr = document.createElement('tr');
+            tr.style.opacity = '0.6';
+            tr.innerHTML = `
+                <td><i class="fa-solid fa-spinner fa-spin"></i></td>
+                <td style="font-weight: 500;">${payload.nama}</td>
+                <td>${payload.alamat}</td>
+                <td>Hari ini</td>
+                <td><span class="badge badge-warning">Menyimpan...</span></td>
+            `;
+            tbody.insertBefore(tr, tbody.firstChild);
+        } else {
+            const rows = tbody.querySelectorAll('.btn-edit-customer');
+            const targetRow = Array.from(rows).find(btn => btn.getAttribute('data-id') === payload.id)?.closest('tr');
+            if (targetRow) {
+                targetRow.style.opacity = '0.5';
+                const cells = targetRow.querySelectorAll('td');
+                if (cells.length > 2) {
+                    cells[1].textContent = payload.nama;
+                    cells[2].textContent = payload.alamat;
+                }
+            }
+        }
+    }
+    
+    if (typeof showToast !== 'undefined') showToast('Sinkronisasi Customer ke server...', 'info');
+    
+    window.ERPAPI.request('save_customer', payload).then(res => {
+        if(res.status === 'success') {
+            if (typeof showToast !== 'undefined') showToast('✅ Customer berhasil disinkronisasi!', 'success');
+            loadCustomerData(true);
+        } else {
+            if (typeof showToast !== 'undefined') showToast('❌ Gagal: ' + (res.message || 'Gagal menyimpan customer'), 'danger');
+            loadCustomerData(true);
+        }
+    });
+});
+
+let currentDetailItem = null;
+
+async function openDetailPenawaran(item) {
+    currentDetailItem = item;
+    
+    document.getElementById('detail-modal-title').textContent = 'Detail Penawaran: ' + (item.no_penawaran || '-');
+    document.getElementById('detail_status').value = item.status || 'Penawaran';
+    
+    document.getElementById('detail_customer').textContent = item.customer || '-';
+    document.getElementById('detail_tanggal').textContent = item.tanggal || '-';
+    document.getElementById('detail_narasi').textContent = item.narasi || '-';
+    
+    document.getElementById('detail_total_harga').textContent = 'Rp ' + (parseInt(String(item.total_harga || '0').replace(/\D/g, '')) || 0).toLocaleString('id-ID');
+    document.getElementById('detail_dp').textContent = 'Rp ' + (parseInt(String(item.down_payment || item.dp || '0').replace(/\D/g, '')) || 0).toLocaleString('id-ID');
+
+    // Reset UI
+    const bomCheckWrapper = document.getElementById('detail_bom_check_wrapper');
+    const bomCheckContainer = document.getElementById('detail_bom_check_container');
+    bomCheckWrapper.style.display = 'block';
+    bomCheckContainer.innerHTML = '<p style="margin:0; color:#aaa;">Memeriksa ketersediaan stok material...</p>';
+    
+    document.getElementById('detail-penawaran-modal').classList.add('active');
+
+    // Render items
+    const tbody = document.getElementById('detail_items_tbody');
+    tbody.innerHTML = '';
+    
+    let items = [];
+    try {
+        items = typeof item.rincian_item === 'string' ? JSON.parse(item.rincian_item) : (item.rincian_item || []);
+    } catch(e) {}
+
+    if (!items || items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Tidak ada item</td></tr>';
+        bomCheckWrapper.style.display = 'none';
     } else {
-        showToast(res.message || 'Gagal menyimpan customer', 'danger');
+        items.forEach(it => {
+            const tr = document.createElement('tr');
+            const qty = parseInt(it.qty || it.moq_pcs || 0);
+            const harga = parseInt(it.harga || it.price_idr || 0);
+            const subtotal = qty * harga;
+            tr.innerHTML = `
+                <td>${it.nama || it.part_name || '-'}</td>
+                <td style="text-align: right;">${qty.toLocaleString('id-ID')}</td>
+                <td style="text-align: right;">${harga.toLocaleString('id-ID')}</td>
+                <td style="text-align: right; font-weight: 600;">${subtotal.toLocaleString('id-ID')}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Process BOM Check
+    let hasShortage = false;
+    let allCustom = true;
+
+    if (items && items.length > 0) {
+        // Fetch if empty
+        if (cachedBOMData.length === 0 || cachedInventoryData.length === 0) {
+            const [resBom, resInv] = await Promise.all([
+                window.ERPAPI.request('get_bom'),
+                window.ERPAPI.request('get_inventory')
+            ]);
+            if (resBom.status === 'success' && resBom.data) cachedBOMData = resBom.data;
+            if (resInv.status === 'success' && resInv.data) cachedInventoryData = resInv.data;
+        }
+
+        // Aggregate materials
+        const aggregatedMaterials = {};
+        
+        items.forEach(it => {
+            const partName = String(it.nama || it.part_name || '').trim().toLowerCase();
+            const reqQty = parseInt(it.qty || it.moq_pcs || 0);
+            
+            const matchedBom = cachedBOMData.find(b => String(b.nama_barang).trim().toLowerCase() === partName);
+            if (matchedBom) {
+                allCustom = false;
+                let matArray = [];
+                try {
+                    matArray = typeof matchedBom.rincian_material === 'string' ? JSON.parse(matchedBom.rincian_material) : matchedBom.rincian_material;
+                } catch(e) {}
+
+                if (matArray && matArray.length > 0) {
+                    matArray.forEach(m => {
+                        const matCode = m.kode || 'UNKNOWN';
+                        const matName = m.nama || 'Material Tidak Diketahui';
+                        const qtyPerUnit = m.qty || 1;
+                        const totalReqQty = qtyPerUnit * reqQty;
+                        
+                        if (!aggregatedMaterials[matCode]) {
+                            aggregatedMaterials[matCode] = { nama: matName, reqQty: 0 };
+                        }
+                        aggregatedMaterials[matCode].reqQty += totalReqQty;
+                    });
+                }
+            }
+        });
+
+        if (allCustom) {
+            bomCheckContainer.innerHTML = '<span style="color:var(--warning);"><i class="fa-solid fa-circle-info"></i> Seluruh produk Custom atau tidak terdaftar di Master BOM.</span>';
+        } else if (Object.keys(aggregatedMaterials).length === 0) {
+            bomCheckContainer.innerHTML = '<span style="color:var(--warning);"><i class="fa-solid fa-circle-info"></i> Tidak ada rincian material pada BOM produk-produk ini.</span>';
+        } else {
+            let html = '';
+            Object.keys(aggregatedMaterials).forEach(kode => {
+                const mat = aggregatedMaterials[kode];
+                const invItem = cachedInventoryData.find(inv => inv.kode_material === kode);
+                const currentStock = invItem ? parseInt(invItem.stok || 0) : 0;
+                const shortage = mat.reqQty - currentStock;
+
+                if (shortage > 0) {
+                    hasShortage = true;
+                    html += `<div style="display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px; color: var(--danger);">
+                            <span><i class="fa-solid fa-triangle-exclamation"></i> ${kode} | ${mat.nama}</span>
+                            <span>Butuh: <strong>${mat.reqQty.toLocaleString('id-ID')}</strong> (Stok: ${currentStock.toLocaleString('id-ID')}, <strong>Kurang: ${shortage.toLocaleString('id-ID')}</strong>)</span>
+                        </div>`;
+                } else {
+                    html += `<div style="display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px; color: var(--success);">
+                            <span><i class="fa-solid fa-check"></i> ${kode} | ${mat.nama}</span>
+                            <span>Butuh: <strong>${mat.reqQty.toLocaleString('id-ID')}</strong> (Stok: ${currentStock.toLocaleString('id-ID')}, Cukup)</span>
+                        </div>`;
+                }
+            });
+            bomCheckContainer.innerHTML = html;
+        }
+    }
+
+    const actionDiv = document.getElementById('detail-action-produksi');
+    const btnPO = document.getElementById('btn-detail-po');
+    
+    if ((item.status || '').toLowerCase() === 'approved') {
+        actionDiv.style.display = 'flex';
+        
+        // Show PR Barang button if there's a shortage
+        if (hasShortage) {
+            btnPO.style.display = 'inline-flex';
+        } else {
+            btnPO.style.display = 'none';
+        }
+
+        document.getElementById('btn-detail-spk').onclick = (e) => {
+            e.stopPropagation();
+            document.querySelector(`.btn-spk-penawaran[data-item*="${item.no_penawaran}"]`)?.click();
+            document.getElementById('detail-penawaran-modal').classList.remove('active');
+        };
+        btnPO.onclick = (e) => {
+            e.stopPropagation();
+            document.querySelector(`.btn-po-penawaran[data-item*="${item.no_penawaran}"]`)?.click();
+            document.getElementById('detail-penawaran-modal').classList.remove('active');
+        };
+    } else {
+        actionDiv.style.display = 'none';
+    }
+}
+
+document.getElementById('btn-update-detail-status')?.addEventListener('click', async () => {
+    if (!currentDetailItem) return;
+    const newStatus = document.getElementById('detail_status').value;
+    
+    const payload = { ...currentDetailItem, status: newStatus };
+    
+    showToast('Memperbarui status...', 'info');
+    document.getElementById('detail-penawaran-modal').classList.remove('active');
+    
+    const res = await window.ERPAPI.request('save_penawaran', payload);
+    if (res.status === 'success') {
+        showToast('Status berhasil diperbarui!', 'success');
+        loadPenawaranData();
+    } else {
+        showToast(res.message || 'Gagal mengupdate status', 'danger');
     }
 });
 
 });
+
+// Global event listener for table row clicks to trigger detail/edit actions
+document.addEventListener('click', (e) => {
+    const tr = e.target.closest('tbody tr');
+    if (!tr) return;
+
+    // Ignore if clicking a button, input, link, or badge (like status badges)
+    if (e.target.closest('button, .btn, input, select, textarea, a, .badge')) return;
+
+    // Find the primary action button in this row
+    // Prioritize Detail buttons over Edit buttons
+    const actionBtn = tr.querySelector('.btn-detail-po, .btn-detail-bom, .btn-detail-penawaran');
+    
+    if (actionBtn) {
+        actionBtn.click();
+    }
+});
+
+// === DETAIL MODALS FUNCTIONS ===
+function openStockDetail(item) {
+    const content = document.getElementById('stock-detail-content');
+    const isKritis = item.stok < 10;
+    content.innerHTML = `
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; padding:1rem; background:rgba(255,255,255,0.04); border-radius:10px;">
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">KODE</div><div style="font-weight:600;">${item.kode || '-'}</div></div>
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">NAMA BARANG</div><div style="font-weight:600;">${item.nama || '-'}</div></div>
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">STOK</div><div><span class="badge ${isKritis ? 'badge-warning' : 'badge-success'}">${parseInt(item.stok || 0).toLocaleString('id-ID')} ${item.satuan || ''}</span></div></div>
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">HARGA</div><div style="font-weight:600; color:var(--primary);">Rp ${parseInt(item.harga || 0).toLocaleString('id-ID')}</div></div>
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">LOKASI GUDANG</div><div style="font-weight:600;">${item.lokasi || '-'}</div></div>
+            <div style="grid-column:1/-1;"><div style="font-size:0.75rem; color:var(--text-muted);">SPESIFIKASI</div><div>${item.spesifikasi || '-'}</div></div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:1.5rem;">
+            <button class="btn" onclick="document.getElementById('stock-detail-modal').classList.remove('active'); document.querySelector('.btn-edit-stock[data-kode=\\'${item.kode}\\']')?.click()" style="background:var(--accent);"><i class="fa-solid fa-pen"></i> Edit</button>
+        </div>
+    `;
+    document.getElementById('stock-detail-modal').classList.add('active');
+}
+
+function openCustomerDetail(item) {
+    const content = document.getElementById('customer-detail-content');
+    content.innerHTML = `
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; padding:1rem; background:rgba(255,255,255,0.04); border-radius:10px;">
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">ID CUSTOMER</div><div style="font-weight:600;">${item.id_customer || '-'}</div></div>
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">NAMA CUSTOMER</div><div style="font-weight:600;">${item.nama_customer || '-'}</div></div>
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">TANGGAL TERDAFTAR</div><div style="font-weight:600;">${item.tanggal_terdaftar || '-'}</div></div>
+            <div style="grid-column:1/-1;"><div style="font-size:0.75rem; color:var(--text-muted);">ALAMAT / KETERANGAN</div><div>${item.alamat_keterangan || item['alamat_/_keterangan'] || '-'}</div></div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:1.5rem;">
+            <button class="btn" onclick="document.getElementById('customer-detail-modal').classList.remove('active'); document.querySelector('.btn-edit-customer[data-id=\\'${item.id_customer}\\']')?.click()" style="background:var(--accent);"><i class="fa-solid fa-pen"></i> Edit</button>
+        </div>
+    `;
+    document.getElementById('customer-detail-modal').classList.add('active');
+}
+
+function openBarangJadiDetail(item) {
+    const content = document.getElementById('barang-jadi-detail-content');
+    const isKritis = parseInt(item.stok) < 5;
+    content.innerHTML = `
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; padding:1rem; background:rgba(255,255,255,0.04); border-radius:10px;">
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">KODE BARANG</div><div style="font-weight:600;">${item.kode_barang || item.kode || '-'}</div></div>
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">NAMA BARANG</div><div style="font-weight:600;">${item.nama_barang || item.nama || '-'}</div></div>
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">STOK</div><div><span class="badge ${isKritis ? 'badge-warning' : 'badge-success'}">${parseInt(item.stok || 0).toLocaleString('id-ID')}</span></div></div>
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">HARGA JUAL</div><div style="font-weight:600; color:var(--primary);">Rp ${parseInt(item.harga_jual || 0).toLocaleString('id-ID')}</div></div>
+            <div style="grid-column:1/-1;"><div style="font-size:0.75rem; color:var(--text-muted);">LOKASI GUDANG</div><div style="font-weight:600;">${item.lokasi_gudang || item.lokasi || '-'}</div></div>
+        </div>
+    `;
+    document.getElementById('barang-jadi-detail-modal').classList.add('active');
+}
+
+function openSPKDetail(item) {
+    const content = document.getElementById('spk-detail-content');
+    content.innerHTML = `
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; padding:1rem; background:rgba(255,255,255,0.04); border-radius:10px;">
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">NO SPK</div><div style="font-weight:600;">${item.no_spk || '-'}</div></div>
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">TANGGAL</div><div style="font-weight:600;">${item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID') : '-'}</div></div>
+            <div style="grid-column:1/-1;"><div style="font-size:0.75rem; color:var(--text-muted);">BARANG JADI</div><div style="font-weight:600;">${item.kode_barang || '-'}</div></div>
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">QTY PRODUKSI</div><div style="font-weight:600;">${item.qty || '-'}</div></div>
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">STATUS</div><div><span class="badge badge-success">${item.status || '-'}</span></div></div>
+        </div>
+    `;
+    document.getElementById('spk-detail-modal').classList.add('active');
+}
+
+document.getElementById('btn-close-stock-detail')?.addEventListener('click', () => document.getElementById('stock-detail-modal').classList.remove('active'));
+document.getElementById('btn-close-customer-detail')?.addEventListener('click', () => document.getElementById('customer-detail-modal').classList.remove('active'));
+document.getElementById('btn-close-barang-jadi-detail')?.addEventListener('click', () => document.getElementById('barang-jadi-detail-modal').classList.remove('active'));
+document.getElementById('btn-close-spk-detail')?.addEventListener('click', () => document.getElementById('spk-detail-modal').classList.remove('active'));

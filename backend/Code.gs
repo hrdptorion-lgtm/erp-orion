@@ -131,6 +131,15 @@ function doPost(e) {
       case 'import_stock':
         response = importStock(payload);
         break;
+      case 'delete_barang_jadi':
+        response = deleteBarangJadi(payload);
+        break;
+      case 'delete_bom':
+        response = deleteBOM(payload);
+        break;
+      case 'delete_spk':
+        response = deleteSPK(payload);
+        break;
       default:
         response = { status: 'error', message: 'Action tidak dikenali: ' + action };
         break;
