@@ -858,9 +858,23 @@ tbody tr:hover {
     -webkit-backdrop-filter: none !important;
   }
   
-  .data-section, .stat-card, .login-box, .top-nav-actions {
+  .stat-card, .login-box, .top-nav-actions {
     background: var(--bg-main) !important;
     border: 1px solid var(--glass-border) !important;
+  }
+
+  /* Edge-to-edge styling for ALL Data Sections on Mobile */
+  .data-section {
+    margin: 0 -1rem !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+  }
+  
+  .data-section .section-header, 
+  .data-section .pagination-controls {
+    padding: 0 1rem;
   }
 
   body {
