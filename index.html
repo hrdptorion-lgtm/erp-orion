@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="css/style.css?v=6">
+    <link rel="stylesheet" href="css/style.css?v=20">
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Tom Select for Smart Dropdowns -->
@@ -172,31 +172,23 @@
             </ul>
         </div>
         <div class="sidebar-profile-container"
-            style="margin-top: auto; padding: 15px; border-top: 1px solid var(--glass-border); flex-shrink: 0;">
+            style="margin-top: auto; padding: 15px; border-top: 1px solid var(--glass-border); flex-shrink: 0; display: flex; flex-direction: column; gap: 10px;">
             <div class="user-profile-sidebar"
                 style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; border-radius: 10px; transition: background 0.3s;"
-                id="btn-sidebar-profile">
+                id="btn-sidebar-profile" title="Buka Profil Saya">
                 <div class="avatar" id="user-avatar-initial"
                     style="width: 35px; height: 35px; min-width: 35px; font-size: 1rem;">A</div>
                 <div class="user-info" style="flex: 1; overflow: hidden;">
                     <span id="user-name-display"
-                        style="font-weight: 500; font-size: 0.9rem; display: block; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">Admin
+                        style="font-weight: 500; font-size: 0.9rem; display: block; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; color: var(--text-main);">Admin
                         Orion</span>
                     <span id="user-role-display" style="font-size: 0.75rem; color: var(--text-muted);">Direktur</span>
                 </div>
-                <i class="fa-solid fa-chevron-up" style="font-size: 0.8rem; color: var(--text-muted);"></i>
             </div>
-            <div id="profile-action-menu" class="profile-action-menu"
-                style="display: none; flex-direction: column; gap: 5px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--glass-border);">
-                <button class="btn btn-profile-action" id="btn-my-profile"
-                    style="background: transparent; color: var(--text-main); justify-content: flex-start; padding: 8px 12px; font-size: 0.85rem; box-shadow: none;">
-                    <i class="fa-solid fa-user" style="width: 20px;"></i> Profil Saya
-                </button>
-                <button class="btn btn-profile-action" id="btn-logout"
-                    style="background: transparent; color: var(--danger); justify-content: flex-start; padding: 8px 12px; font-size: 0.85rem; box-shadow: none;">
-                    <i class="fa-solid fa-sign-out-alt" style="width: 20px;"></i> Keluar
-                </button>
-            </div>
+            <button class="btn" id="btn-logout"
+                style="background: rgba(239, 68, 68, 0.1); color: var(--danger); width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 10px; border-radius: 10px; font-weight: 600; border: 1px solid rgba(239, 68, 68, 0.2); transition: all 0.2s; box-shadow: none;">
+                <i class="fa-solid fa-sign-out-alt"></i> Keluar
+            </button>
         </div>
     </nav>
     <!-- Global FAB for Mobile (Speed Dial Ready) -->
@@ -261,7 +253,8 @@
                 Perusahaan</div>
             <div class="sheet-item admin-only" data-target="coa"><i class="fa-solid fa-file-invoice"></i> Kategori COA
             </div>
-            <div class="sheet-item admin-only" data-target="approval"><i class="fa-solid fa-diagram-project"></i> Alur
+            <div class="sheet-item super-admin-only" data-target="approval"><i class="fa-solid fa-diagram-project"></i>
+                Alur
                 Approval</div>
             <div class="sheet-item admin-only" data-target="admin"><i class="fa-solid fa-users-gear"></i> Manajemen
                 Akses</div>
@@ -314,28 +307,28 @@
                         <span>Total PO Outstanding</span>
                         <div class="stat-icon icon-blue"><i class="fa-solid fa-file-contract"></i></div>
                     </div>
-                    <div class="stat-value">12</div>
+                    <div class="stat-value" id="dashboard-po">-</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">
                         <span>Stok Raw Material Kritis</span>
                         <div class="stat-icon icon-orange"><i class="fa-solid fa-boxes-stacked"></i></div>
                     </div>
-                    <div class="stat-value">3</div>
+                    <div class="stat-value" id="dashboard-rm">-</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">
                         <span>Total Invoice Unpaid</span>
                         <div class="stat-icon icon-purple"><i class="fa-solid fa-file-invoice"></i></div>
                     </div>
-                    <div class="stat-value">Rp 45M</div>
+                    <div class="stat-value" id="dashboard-invoice">-</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">
-                        <span>Saldo Petty Cash</span>
-                        <div class="stat-icon icon-green"><i class="fa-solid fa-wallet"></i></div>
+                        <span>Jumlah Produk BMO & PMO</span>
+                        <div class="stat-icon icon-green"><i class="fa-solid fa-boxes-packing"></i></div>
                     </div>
-                    <div class="stat-value">Rp 2.5M</div>
+                    <div class="stat-value" id="dashboard-bmo">-</div>
                 </div>
             </div>
 
@@ -558,9 +551,9 @@
         <div id="view-produksi" class="view">
             <div class="data-section">
                 <div class="section-header">
-                    <h3>Jadwal & SPK Produksi (Flow 3)</h3>
+                    <h3>Jadwal & SPK Produksi</h3>
                     <button class="btn" id="btn-run-spk" style="background: var(--secondary);"><i
-                            class="fa-solid fa-play"></i> Terbitkan & Selesaikan SPK</button>
+                            class="fa-solid fa-plus"></i> Buat SPK Produksi</button>
                 </div>
                 <div class="table-container">
                     <table>
@@ -945,6 +938,18 @@
                         style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;">✕</button>
                 </div>
                 <div id="customer-detail-content"></div>
+            </div>
+        </div>
+
+        <!-- User Detail Modal -->
+        <div id="user-detail-modal" class="login-overlay">
+            <div class="login-box" style="max-width:600px; width:95vw; max-height:90vh; overflow-y:auto;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                    <h2 style="margin:0;">Detail Pengguna</h2>
+                    <button type="button" id="btn-close-user-detail"
+                        style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;">✕</button>
+                </div>
+                <div id="user-detail-content"></div>
             </div>
         </div>
 
@@ -1417,7 +1422,7 @@
                     <div class="input-group">
                         <label>Pilih Barang Jadi (Dari BOM)</label>
                         <select id="spk_kode_jadi" required
-                            style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
+                            style="width: 100%; padding: 0.8rem; border-radius: 10px; border: 1px solid var(--glass-border);">
                             <option value="" disabled selected>-- Pilih Barang Jadi --</option>
                         </select>
                     </div>
@@ -1427,9 +1432,10 @@
                     </div>
                     <div class="input-group"
                         style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-top: 15px;">
-                        <label style="color: var(--warning);">Estimasi Penggunaan Bahan Baku (Auto Deduct)</label>
+                        <label style="color: var(--warning); filter: drop-shadow(0 0 2px rgba(0,0,0,0.1));">Estimasi
+                            Penggunaan Bahan Baku (Auto Deduct)</label>
                         <div id="spk-bahan-container"
-                            style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; font-size: 0.9rem; color: #ccc;">
+                            style="background: var(--card-bg); padding: 10px; border-radius: 6px; font-size: 0.9rem; color: var(--text-main); border: 1px solid var(--glass-border);">
                             Pilih barang dan isi Qty untuk melihat estimasi...
                         </div>
                         <div style="text-align: right; margin-top: 10px; font-weight: bold; color: var(--text-main);">
@@ -1439,12 +1445,14 @@
 
                     <div class="input-group"
                         style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-top: 15px;">
-                        <label style="color: var(--info);">Otorisasi Pengambilan Gudang</label>
+                        <label style="color: var(--info); filter: drop-shadow(0 0 2px rgba(0,0,0,0.1));">Otorisasi
+                            Pengambilan Gudang</label>
                         <div style="display: flex; gap: 10px;">
                             <input type="text" id="spk_peminta" required placeholder="Nama Kru Produksi (Peminta)"
                                 style="flex: 1;">
-                            <input type="text" id="spk_pemberi" required placeholder="Nama Kru Gudang (Penyetuju)"
-                                style="flex: 1;">
+                            <select id="spk_pemberi" multiple required style="flex: 1; padding: 0.8rem; border-radius: 10px; border: 1px solid var(--glass-border); background: var(--card-bg); color: var(--text-main);">
+                                <option value="" disabled>Pilih Kru Gudang (Penyetuju)</option>
+                            </select>
                         </div>
                     </div>
 
@@ -2108,8 +2116,8 @@
         <option value="Set"></option>
     </datalist>
 
-    <script src="js/api.js?v=8"></script>
-    <script src="js/app.js?v=8"></script>
+    <script src="js/api.js?v=26"></script>
+    <script src="js/app.js?v=26"></script>
 </body>
 
 </html>

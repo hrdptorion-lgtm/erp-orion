@@ -44,14 +44,113 @@ body.light-mode {
 
 /* Light mode specific overrides */
 body.light-mode .brand h2 {
-  background: linear-gradient(to right, var(--primary), #1e293b);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  background: none !important;
+  -webkit-text-fill-color: white !important;
+  color: white !important;
 }
 
-body.light-mode .top-nav-actions {
-  background: rgba(255, 255, 255, 0.95) !important;
+body.light-mode .sidebar {
+  background: var(--primary) !important;
+  box-shadow: 2px 0 15px rgba(0,0,0,0.1);
+}
+
+body.light-mode .nav-item {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+body.light-mode .nav-item i {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+body.light-mode .nav-item:hover,
+body.light-mode .nav-item.active {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: white !important;
+  border-right-color: white !important;
+}
+
+body.light-mode .nav-item:hover i,
+body.light-mode .nav-item.active i {
+  color: white !important;
+}
+
+body.light-mode .user-info #user-name-display {
+  color: white !important;
+}
+
+body.light-mode .user-info #user-role-display {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+body.light-mode .user-avatar {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.light-mode .data-section {
+  background: var(--card-bg) !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+body.light-mode .login-box,
+body.light-mode .stat-card {
+  background: var(--card-bg) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+body.light-mode input,
+body.light-mode select,
+body.light-mode textarea {
+  background: var(--card-bg) !important;
+  color: var(--text-main) !important;
+  border-color: var(--glass-border) !important;
+}
+
+body.light-mode .ts-control,
+body.light-mode .ts-wrapper.single .ts-control {
+  background: var(--card-bg) !important;
+  border-color: var(--glass-border) !important;
+}
+
+body.light-mode .ts-control > input,
+body.light-mode .ts-wrapper.single .ts-control .item {
+  color: var(--text-main) !important;
+}
+
+body.light-mode .ts-dropdown {
+  background: var(--bg-main) !important;
+  color: var(--text-main) !important;
+  border-color: var(--glass-border) !important;
+}
+
+body.light-mode .ts-dropdown .option {
+  color: var(--text-main) !important;
+}
+
+body.light-mode .brand {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+body.light-mode .sidebar-profile-container {
+  border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+body.light-mode #btn-logout {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.light-mode #btn-logout:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+body.light-mode th {
+  color: var(--text-muted) !important;
+}
+
+body.light-mode p[id^="detail_"] {
+  background: rgba(0,0,0,0.03) !important;
+  color: var(--text-main) !important;
 }
 
 body.light-mode .bottom-nav {
@@ -475,6 +574,7 @@ td {
   padding: 1rem;
   text-align: left;
   border-bottom: 1px solid var(--glass-border);
+  white-space: nowrap;
 }
 
 th {
@@ -885,9 +985,28 @@ tbody tr:hover {
     border-radius: 0 !important;
   }
 
-  .data-section .section-header,
+  .data-section .section-header {
+    padding: 0 1rem;
+  }
+
   .data-section .pagination-controls {
     padding: 0 1rem;
+    flex-direction: column !important;
+    gap: 15px !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  .data-section .pagination-controls > div:first-child {
+    order: 2;
+    text-align: center;
+    font-size: 0.8rem !important;
+  }
+
+  .data-section .pagination-controls > div:last-child {
+    order: 1;
+    width: 100%;
+    justify-content: center;
   }
 
   body {
@@ -953,16 +1072,18 @@ tbody tr:hover {
     white-space: nowrap;
   }
 
-  /* Hide standard Add Buttons on Mobile */
+  /* Hide specific buttons to replace with FAB */
   #btn-add-penawaran,
   #btn-add-stock,
-  #btn-grn,
   #btn-import-stock,
+  #btn-export-stock,
   #btn-add-po-internal,
   #btn-add-bom,
+  #btn-run-spk,
   #btn-add-cash,
   #btn-add-coa,
   #btn-add-user,
+  #btn-add-customer,
   #btn-add-kategori,
   #btn-add-jabatan {
     display: none !important;

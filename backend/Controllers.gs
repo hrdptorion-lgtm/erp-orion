@@ -68,7 +68,7 @@ function getDashboardData() {
   };
 
   const orders = getSheetData('DB Orders');
-  const produksi = getSheetData('DB Jadwal Produksi');
+  const produksi = getSheetData('DB SPK Produksi');
   const inventory = getSheetData('DB Master Barang Jadi');
   const stock = getSheetData('DB Master Bahan Baku');
 
@@ -154,8 +154,8 @@ function updateOrderStatus(payload) {
 }
 
 function getProduksi() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Jadwal Produksi');
-  if (!sheet) return { status: 'error', message: 'Sheet DB Jadwal Produksi tidak ditemukan.' };
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB SPK Produksi');
+  if (!sheet) return { status: 'error', message: 'Sheet DB SPK Produksi tidak ditemukan.' };
   
   const values = sheet.getDataRange().getDisplayValues();
   if (values.length <= 1) return { status: 'success', data: [] };
@@ -173,8 +173,8 @@ function getProduksi() {
 }
 
 function saveProduksi(payload) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Jadwal Produksi');
-  if (!sheet) return { status: 'error', message: 'Sheet DB Jadwal Produksi tidak ditemukan.' };
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB SPK Produksi');
+  if (!sheet) return { status: 'error', message: 'Sheet DB SPK Produksi tidak ditemukan.' };
   
   const headers = sheet.getDataRange().getDisplayValues()[0];
   const rowData = headers.map(h => {
@@ -903,10 +903,136 @@ function saveSettings(payload) {
 // ==========================================
 function saveSPK(payload) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName('DB SPK');
-  if (!sheet) return { status: 'error', message: 'Sheet DB SPK tidak ditemukan.' };
-  sheet.appendRow(['SPK-' + Date.now(), payload.id_produksi || '', payload.item || '', payload.qty || 0, new Date().toLocaleDateString('id-ID'), 'Aktif']);
-  return { status: 'success', message: 'SPK berhasil disimpan.' };
+  const sheet = ss.getSheetByName('DB SPK Produksi');
+  if (!sheet) return { status: 'error', message: 'Sheet DB SPK Produksi tidak ditemukan.' };
+  
+  const noSPK = 'SPK-' + Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyyyMMdd') + '-' + Math.floor(Math.random() * 1000);
+  const tanggal = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy HH:mm');
+  
+  sheet.appendRow([
+    noSPK,
+    tanggal,
+    payload.kode_barang || '',
+    payload.qty || 0,
+    payload.peminta || '',
+    payload.pemberi || '',
+    'Menunggu Pengambilan',
+    JSON.stringify(payload.bahan_baku || [])
+  ]);
+
+  return { status: 'success', message: 'SPK berhasil diterbitkan (Menunggu Pengambilan).' };
+}
+
+function ambilBahanSPK(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('DB SPK Produksi');
+  if (!sheet) return { status: 'error', message: 'Sheet DB SPK Produksi tidak ditemukan.' };
+
+  const spkValues = sheet.getDataRange().getDisplayValues();
+  const headers = spkValues[0];
+  const noSPKIdx = headers.findIndex(h => /no.*spk/i.test(h));
+  const statusIdx = headers.findIndex(h => /status/i.test(h));
+  const bahanIdx = headers.findIndex(h => /bahan/i.test(h));
+
+  let rowIndex = -1;
+  let bahanBakuJson = '[]';
+  for (let i = 1; i < spkValues.length; i++) {
+    if (String(spkValues[i][noSPKIdx]).trim() === String(payload.no_spk).trim()) {
+      rowIndex = i + 1;
+      bahanBakuJson = spkValues[i][bahanIdx] || '[]';
+      break;
+    }
+  }
+
+  if (rowIndex === -1) return { status: 'error', message: 'SPK tidak ditemukan.' };
+
+  const bahanBaku = JSON.parse(bahanBakuJson);
+
+  // Deduct inventory
+  const stockSheet = ss.getSheetByName('DB Master Bahan Baku');
+  if (stockSheet && bahanBaku.length > 0) {
+    const stockValues = stockSheet.getDataRange().getDisplayValues();
+    const stockHeaders = stockValues[0];
+    const kodeIdx = stockHeaders.findIndex(h => /kode/i.test(h));
+    const stokIdx = stockHeaders.findIndex(h => /stok|stock/i.test(h));
+    
+    if (kodeIdx !== -1 && stokIdx !== -1) {
+      bahanBaku.forEach(bahan => {
+        for (let i = 1; i < stockValues.length; i++) {
+          if (String(stockValues[i][kodeIdx]).trim() === String(bahan.kode).trim()) {
+            const currentStok = parseFloat(String(stockSheet.getRange(i + 1, stokIdx + 1).getValue()).replace(/[^0-9.-]/g, '')) || 0;
+            const deduction = parseFloat(bahan.qty) || 0;
+            stockSheet.getRange(i + 1, stokIdx + 1).setValue(currentStok - deduction);
+            break;
+          }
+        }
+      });
+    }
+  }
+
+  sheet.getRange(rowIndex, statusIdx + 1).setValue('Dalam Proses');
+  return { status: 'success', message: 'Bahan baku berhasil diambil, status Dalam Proses.' };
+}
+
+function selesaikanSPK(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('DB SPK Produksi');
+  if (!sheet) return { status: 'error', message: 'Sheet DB SPK Produksi tidak ditemukan.' };
+
+  const spkValues = sheet.getDataRange().getDisplayValues();
+  const headers = spkValues[0];
+  const noSPKIdx = headers.findIndex(h => /no.*spk/i.test(h));
+  const kodeBarangIdx = headers.findIndex(h => /kode/i.test(h));
+  const qtyIdx = headers.findIndex(h => /qty/i.test(h));
+  const statusIdx = headers.findIndex(h => /status/i.test(h));
+
+  let rowIndex = -1;
+  let kodeBarang = '';
+  let qtyProduksi = 0;
+
+  for (let i = 1; i < spkValues.length; i++) {
+    if (String(spkValues[i][noSPKIdx]).trim() === String(payload.no_spk).trim()) {
+      rowIndex = i + 1;
+      kodeBarang = spkValues[i][kodeBarangIdx];
+      qtyProduksi = parseFloat(spkValues[i][qtyIdx]) || 0;
+      break;
+    }
+  }
+
+  if (rowIndex === -1) return { status: 'error', message: 'SPK tidak ditemukan.' };
+
+  // Increase Barang Jadi
+  const fgSheet = ss.getSheetByName('DB Master Barang Jadi');
+  if (fgSheet && kodeBarang && qtyProduksi > 0) {
+    const fgValues = fgSheet.getDataRange().getDisplayValues();
+    const fgHeaders = fgValues[0];
+    const fgKodeIdx = fgHeaders.findIndex(h => /kode/i.test(h));
+    const fgStokIdx = fgHeaders.findIndex(h => /stok|stock/i.test(h));
+    
+    if (fgKodeIdx !== -1 && fgStokIdx !== -1) {
+      let fgFound = false;
+      for (let i = 1; i < fgValues.length; i++) {
+        if (String(fgValues[i][fgKodeIdx]).trim() === String(kodeBarang).trim()) {
+          const currentStok = parseFloat(String(fgSheet.getRange(i + 1, fgStokIdx + 1).getValue()).replace(/[^0-9.-]/g, '')) || 0;
+          fgSheet.getRange(i + 1, fgStokIdx + 1).setValue(currentStok + qtyProduksi);
+          fgFound = true;
+          break;
+        }
+      }
+      
+      if (!fgFound) {
+        const newRow = fgHeaders.map(h => {
+          if (/kode/i.test(h)) return kodeBarang;
+          if (/stok|stock/i.test(h)) return qtyProduksi;
+          return '';
+        });
+        fgSheet.appendRow(newRow);
+      }
+    }
+  }
+
+  sheet.getRange(rowIndex, statusIdx + 1).setValue('Selesai');
+  return { status: 'success', message: 'SPK Selesai! Stok Barang Jadi ditambahkan.' };
 }
 
 function saveInvoice(payload) {
@@ -1218,8 +1344,8 @@ function deleteBOM(payload) {
 }
 
 function deleteSPK(payload) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Jadwal Produksi');
-  if (!sheet) return { status: 'error', message: 'Sheet DB Jadwal Produksi tidak ditemukan.' };
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB SPK Produksi');
+  if (!sheet) return { status: 'error', message: 'Sheet DB SPK Produksi tidak ditemukan.' };
   const values = sheet.getDataRange().getDisplayValues();
   const headers = values[0];
   const noSPKIdx = headers.findIndex(h => /no.*spk/i.test(h));

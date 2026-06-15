@@ -201,7 +201,11 @@ class ERPAPI {
         } else if (action === 'save_bom') {
             return { status: 'success', message: 'Data BOM & PMO Sampel berhasil disimpan (Simulasi).' };
         } else if (action === 'save_spk') {
-            return { status: 'success', message: 'Simulasi SPK Selesai. Bahan baku otomatis berkurang (Auto-deduct).' };
+            return { status: 'success', message: 'Simulasi SPK Selesai (Menunggu Pengambilan).' };
+        } else if (action === 'ambil_bahan_spk') {
+            return { status: 'success', message: 'Simulasi Ambil Bahan Selesai (Dalam Proses).' };
+        } else if (action === 'selesaikan_spk') {
+            return { status: 'success', message: 'Simulasi Produksi Selesai.' };
         } else if (action === 'add_petty_cash') {
             return { status: 'success', message: 'Data Petty Cash berhasil ditambahkan.' };
         } else if (action === 'get_settings') {

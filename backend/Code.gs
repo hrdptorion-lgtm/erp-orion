@@ -98,6 +98,12 @@ function doPost(e) {
       case 'save_spk':
         response = saveSPK(payload);
         break;
+      case 'ambil_bahan_spk':
+        response = ambilBahanSPK(payload);
+        break;
+      case 'selesaikan_spk':
+        response = selesaikanSPK(payload);
+        break;
       case 'save_invoice':
         response = saveInvoice(payload);
         break;
