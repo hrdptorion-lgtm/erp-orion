@@ -947,6 +947,10 @@ function ambilBahanSPK(payload) {
   if (rowIndex === -1) return { status: 'error', message: 'SPK tidak ditemukan.' };
 
   const bahanBaku = JSON.parse(bahanBakuJson);
+  let shortages = [];
+  const trxSheet = ss.getSheetByName('DB Transaksi Gudang');
+  const now = new Date();
+  const tanggal = Utilities.formatDate(now, 'Asia/Jakarta', 'dd/MM/yyyy HH:mm');
 
   // Deduct inventory
   const stockSheet = ss.getSheetByName('DB Master Bahan Baku');
@@ -954,24 +958,67 @@ function ambilBahanSPK(payload) {
     const stockValues = stockSheet.getDataRange().getDisplayValues();
     const stockHeaders = stockValues[0];
     const kodeIdx = stockHeaders.findIndex(h => /kode/i.test(h));
+    const namaIdx = stockHeaders.findIndex(h => /nama/i.test(h));
     const stokIdx = stockHeaders.findIndex(h => /stok|stock/i.test(h));
     
     if (kodeIdx !== -1 && stokIdx !== -1) {
       bahanBaku.forEach(bahan => {
+        let found = false;
         for (let i = 1; i < stockValues.length; i++) {
           if (String(stockValues[i][kodeIdx]).trim() === String(bahan.kode).trim()) {
+            found = true;
             const currentStok = parseFloat(String(stockSheet.getRange(i + 1, stokIdx + 1).getValue()).replace(/[^0-9.-]/g, '')) || 0;
             const deduction = parseFloat(bahan.qty) || 0;
-            stockSheet.getRange(i + 1, stokIdx + 1).setValue(currentStok - deduction);
+            let actualDeduct = 0;
+            let shortageQty = 0;
+
+            if (currentStok >= deduction) {
+              actualDeduct = deduction;
+            } else {
+              actualDeduct = currentStok;
+              shortageQty = deduction - currentStok;
+            }
+
+            if (actualDeduct > 0) {
+              stockSheet.getRange(i + 1, stokIdx + 1).setValue(currentStok - actualDeduct);
+              if (trxSheet) {
+                const idTrx = 'TRX-' + Date.now() + '-' + Math.floor(Math.random() * 100);
+                trxSheet.appendRow([idTrx, tanggal, 'OUT', payload.no_spk, bahan.kode, actualDeduct, 'Sistem (SPK)', 'Pengambilan bahan baku SPK']);
+              }
+            }
+
+            if (shortageQty > 0) {
+              const namaMat = namaIdx !== -1 ? stockValues[i][namaIdx] : bahan.kode;
+              shortages.push({ kode: bahan.kode, nama: namaMat, qty: shortageQty, harga: 0 });
+            }
             break;
           }
+        }
+        if (!found) {
+          shortages.push({ kode: bahan.kode, nama: bahan.kode, qty: bahan.qty, harga: 0 });
         }
       });
     }
   }
 
+  // Create PO Internal if there are shortages
+  let message = 'Bahan baku berhasil diambil, status Dalam Proses.';
+  if (shortages.length > 0) {
+    const poSheet = ss.getSheetByName('DB PO Internal');
+    if (poSheet) {
+      const noPO = 'POI-' + Date.now();
+      const itemsJson = JSON.stringify(shortages.map(s => ({
+        nama: s.nama,
+        qty: s.qty,
+        harga: 0
+      })));
+      poSheet.appendRow([noPO, tanggal, payload.no_spk, itemsJson, 0, 'Menunggu Approval', 'Kekurangan otomatis dari ' + payload.no_spk, '', '', '']);
+      message = 'Sebagian bahan berhasil diambil. Sisa kekurangan otomatis masuk ke Permintaan Belanja (PO Internal).';
+    }
+  }
+
   sheet.getRange(rowIndex, statusIdx + 1).setValue('Dalam Proses');
-  return { status: 'success', message: 'Bahan baku berhasil diambil, status Dalam Proses.' };
+  return { status: 'success', message: message };
 }
 
 function selesaikanSPK(payload) {

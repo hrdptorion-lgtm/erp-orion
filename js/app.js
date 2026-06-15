@@ -1085,19 +1085,19 @@ async function loadPOInternalData(isBackgroundSync = false) {
             else if (item.status === 'Selesai (Barang Diterima)') { badgeClass = 'badge-success'; badgeIcon = '📦'; }
             else if (item.status === 'Ditolak') { badgeClass = 'badge-danger'; badgeIcon = '❌'; }
 
-            let actionBtns = `<button class="btn btn-detail-po" data-no="${item.no_po}" style="padding:0.35rem 0.7rem; font-size:0.78rem; background:rgba(255,255,255,0.08); margin-right:4px;" title="Lihat Detail"><i class="fa-solid fa-eye"></i></button>`;
-            actionBtns += `<button class="btn btn-print-po" data-item='${JSON.stringify(item).replace(/'/g, "&apos;")}' style="padding:0.35rem 0.7rem; font-size:0.78rem; background:var(--info); margin-right:4px;" title="Print PO"><i class="fa-solid fa-print"></i></button>`;
+            let actionBtns = `<button class="btn btn-detail-po" data-no="${item.no_po}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: var(--accent);" title="Lihat Detail"><i class="fa-solid fa-eye"></i> Detail</button>`;
+            actionBtns += `<button class="btn btn-print-po" data-item='${JSON.stringify(item).replace(/'/g, "&apos;")}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background:var(--info);" title="Print PO"><i class="fa-solid fa-print"></i></button>`;
 
             if (item.status === 'Menunggu Approval' && isAtasan) {
-                actionBtns += `<button class="btn btn-approve-po" data-no="${item.no_po}" style="padding:0.35rem 0.7rem; font-size:0.78rem; margin-right:4px;" title="Approve"><i class="fa-solid fa-check"></i></button>`;
-                actionBtns += `<button class="btn btn-reject-po" data-no="${item.no_po}" style="padding:0.35rem 0.7rem; font-size:0.78rem; background:var(--danger); margin-right:4px;" title="Tolak"><i class="fa-solid fa-times"></i></button>`;
+                actionBtns += `<button class="btn btn-approve-po" data-no="${item.no_po}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;" title="Approve"><i class="fa-solid fa-check"></i></button>`;
+                actionBtns += `<button class="btn btn-reject-po" data-no="${item.no_po}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background:var(--danger); margin-right: 5px;" title="Tolak"><i class="fa-solid fa-times"></i></button>`;
             } else if (item.status === 'Disetujui (Sedang Dibelikan)' && isPurchasing) {
-                actionBtns += `<button class="btn btn-selesai-po" data-no="${item.no_po}" style="padding:0.35rem 0.7rem; font-size:0.78rem; background:var(--info); margin-right:4px;" title="Selesai - Terima Barang"><i class="fa-solid fa-box-open"></i> Terima</button>`;
+                actionBtns += `<button class="btn btn-selesai-po" data-no="${item.no_po}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background:var(--info); margin-right: 5px;" title="Selesai - Terima Barang"><i class="fa-solid fa-box-open"></i> Terima</button>`;
             }
 
             // Tombol hapus hanya untuk Admin / Super Admin
             if (isAdmin) {
-                actionBtns += `<button class="btn btn-delete-po" data-no="${item.no_po}" style="padding:0.35rem 0.7rem; font-size:0.78rem; background:var(--danger);" title="Hapus PO"><i class="fa-solid fa-trash"></i></button>`;
+                actionBtns += `<button class="btn btn-delete-po" data-no="${item.no_po}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background:var(--danger);" title="Hapus PO"><i class="fa-solid fa-trash"></i></button>`;
             }
 
             tr.innerHTML = `
@@ -4630,9 +4630,9 @@ function openSPKDetail(item) {
     content.innerHTML = `
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; padding:1rem; background:rgba(255,255,255,0.04); border-radius:10px;">
             <div><div style="font-size:0.75rem; color:var(--text-muted);">NO SPK</div><div style="font-weight:600;">${item.no_spk || '-'}</div></div>
-            <div><div style="font-size:0.75rem; color:var(--text-muted);">TANGGAL</div><div style="font-weight:600;">${item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID') : '-'}</div></div>
-            <div style="grid-column:1/-1;"><div style="font-size:0.75rem; color:var(--text-muted);">BARANG JADI</div><div style="font-weight:600;">${item.kode_barang || '-'}</div></div>
-            <div><div style="font-size:0.75rem; color:var(--text-muted);">QTY PRODUKSI</div><div style="font-weight:600;">${item.qty || '-'}</div></div>
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">TANGGAL</div><div style="font-weight:600;">${item.tanggal || '-'}</div></div>
+            <div style="grid-column:1/-1;"><div style="font-size:0.75rem; color:var(--text-muted);">BARANG JADI</div><div style="font-weight:600;">${item.kode_barang_jadi || item.kode_barang || '-'}</div></div>
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">QTY PRODUKSI</div><div style="font-weight:600;">${item.qty_produksi || item.qty || '-'}</div></div>
             <div><div style="font-size:0.75rem; color:var(--text-muted);">STATUS</div><div><span class="badge badge-success">${item.status || '-'}</span></div></div>
         </div>
     `;

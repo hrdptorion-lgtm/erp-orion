@@ -371,6 +371,7 @@ body::after {
   overflow-x: hidden;
   padding: 0 3rem 2rem 3rem;
   scroll-behavior: smooth;
+  min-width: 0;
 }
 
 .header-wrapper {
@@ -1010,8 +1011,8 @@ tbody tr:hover {
   }
 
   body {
-    width: 100vw;
-    max-width: 100vw;
+    width: 100%;
+    max-width: 100%;
     overflow-x: hidden;
   }
 
@@ -1021,9 +1022,30 @@ tbody tr:hover {
 
   .main-content {
     padding: 85px 1rem 80px 1rem;
-    width: 100vw;
-    max-width: 100vw;
+    width: 100%;
+    max-width: 100%;
     overflow-x: hidden;
+  }
+
+  /* Make table columns wrap and fit screen on mobile */
+  th, td {
+    white-space: normal !important;
+    padding: 0.6rem 0.4rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  th {
+    font-size: 0.7rem !important;
+  }
+
+  /* Keep action buttons horizontal */
+  td:last-child {
+    white-space: nowrap !important;
+  }
+
+  .badge {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.7rem;
   }
 
   .header-wrapper {

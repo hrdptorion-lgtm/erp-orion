@@ -203,7 +203,7 @@ class ERPAPI {
         } else if (action === 'save_spk') {
             return { status: 'success', message: 'Simulasi SPK Selesai (Menunggu Pengambilan).' };
         } else if (action === 'ambil_bahan_spk') {
-            return { status: 'success', message: 'Simulasi Ambil Bahan Selesai (Dalam Proses).' };
+            return { status: 'success', message: 'Sebagian bahan berhasil diambil. Sisa kekurangan otomatis dibuatkan Permintaan Belanja (PO Internal).' };
         } else if (action === 'selesaikan_spk') {
             return { status: 'success', message: 'Simulasi Produksi Selesai.' };
         } else if (action === 'add_petty_cash') {
