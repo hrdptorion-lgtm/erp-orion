@@ -208,6 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isFinance = user.role.toLowerCase().includes('finance') || user.role.toLowerCase().includes('accounting');
         const isSales = user.role.toLowerCase().includes('marketing');
         const isAdmin = ['direktur', 'admin', 'management'].some(r => user.role.toLowerCase().includes(r));
+        const isSuperAdmin = ['super admin'].some(r => user.role.toLowerCase().includes(r));
 
         navItems.forEach(item => {
             const target = item.getAttribute('data-target');
@@ -221,6 +222,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (item.classList.contains('admin-only')) item.style.display = 'none';
             } else {
                 if (item.classList.contains('admin-only')) item.style.display = 'flex';
+            }
+
+            // Super Admin Only items
+            if (item.classList.contains('super-admin-only')) {
+                item.style.display = isSuperAdmin ? 'flex' : 'none';
             }
         });
 
@@ -242,9 +248,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!session) return;
         const user = JSON.parse(session);
         const isAdmin = ['direktur', 'admin', 'management'].some(r => user.role.toLowerCase().includes(r));
+        const isSuperAdmin = ['super admin'].some(r => user.role.toLowerCase().includes(r));
 
         document.querySelectorAll('.admin-only:not(.nav-item)').forEach(el => {
             el.style.display = isAdmin ? '' : 'none';
+        });
+
+        document.querySelectorAll('.super-admin-only:not(.nav-item)').forEach(el => {
+            el.style.display = isSuperAdmin ? '' : 'none';
         });
     }
 
@@ -510,15 +521,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const fabMappings = {
             'purchasing': [
                 { id: 'btn-add-stock', label: 'Tambah Bahan', icon: 'fa-plus', color: 'var(--secondary)' },
-                { id: 'btn-grn', label: 'Terima Barang (GRN)', icon: 'fa-box-open', color: 'var(--success)' },
-                { id: 'btn-import-stock', label: 'Import Data', icon: 'fa-file-import', color: 'var(--info)' }
+                { id: 'btn-import-stock', label: 'Import Data', icon: 'fa-file-import', color: 'var(--info)' },
+                { id: 'btn-export-stock', label: 'Export Data', icon: 'fa-file-export', color: 'var(--warning)' }
             ],
             'sales': [{ id: 'btn-add-penawaran', label: 'Buat Penawaran', icon: 'fa-plus', color: 'var(--secondary)' }],
             'po-internal': [{ id: 'btn-add-po-internal', label: 'Buat Pengajuan', icon: 'fa-plus', color: 'var(--primary)' }],
             'bom': [{ id: 'btn-add-bom', label: 'Buat BOM Baru', icon: 'fa-plus', color: 'var(--accent)' }],
+            'produksi': [{ id: 'btn-run-spk', label: 'Selesaikan SPK', icon: 'fa-play', color: 'var(--secondary)' }],
             'finance': [{ id: 'btn-add-cash', label: 'Mutasi Kas', icon: 'fa-plus', color: 'var(--primary)' }],
             'coa': [{ id: 'btn-add-coa', label: 'Tambah COA', icon: 'fa-plus', color: 'var(--primary)' }],
-            'admin': [{ id: 'btn-add-user', label: 'Tambah User', icon: 'fa-user-plus', color: 'var(--primary)' }]
+            'admin': [{ id: 'btn-add-user', label: 'Tambah User', icon: 'fa-user-plus', color: 'var(--primary)' }],
+            'customer': [{ id: 'btn-add-customer', label: 'Tambah Customer', icon: 'fa-user-plus', color: 'var(--primary)' }],
+            'approval': [
+                { id: 'btn-add-kategori', label: 'Tambah Kategori', icon: 'fa-plus', color: 'var(--primary)' },
+                { id: 'btn-add-jabatan', label: 'Tambah Jabatan', icon: 'fa-plus', color: 'var(--secondary)' }
+            ]
         };
 
         const fabWrapper = document.getElementById('global-fab-wrapper');
@@ -872,6 +889,36 @@ document.getElementById('btn-add-stock')?.addEventListener('click', () => {
 
 document.getElementById('btn-import-stock')?.addEventListener('click', () => {
     document.getElementById('file-import-stock').click();
+});
+
+document.getElementById('btn-export-stock')?.addEventListener('click', () => {
+    const tbody = document.getElementById('table-bahan-baku');
+    if (!tbody) return;
+    const table = tbody.closest('table');
+    
+    let csv = [];
+    const rows = table.querySelectorAll('tr');
+    
+    for (let i = 0; i < rows.length; i++) {
+        let row = [], cols = rows[i].querySelectorAll('td, th');
+        if (cols.length === 1 && cols[0].colSpan > 1) continue;
+
+        // Skip last column (Aksi)
+        for (let j = 0; j < cols.length - 1; j++) {
+            let data = cols[j].innerText.replace(/"/g, '""');
+            row.push('"' + data + '"');
+        }
+        csv.push(row.join(','));
+    }
+    
+    const csvFile = new Blob([csv.join('\n')], {type: "text/csv"});
+    const downloadLink = document.createElement("a");
+    downloadLink.download = "Data_Bahan_Baku_" + new Date().toISOString().split('T')[0] + ".csv";
+    downloadLink.href = window.URL.createObjectURL(csvFile);
+    downloadLink.style.display = "none";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
 });
 
 document.getElementById('file-import-stock')?.addEventListener('change', async (e) => {
@@ -1570,9 +1617,77 @@ async function loadPenawaranData(isBackgroundSync = false) {
                 actionBtns += `<button class="btn btn-delete-penawaran" data-no="${item.no_penawaran}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger); display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-trash"></i></button>`;
             }
             
+            let has_shortage = false;
+            let shortage_items = [];
+
             if (item.status === 'Approved') {
-                actionBtns += `<button class="btn btn-spk-penawaran" data-item='${JSON.stringify(item)}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: var(--success);" title="Lanjut ke SPK Produksi"><i class="fa-solid fa-industry"></i> SPK</button>
-                               <button class="btn btn-po-penawaran" data-item='${JSON.stringify(item)}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: var(--warning);" title="Buat Permintaan Barang (PO Internal) untuk Komponen Kurang"><i class="fa-solid fa-cart-shopping"></i> PR Barang</button>`;
+                try {
+                    let rincianItem = [];
+                    if (typeof item.rincian_item === 'string') {
+                        rincianItem = JSON.parse(item.rincian_item || '[]');
+                    } else if (Array.isArray(item.rincian_item)) {
+                        rincianItem = item.rincian_item;
+                    }
+
+                    let requiredMaterials = {};
+
+                    // Calculate total raw materials required
+                    rincianItem.forEach(rj => {
+                        const namaProduk = (rj.nama_barang || '').trim().toLowerCase();
+                        const qtyProduk = parseFloat(rj.qty) || 0;
+                        
+                        // Find BOM for this product
+                        if (bomRes && bomRes.data) {
+                            const bom = bomRes.data.find(b => (b.nama_barang || '').trim().toLowerCase() === namaProduk);
+                            if (bom) {
+                                let rincianMaterial = [];
+                                if (typeof bom.rincian_material === 'string') {
+                                    try { rincianMaterial = JSON.parse(bom.rincian_material || '[]'); } catch(e) {}
+                                } else if (Array.isArray(bom.rincian_material)) {
+                                    rincianMaterial = bom.rincian_material;
+                                }
+
+                                rincianMaterial.forEach(mat => {
+                                    const namaMat = (mat.nama || '').trim();
+                                    if (namaMat) {
+                                        const qtyMat = parseFloat(mat.qty) || 0;
+                                        requiredMaterials[namaMat] = (requiredMaterials[namaMat] || 0) + (qtyMat * qtyProduk);
+                                    }
+                                });
+                            }
+                        }
+                    });
+
+                    // Compare with current stock
+                    if (stockRes && stockRes.data) {
+                        for (const [namaMat, reqQty] of Object.entries(requiredMaterials)) {
+                            // Find stock for this material
+                            const stockItem = stockRes.data.find(s => (s.nama_material || '').trim().toLowerCase() === namaMat.toLowerCase());
+                            const currentStock = stockItem ? (parseFloat(String(stockItem.stok).replace(/[^0-9.-]+/g,"")) || 0) : 0;
+                            
+                            if (reqQty > currentStock) {
+                                has_shortage = true;
+                                shortage_items.push({
+                                    nama: stockItem ? stockItem.nama_material : namaMat,
+                                    kode: stockItem ? stockItem.kode_material : ('RM' + Math.floor(Math.random()*10000)),
+                                    qty: reqQty - currentStock,
+                                    satuan: 'pcs',
+                                    harga: stockItem ? stockItem.harga_satuan : 0
+                                });
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error calculating shortages:', e);
+                }
+            }
+
+            if (item.status === 'Approved') {
+                actionBtns += `<button class="btn btn-spk-penawaran" data-item='${JSON.stringify(item).replace(/'/g, "&#39;")}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: var(--warning);" title="Lanjut ke SPK Produksi"><i class="fa-solid fa-industry"></i></button>`;
+                if (has_shortage) {
+                    const shortageStr = JSON.stringify(shortage_items).replace(/'/g, "&#39;");
+                    actionBtns += `<button class="btn btn-po-penawaran" data-item='${JSON.stringify(item).replace(/'/g, "&#39;")}' data-shortage='${shortageStr}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: var(--warning);" title="Buat Permintaan Barang (PO Internal) untuk Komponen Kurang"><i class="fa-solid fa-cart-shopping"></i></button>`;
+                }
             }
 
             const tr = document.createElement('tr');
@@ -1769,11 +1884,22 @@ async function loadPenawaranData(isBackgroundSync = false) {
         document.querySelectorAll('.btn-po-penawaran').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const item = JSON.parse(e.currentTarget.getAttribute('data-item'));
+                const shortageStr = e.currentTarget.getAttribute('data-shortage');
+                const shortageItems = shortageStr ? JSON.parse(shortageStr) : [];
+
                 const poFormEl = document.getElementById('po-form');
                 if(poFormEl) poFormEl.reset();
                 const poItemsTbodyEl = document.getElementById('po-items-tbody');
                 if(poItemsTbodyEl) poItemsTbodyEl.innerHTML = '';
-                addPOItemRow();
+                
+                if (shortageItems && shortageItems.length > 0) {
+                    shortageItems.forEach(short => {
+                        addPOItemRow(short.kode, short.nama, short.harga, short.qty, short.satuan);
+                    });
+                } else {
+                    addPOItemRow();
+                }
+                
                 calculatePOTotal();
 
                 const session = localStorage.getItem('erp_session');

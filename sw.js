@@ -1,4 +1,4 @@
-const CACHE_NAME = 'transkrip-nilai-v1';
+const CACHE_NAME = 'transkrip-nilai-v2';
 const urlsToCache = [
   './',
   './index.html',

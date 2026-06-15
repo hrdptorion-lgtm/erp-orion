@@ -8,42 +8,49 @@
     <meta name="description" content="Aplikasi Enterprise Resource Planning PT Orion Karya Sejahtera">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="logo.png" type="image/png">
-    
+
     <!-- Preconnect for Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="css/style.css">
+
+    <link rel="stylesheet" href="css/style.css?v=6">
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Tom Select for Smart Dropdowns -->
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
     <style>
-        .ts-wrapper.single .ts-control, .ts-control {
+        .ts-wrapper.single .ts-control,
+        .ts-control {
             background: rgba(255, 255, 255, 0.05) !important;
             border: 1px solid var(--glass-border) !important;
             border-radius: 8px !important;
             color: white !important;
             padding: 0.8rem !important;
         }
-        .ts-control > input {
+
+        .ts-control>input {
             color: white !important;
         }
+
         .ts-wrapper.single .ts-control .item {
             color: white !important;
         }
+
         .ts-dropdown {
-            background: #1e1e24 !important; /* Darker background to match theme */
+            background: #1e1e24 !important;
+            /* Darker background to match theme */
             border: 1px solid var(--glass-border) !important;
             border-radius: 8px !important;
             color: white !important;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
         }
+
         .ts-dropdown .option {
             padding: 10px !important;
             color: white !important;
         }
+
         .ts-dropdown .active {
             background-color: var(--primary) !important;
             color: white !important;
@@ -153,7 +160,7 @@
                         <i class="fa-solid fa-users"></i>
                         <span>Master Customer</span>
                     </li>
-                    <li class="nav-item admin-only" data-target="approval">
+                    <li class="nav-item super-admin-only" data-target="approval">
                         <i class="fa-solid fa-diagram-project"></i>
                         <span>Alur Approval</span>
                     </li>
@@ -414,12 +421,13 @@
                             style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main); min-width: 150px;">
                             <option value="">Semua Gudang</option>
                         </select>
-                        <button class="btn" id="btn-grn" style="background: var(--success);"><i
-                                class="fa-solid fa-box-open"></i> Terima Barang (GRN)</button>
+
                         <button class="btn" id="btn-add-stock" style="background: var(--secondary);"><i
                                 class="fa-solid fa-plus"></i> Tambah Bahan</button>
                         <button class="btn" id="btn-import-stock" style="background: var(--info);"><i
                                 class="fa-solid fa-file-import"></i> Import Data</button>
+                        <button class="btn" id="btn-export-stock" style="background: var(--warning);"><i
+                                class="fa-solid fa-file-export"></i> Export Data</button>
                         <input type="file" id="file-import-stock" accept=".csv, .xlsx" style="display: none;">
                     </div>
                 </div>
@@ -611,7 +619,6 @@
         <div id="view-admin" class="view">
             <div class="data-section">
                 <div class="section-header">
-                    <h3>Manajemen Pengguna</h3>
                     <button class="btn" id="btn-add-user"><i class="fa-solid fa-user-plus"></i> Tambah User</button>
                 </div>
                 <div class="table-container">
@@ -922,7 +929,8 @@
             <div class="login-box" style="max-width:600px; width:95vw; max-height:90vh; overflow-y:auto;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
                     <h2 style="margin:0;">Detail Bahan Baku</h2>
-                    <button type="button" id="btn-close-stock-detail" style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;">✕</button>
+                    <button type="button" id="btn-close-stock-detail"
+                        style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;">✕</button>
                 </div>
                 <div id="stock-detail-content"></div>
             </div>
@@ -933,7 +941,8 @@
             <div class="login-box" style="max-width:600px; width:95vw; max-height:90vh; overflow-y:auto;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
                     <h2 style="margin:0;">Detail Customer</h2>
-                    <button type="button" id="btn-close-customer-detail" style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;">✕</button>
+                    <button type="button" id="btn-close-customer-detail"
+                        style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;">✕</button>
                 </div>
                 <div id="customer-detail-content"></div>
             </div>
@@ -944,7 +953,8 @@
             <div class="login-box" style="max-width:600px; width:95vw; max-height:90vh; overflow-y:auto;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
                     <h2 style="margin:0;">Detail Barang Jadi</h2>
-                    <button type="button" id="btn-close-barang-jadi-detail" style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;">✕</button>
+                    <button type="button" id="btn-close-barang-jadi-detail"
+                        style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;">✕</button>
                 </div>
                 <div id="barang-jadi-detail-content"></div>
             </div>
@@ -955,7 +965,8 @@
             <div class="login-box" style="max-width:600px; width:95vw; max-height:90vh; overflow-y:auto;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
                     <h2 style="margin:0;">Detail SPK Produksi</h2>
-                    <button type="button" id="btn-close-spk-detail" style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;">✕</button>
+                    <button type="button" id="btn-close-spk-detail"
+                        style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;">✕</button>
                 </div>
                 <div id="spk-detail-content"></div>
             </div>
@@ -1207,14 +1218,19 @@
         <!-- Detail Penawaran Modal -->
         <div id="detail-penawaran-modal" class="login-overlay">
             <div class="login-box" style="max-width: 800px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
                     <h2 id="detail-modal-title" style="margin: 0; font-size: 1.5rem;">Detail Penawaran</h2>
-                    <button class="btn" style="background: none; color: #fff; font-size: 1.2rem; cursor: pointer;" onclick="document.getElementById('detail-penawaran-modal').classList.remove('active')"><i class="fa-solid fa-times"></i></button>
+                    <button class="btn" style="background: none; color: #fff; font-size: 1.2rem; cursor: pointer;"
+                        onclick="document.getElementById('detail-penawaran-modal').classList.remove('active')"><i
+                            class="fa-solid fa-times"></i></button>
                 </div>
-                
-                <div style="display: flex; gap: 10px; align-items: center; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 1.5rem;">
+
+                <div
+                    style="display: flex; gap: 10px; align-items: center; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 1.5rem;">
                     <label style="margin: 0; font-weight: bold; width: 120px;">Ubah Status:</label>
-                    <select id="detail_status" style="flex: 1; padding: 0.5rem; border-radius: 6px; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid var(--glass-border);">
+                    <select id="detail_status"
+                        style="flex: 1; padding: 0.5rem; border-radius: 6px; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid var(--glass-border);">
                         <option value="Draft" style="color:#000">Draft</option>
                         <option value="Penawaran" style="color:#000">Penawaran</option>
                         <option value="Proses" style="color:#000">Proses</option>
@@ -1222,15 +1238,20 @@
                         <option value="Rejected" style="color:#000">Rejected</option>
                         <option value="Finish" style="color:#000">Finish</option>
                     </select>
-                    <button id="btn-update-detail-status" class="btn btn-primary" style="padding: 0.5rem 1rem;">Simpan</button>
+                    <button id="btn-update-detail-status" class="btn btn-primary"
+                        style="padding: 0.5rem 1rem;">Simpan</button>
                 </div>
 
-                <div id="detail-action-produksi" style="display: none; justify-content: flex-end; gap: 10px; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border);">
-                    <button id="btn-detail-spk" class="btn btn-success"><i class="fa-solid fa-industry"></i> Lanjut SPK Produksi</button>
-                    <button id="btn-detail-po" class="btn btn-warning"><i class="fa-solid fa-cart-shopping"></i> PR Barang</button>
+                <div id="detail-action-produksi"
+                    style="display: none; justify-content: flex-end; gap: 10px; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border);">
+                    <button id="btn-detail-spk" class="btn btn-success"><i class="fa-solid fa-industry"></i> Lanjut SPK
+                        Produksi</button>
+                    <button id="btn-detail-po" class="btn btn-warning"><i class="fa-solid fa-cart-shopping"></i> PR
+                        Barang</button>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; font-size: 0.95rem;">
+                <div
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; font-size: 0.95rem;">
                     <div>
                         <p style="margin: 0 0 5px 0; color: #aaa;">Customer</p>
                         <p id="detail_customer" style="margin: 0; font-weight: 600;">-</p>
@@ -1243,7 +1264,9 @@
 
                 <div style="margin-bottom: 1.5rem;">
                     <p style="margin: 0 0 5px 0; color: #aaa;">Narasi / Keterangan</p>
-                    <p id="detail_narasi" style="margin: 0; background: rgba(0,0,0,0.1); padding: 10px; border-radius: 6px; white-space: pre-wrap;">-</p>
+                    <p id="detail_narasi"
+                        style="margin: 0; background: rgba(0,0,0,0.1); padding: 10px; border-radius: 6px; white-space: pre-wrap;">
+                        -</p>
                 </div>
 
                 <h4 style="margin-bottom: 10px; color: var(--primary);">Rincian Item</h4>
@@ -1258,13 +1281,17 @@
                             </tr>
                         </thead>
                         <tbody id="detail_items_tbody">
-                            <tr><td colspan="4" style="text-align:center;">Tidak ada item</td></tr>
+                            <tr>
+                                <td colspan="4" style="text-align:center;">Tidak ada item</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
 
-                <div id="detail_bom_check_wrapper" style="display: none; margin-bottom: 1.5rem; padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.2); border-left: 4px solid var(--info);">
-                    <h4 style="margin: 0 0 10px 0; color: var(--info);"><i class="fa-solid fa-boxes-stacked"></i> Status Kesiapan Produksi (BOM Check)</h4>
+                <div id="detail_bom_check_wrapper"
+                    style="display: none; margin-bottom: 1.5rem; padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.2); border-left: 4px solid var(--info);">
+                    <h4 style="margin: 0 0 10px 0; color: var(--info);"><i class="fa-solid fa-boxes-stacked"></i> Status
+                        Kesiapan Produksi (BOM Check)</h4>
                     <div id="detail_bom_check_container" style="font-size: 0.9rem;">
                         <p style="margin:0; color:#aaa;">Memeriksa ketersediaan stok material...</p>
                     </div>
@@ -1276,7 +1303,8 @@
                             <span style="color: #ccc;">Down Payment (DP)</span>
                             <strong id="detail_dp">Rp 0</strong>
                         </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 1.2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+                        <div
+                            style="display: flex; justify-content: space-between; font-size: 1.2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
                             <span style="color: var(--primary);">Grand Total</span>
                             <strong id="detail_total_harga" style="color: var(--primary);">Rp 0</strong>
                         </div>
@@ -1285,7 +1313,7 @@
             </div>
         </div>
 
-                <!-- Penawaran Modal Overlay -->
+        <!-- Penawaran Modal Overlay -->
         <div id="penawaran-modal" class="login-overlay">
             <div class="login-box" style="max-width: 800px;">
                 <h2 id="penawaran-modal-title" style="margin-bottom: 1.5rem;">Form Penawaran</h2>
@@ -1293,7 +1321,8 @@
                     <input type="hidden" id="p_no_penawaran">
                     <div class="input-group">
                         <label>Customer <span style="color:var(--danger)">*</span></label>
-                        <select id="p_customer" required style="width: 100%; border:1px solid var(--glass-border); padding:0.8rem; background:rgba(255,255,255,0.05); color:#fff; border-radius:10px;">
+                        <select id="p_customer" required
+                            style="width: 100%; border:1px solid var(--glass-border); padding:0.8rem; background:rgba(255,255,255,0.05); color:#fff; border-radius:10px;">
                             <option value="">Pilih atau ketik nama Customer...</option>
                         </select>
                     </div>
@@ -2079,8 +2108,8 @@
         <option value="Set"></option>
     </datalist>
 
-    <script src="js/api.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/api.js?v=8"></script>
+    <script src="js/app.js?v=8"></script>
 </body>
 
 </html>
