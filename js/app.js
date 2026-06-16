@@ -1848,6 +1848,7 @@ async function loadPenawaranData(isBackgroundSync = false) {
             btn.addEventListener('click', async (e) => {
                 const item = JSON.parse(e.currentTarget.getAttribute('data-item'));
                 document.getElementById('produksi-form').reset();
+                document.getElementById('spk_no_penawaran').value = item.no_penawaran || '';
                 const selectKode = document.getElementById('spk_kode_jadi');
                 
                 if (cachedBOMData.length === 0 || cachedInventoryData.length === 0) {
@@ -3265,6 +3266,7 @@ produksiForm?.addEventListener('submit', async (e) => {
 
     const kode = document.getElementById('spk_kode_jadi').value;
     const qty = parseInt(String(document.getElementById('spk_qty_jadi').value).replace(/\D/g, '')) || 0;
+    const batch_count = parseInt(document.getElementById('spk_batch_count').value) || 1;
 
     const bom = cachedBOMData.find(b => b.kode_barang === kode);
     let calculatedBahan = [];
@@ -3280,7 +3282,9 @@ produksiForm?.addEventListener('submit', async (e) => {
     const payload = {
         kode_barang: kode,
         qty: qty,
+        batch_count: batch_count,
         bahan_baku: calculatedBahan,
+        no_penawaran: document.getElementById('spk_no_penawaran')?.value || '',
         peminta: document.getElementById('spk_peminta').value,
         pemberi: Array.from(document.getElementById('spk_pemberi').selectedOptions).map(o => o.value).join(', ')
     };
@@ -3299,12 +3303,13 @@ produksiForm?.addEventListener('submit', async (e) => {
     if (tbody) {
         const tr = document.createElement('tr');
         tr.style.opacity = '0.6';
+        let badgeText = batch_count > 1 ? `Memproses ${batch_count} Batch...` : `Menyimpan...`;
         tr.innerHTML = `
             <td><i class="fa-solid fa-spinner fa-spin"></i></td>
             <td>Hari ini</td>
             <td style="font-weight: 500;">${kode}</td>
-            <td>${qty}</td>
-            <td><span class="badge badge-warning">Menyimpan...</span></td>
+            <td>${qty} (Total)</td>
+            <td><span class="badge badge-warning">${badgeText}</span></td>
         `;
         tbody.insertBefore(tr, tbody.firstChild);
     }
@@ -4435,6 +4440,45 @@ async function openDetailPenawaran(item) {
     }
 
     // Process BOM Check
+    checkBOMAvailabilityForPenawaran(items);
+
+    // Fetch SPK Progress
+    const progressContainer = document.getElementById('detail_spk_progress_container');
+    const progressStats = document.getElementById('detail_spk_stats');
+    progressContainer.style.display = 'block';
+    progressStats.innerHTML = '<p style="margin:0; color:#aaa;">Memuat status SPK...</p>';
+    
+    if (item.no_penawaran) {
+        window.ERPAPI.request('get_spk_progress', { no_penawaran: item.no_penawaran }).then(res => {
+            if (res.status === 'success' && res.data) {
+                const { total, berjalan, selesai, targetQty, selesaiQty } = res.data;
+                
+                if (total === 0) {
+                    progressStats.innerHTML = '<p style="margin:0; color:#aaa;">Belum ada SPK untuk penawaran ini.</p>';
+                } else {
+                    const percent = targetQty > 0 ? Math.round((selesaiQty / targetQty) * 100) : 0;
+                    progressStats.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
+                            <span>Batch SPK: <strong>${selesai} Selesai</strong> / ${total} Total (${berjalan} Berjalan)</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
+                            <span>Progress Item: <strong>${selesaiQty.toLocaleString('id-ID')}</strong> / ${targetQty.toLocaleString('id-ID')} Pcs</span>
+                            <span><strong>${percent}%</strong></span>
+                        </div>
+                        <div style="width: 100%; background: rgba(0,0,0,0.3); border-radius: 4px; overflow: hidden; height: 8px; margin-top: 5px;">
+                            <div style="width: ${percent}%; background: var(--primary); height: 100%; transition: width 0.3s ease;"></div>
+                        </div>
+                    `;
+                }
+            } else {
+                progressStats.innerHTML = '<p style="margin:0; color:var(--danger);">Gagal memuat status SPK.</p>';
+            }
+        }).catch(err => {
+            progressStats.innerHTML = '<p style="margin:0; color:var(--danger);">Error memuat status SPK.</p>';
+        });
+    } else {
+        progressContainer.style.display = 'none';
+    }
     let hasShortage = false;
     let allCustom = true;
 

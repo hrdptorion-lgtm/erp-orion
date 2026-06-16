@@ -1300,6 +1300,13 @@
                     </div>
                 </div>
 
+                <div id="detail_spk_progress_container" style="display: none; margin-bottom: 1.5rem; padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.2); border-left: 4px solid var(--primary);">
+                    <h4 style="margin: 0 0 10px 0; color: var(--primary);"><i class="fa-solid fa-industry"></i> Status Produksi (SPK)</h4>
+                    <div id="detail_spk_stats" style="font-size: 0.9rem; color: #fff;">
+                        <p style="margin:0; color:#aaa;">Memuat status SPK...</p>
+                    </div>
+                </div>
+
                 <div style="display: flex; justify-content: flex-end;">
                     <div style="width: 300px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
@@ -1417,6 +1424,7 @@
             <div class="login-box" style="max-width: 500px;">
                 <h2 id="produksi-modal-title" style="margin-bottom: 1.5rem;">Form SPK Produksi</h2>
                 <form id="produksi-form">
+                    <input type="hidden" id="spk_no_penawaran">
                     <div class="input-group">
                         <label>Pilih Barang Jadi (Dari BOM)</label>
                         <select id="spk_kode_jadi" required
@@ -1424,9 +1432,15 @@
                             <option value="" disabled selected>-- Pilih Barang Jadi --</option>
                         </select>
                     </div>
-                    <div class="input-group">
-                        <label>Qty Produksi (Masal)</label>
-                        <input type="text" class="number-format" id="spk_qty_jadi" required placeholder="10">
+                    <div style="display: flex; gap: 10px;">
+                        <div class="input-group" style="flex: 1;">
+                            <label>Qty Produksi (Total)</label>
+                            <input type="text" class="number-format" id="spk_qty_jadi" required placeholder="10">
+                        </div>
+                        <div class="input-group" style="flex: 1;">
+                            <label>Jumlah Batch</label>
+                            <input type="number" id="spk_batch_count" min="1" required placeholder="1" value="1" style="width: 100%; padding: 0.8rem; border-radius: 10px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main);">
+                        </div>
                     </div>
                     <div class="input-group"
                         style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-top: 15px;">

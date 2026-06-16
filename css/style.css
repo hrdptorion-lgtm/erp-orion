@@ -978,12 +978,16 @@ tbody tr:hover {
   }
 
   /* Edge-to-edge styling for ALL Data Sections on Mobile */
+  body.light-mode .data-section,
   .data-section {
     margin: 0 -1rem !important;
     padding: 0 !important;
     border: none !important;
     background: transparent !important;
+    box-shadow: none !important;
     border-radius: 0 !important;
+    max-width: 100vw !important;
+    width: 100vw !important;
   }
 
   .data-section .section-header {

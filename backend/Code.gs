@@ -98,6 +98,9 @@ function doPost(e) {
       case 'save_spk':
         response = saveSPK(payload);
         break;
+      case 'get_spk_progress':
+        response = getSPKProgress(payload);
+        break;
       case 'ambil_bahan_spk':
         response = ambilBahanSPK(payload);
         break;

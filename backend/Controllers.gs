@@ -906,21 +906,104 @@ function saveSPK(payload) {
   const sheet = ss.getSheetByName('DB SPK Produksi');
   if (!sheet) return { status: 'error', message: 'Sheet DB SPK Produksi tidak ditemukan.' };
   
-  const noSPK = 'SPK-' + Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyyyMMdd') + '-' + Math.floor(Math.random() * 1000);
+  const batchCount = parseInt(payload.batch_count) || 1;
+  const totalQty = parseInt(payload.qty) || 0;
+  
+  const baseQty = Math.floor(totalQty / batchCount);
+  const remainder = totalQty % batchCount;
+  const baseNoSPK = 'SPK-' + Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyyyMMdd') + '-' + Math.floor(Math.random() * 1000);
   const tanggal = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy HH:mm');
   
-  sheet.appendRow([
-    noSPK,
-    tanggal,
-    payload.kode_barang || '',
-    payload.qty || 0,
-    payload.peminta || '',
-    payload.pemberi || '',
-    'Menunggu Pengambilan',
-    JSON.stringify(payload.bahan_baku || [])
-  ]);
+  for (let i = 0; i < batchCount; i++) {
+    let currentQty = baseQty;
+    if (i === batchCount - 1) {
+      currentQty += remainder;
+    }
+    
+    let currentBahanBaku = [];
+    if (payload.bahan_baku && payload.bahan_baku.length > 0) {
+      currentBahanBaku = payload.bahan_baku.map(b => ({
+        kode: b.kode,
+        nama: b.nama,
+        qty: (totalQty > 0) ? (b.qty / totalQty) * currentQty : 0
+      }));
+    }
 
-  return { status: 'success', message: 'SPK berhasil diterbitkan (Menunggu Pengambilan).' };
+    let batchSuffix = batchCount > 1 ? `-${i+1}/${batchCount}` : '';
+    
+    sheet.appendRow([
+      baseNoSPK + batchSuffix,
+      tanggal,
+      payload.kode_barang || '',
+      currentQty,
+      payload.peminta || '',
+      payload.pemberi || '',
+      'Menunggu Pengambilan',
+      JSON.stringify(currentBahanBaku),
+      payload.no_penawaran || ''
+    ]);
+  }
+
+  let msg = batchCount > 1 ? `SPK berhasil diterbitkan dalam ${batchCount} Batch.` : 'SPK berhasil diterbitkan (Menunggu Pengambilan).';
+  return { status: 'success', message: msg };
+}
+
+function getSPKProgress(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('DB SPK Produksi');
+  if (!sheet) return { status: 'error', message: 'Sheet DB SPK Produksi tidak ditemukan.' };
+  
+  if (!payload.no_penawaran) return { status: 'error', message: 'No Penawaran tidak diberikan.' };
+
+  const spkValues = sheet.getDataRange().getDisplayValues();
+  if (spkValues.length <= 1) return { status: 'success', data: { total: 0, berjalan: 0, selesai: 0, targetQty: 0, selesaiQty: 0 } };
+  
+  // Asumsi format kolom yang valid:
+  // Kolom 3: Qty (index 3)
+  // Kolom 6: Status (index 6)
+  // Kolom 8: No Penawaran (index 8)
+  
+  const headers = spkValues[0];
+  const qtyIdx = headers.findIndex(h => /qty/i.test(h));
+  const statusIdx = headers.findIndex(h => /status/i.test(h));
+  // Jika kolom ke-9 (index 8) belum ada namanya, atau ada header yang pas
+  // Kita coba cek index secara statis jika header tidak ketemu
+  let noPenawaranIdx = headers.findIndex(h => /no.*penawaran/i.test(h));
+  if (noPenawaranIdx === -1) {
+    // Karena kita baru menambahkannya ke kolom ke-9, kita bisa paksakan cek index 8
+    noPenawaranIdx = 8; 
+  }
+  
+  let total = 0;
+  let berjalan = 0;
+  let selesai = 0;
+  let targetQty = 0;
+  let selesaiQty = 0;
+  
+  for (let i = 1; i < spkValues.length; i++) {
+    const row = spkValues[i];
+    // Pastikan panjang array row mencukupi (minimal index 8 ada)
+    if (row.length > noPenawaranIdx && String(row[noPenawaranIdx]).trim() === String(payload.no_penawaran).trim()) {
+      total++;
+      
+      const qty = parseFloat(row[qtyIdx]) || 0;
+      const status = String(row[statusIdx] || '').trim();
+      
+      targetQty += qty;
+      
+      if (status.toLowerCase() === 'selesai') {
+        selesai++;
+        selesaiQty += qty;
+      } else {
+        berjalan++;
+      }
+    }
+  }
+  
+  return { 
+    status: 'success', 
+    data: { total, berjalan, selesai, targetQty, selesaiQty } 
+  };
 }
 
 function ambilBahanSPK(payload) {
