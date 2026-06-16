@@ -33,13 +33,23 @@ body.light-mode {
   --text-main: #0f172a;
   --text-muted: #64748b;
   --primary-glow: rgba(59, 130, 246, 0.15);
+  
+  --secondary: #059669;
+  --warning: #d97706;
 
   --gradient-1: rgba(59, 130, 246, 0.08);
   --gradient-2: rgba(139, 92, 246, 0.05);
   --gradient-transparent: rgba(248, 250, 252, 0);
 
-  --card-bg: rgba(255, 255, 255, 0.6);
+  --card-bg: rgba(255, 255, 255, 0.95);
   --sidebar-bg: rgba(255, 255, 255, 0.85);
+}
+
+body.light-mode .login-overlay,
+body.light-mode .sheet-overlay,
+body.light-mode .lightbox-overlay,
+body.light-mode .modal-overlay {
+  background: rgba(0, 0, 0, 0.4);
 }
 
 /* Light mode specific overrides */
@@ -563,6 +573,7 @@ button.btn-detail-stock {
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  min-height: 400px;
 }
 
 table {
@@ -600,6 +611,8 @@ tbody tr:hover {
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 600;
+  display: inline-block;
+  white-space: nowrap !important;
 }
 
 .badge-success {
@@ -664,7 +677,7 @@ tbody tr:hover {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(10, 14, 23, 0.95);
+  background: rgba(0, 0, 0, 0.5);
   z-index: 9999;
   display: flex;
   align-items: center;
@@ -916,7 +929,7 @@ tbody tr:hover {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.5);
   z-index: 1000;
 }
 

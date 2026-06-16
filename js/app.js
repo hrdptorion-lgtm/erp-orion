@@ -799,10 +799,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 tr.innerHTML = `
                     <td>${item.kode}</td>
                     <td style="font-weight: 500;">${item.nama}</td>
-                    <td>
+                    <td style="white-space: nowrap !important;">
                         <span class="badge ${isKritis ? 'badge-warning' : 'badge-success'}">${parseInt(item.stok || 0).toLocaleString('id-ID')} ${item.satuan || ''}</span>
                     </td>
-                    <td>Rp ${parseInt(item.harga || 0).toLocaleString('id-ID')}</td>
+                    <td style="white-space: nowrap !important;">Rp ${parseInt(item.harga || 0).toLocaleString('id-ID')}</td>
                     <td>${item.lokasi}</td>
                     <td>${actionBtns}</td>
                 `;
