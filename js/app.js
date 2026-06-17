@@ -4835,8 +4835,17 @@ async function openDetailPenawaran(item) {
                             addInvoiceItemRow();
                         } else {
                             items.forEach(it => {
-                                addInvoiceItemRow(it);
+                                const iname = String(it.nama || it.part_name || '').trim();
+                                const qty = parseInt(it.qty || 0);
+                                const harga = parseInt(it.harga || 0);
+                                addInvoiceItemRow({
+                                    deskripsi: iname,
+                                    qty: qty,
+                                    harga_satuan: harga,
+                                    subtotal: qty * harga
+                                });
                             });
+                            calculateInvoiceTotal();
                         }
                     }
                     
@@ -5130,18 +5139,15 @@ function printSuratJalan(item) {
 }
 
 document.getElementById('btn-add-surat-jalan')?.addEventListener('click', () => {
-    try {
-        console.log("btn-add-surat-jalan clicked");
-        document.getElementById('surat-jalan-form').reset();
-        document.getElementById('sj_no').value = '';
-        document.getElementById('sj_items_hidden').value = '';
-        document.getElementById('sj_tanggal').valueAsDate = new Date();
-        document.getElementById('surat-jalan-modal').classList.add('active');
-        console.log("surat-jalan-modal opened");
-    } catch (error) {
-        console.error("Error in btn-add-surat-jalan:", error);
-        alert("ERROR Surat Jalan: " + error.message);
-    }
+    document.getElementById('surat-jalan-form').reset();
+    document.getElementById('sj_no').value = '';
+    document.getElementById('sj_items_hidden').value = '';
+    document.getElementById('sj_tanggal').valueAsDate = new Date();
+    
+    const tbody = document.getElementById('sj-items-tbody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Gunakan tombol dari Detail PO untuk fitur korelasi otomatis</td></tr>';
+    
+    document.getElementById('surat-jalan-modal').classList.add('active');
 });
 
 document.getElementById('btn-close-sj-modal')?.addEventListener('click', () => {
@@ -5156,12 +5162,20 @@ document.getElementById('surat-jalan-form')?.addEventListener('submit', async (e
     const rows = document.querySelectorAll('#sj-items-tbody tr');
     let hasDynamicItems = false;
     
+    let hasExceededError = false;
     rows.forEach(tr => {
         const nameInput = tr.querySelector('.sj-item-name');
         const qtyInput = tr.querySelector('.sj-item-qty');
         if (nameInput && qtyInput) {
             hasDynamicItems = true;
             const qty = parseInt(qtyInput.value || 0);
+            const maxQty = parseInt(qtyInput.getAttribute('max') || 0);
+            
+            if (qty > maxQty && maxQty > 0) {
+                hasExceededError = true;
+                alert(`Peringatan: Qty pengiriman untuk ${nameInput.value} (${qty}) melebihi sisa pesanan PO (${maxQty}).`);
+            }
+            
             if (qty > 0) {
                 items.push({
                     nama: nameInput.value,
@@ -5171,6 +5185,8 @@ document.getElementById('surat-jalan-form')?.addEventListener('submit', async (e
         }
     });
 
+    if (hasExceededError) return; // prevent submit if exceeding PO
+    
     // Fallback if table wasn't used or is empty (e.g., manual SJ without PO link)
     if (!hasDynamicItems) {
         try { items = JSON.parse(document.getElementById('sj_items_hidden').value); } catch(e){}
@@ -5401,22 +5417,15 @@ document.getElementById('btn-add-inv-item')?.addEventListener('click', () => {
 });
 
 document.getElementById('btn-add-invoice')?.addEventListener('click', () => {
-    try {
-        console.log("btn-add-invoice clicked");
-        document.getElementById('invoice-form').reset();
-        document.getElementById('inv_no').value = '';
-        document.getElementById('inv_items_hidden').value = '';
-        document.getElementById('inv_tanggal').valueAsDate = new Date();
-        document.getElementById('inv_jatuh_tempo').valueAsDate = new Date(Date.now() + 30*24*60*60*1000); // +30 days
-        document.getElementById('inv-items-tbody').innerHTML = '';
-        addInvoiceItemRow(); // start with 1 empty row
-        calculateInvoiceTotal();
-        document.getElementById('invoice-modal').classList.add('active');
-        console.log("invoice-modal opened");
-    } catch (error) {
-        console.error("Error in btn-add-invoice:", error);
-        alert("ERROR Invoice: " + error.message);
-    }
+    document.getElementById('invoice-form').reset();
+    document.getElementById('inv_no').value = '';
+    document.getElementById('inv_items_hidden').value = '';
+    document.getElementById('inv_tanggal').valueAsDate = new Date();
+    document.getElementById('inv_jatuh_tempo').valueAsDate = new Date(Date.now() + 30*24*60*60*1000); // +30 days
+    document.getElementById('inv-items-tbody').innerHTML = '';
+    addInvoiceItemRow(); // start with 1 empty row
+    calculateInvoiceTotal();
+    document.getElementById('invoice-modal').classList.add('active');
 });
 
 document.getElementById('btn-close-inv-modal')?.addEventListener('click', () => {
