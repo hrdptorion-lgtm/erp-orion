@@ -260,11 +260,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Number Format Utility ---
-    function formatRibuan(numStr) {
+    window.formatRibuan = function(numStr) {
         let clean = String(numStr).replace(/\D/g, '');
         if (!clean) return '';
         return parseInt(clean, 10).toLocaleString('id-ID');
-    }
+    };
+
+    window.formatRupiah = function(num) {
+        if (!num) return 'Rp 0';
+        return 'Rp ' + window.formatRibuan(num);
+    };
 
     document.addEventListener('input', (e) => {
         if (e.target.classList && e.target.classList.contains('number-format')) {
@@ -4601,8 +4606,8 @@ async function openDetailPenawaran(item) {
         });
     }
 
-    // Process BOM Check
-    checkBOMAvailabilityForPenawaran(items);
+    // Process BOM Check (Not implemented)
+    // checkBOMAvailabilityForPenawaran(items);
 
     // Fetch SPK Progress
     const progressContainer = document.getElementById('detail_spk_progress_container');
