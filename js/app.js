@@ -5006,7 +5006,6 @@ function printSuratJalan(item) {
         document.body.classList.remove('printing-sj');
     }, 1000);
 }
-}
 
 document.getElementById('btn-add-surat-jalan')?.addEventListener('click', () => {
     document.getElementById('surat-jalan-form').reset();
