@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="css/style.css?v=42">
+    <link rel="stylesheet" href="css/style.css?v=51">
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Tom Select for Smart Dropdowns -->
@@ -54,6 +54,18 @@
         .ts-dropdown .active {
             background-color: var(--primary) !important;
             color: white !important;
+        }
+
+        /* Guarantee print rules bypass any caching */
+        @media print {
+
+            .bottom-nav,
+            .mobile-bottom-sheet,
+            .sheet-overlay {
+                display: none !important;
+                opacity: 0 !important;
+                visibility: hidden !important;
+            }
         }
     </style>
 </head>
@@ -475,7 +487,8 @@
             <div class="data-section">
                 <div class="section-header">
                     <h3>Permintaan Barang (Internal)</h3>
-                    <button class="btn" id="btn-add-po-internal" style="background: var(--accent);"><i class="fa-solid fa-plus"></i> Buat Pengajuan Belanja</button>
+                    <button class="btn" id="btn-add-po-internal" style="background: var(--accent);"><i
+                            class="fa-solid fa-plus"></i> Buat Pengajuan Belanja</button>
                 </div>
                 <div class="table-container">
                     <table>
@@ -623,7 +636,8 @@
             <div class="data-section">
                 <div class="section-header">
                     <h3>Pengiriman (Surat Jalan)</h3>
-                    <button class="btn" id="btn-add-surat-jalan" style="background: var(--accent);"><i class="fa-solid fa-plus"></i> Buat Surat Jalan Manual</button>
+                    <button class="btn" id="btn-add-surat-jalan" style="background: var(--accent);"><i
+                            class="fa-solid fa-plus"></i> Buat Surat Jalan Manual</button>
                 </div>
                 <div class="table-container">
                     <table>
@@ -652,7 +666,8 @@
             <div class="data-section">
                 <div class="section-header">
                     <h3>Invoice Penagihan</h3>
-                    <button class="btn" id="btn-add-invoice" style="background: var(--accent);"><i class="fa-solid fa-plus"></i> Buat Invoice Manual</button>
+                    <button class="btn" id="btn-add-invoice" style="background: var(--accent);"><i
+                            class="fa-solid fa-plus"></i> Buat Invoice Manual</button>
                 </div>
                 <div class="table-container">
                     <table>
@@ -877,7 +892,8 @@
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
                         <div class="input-group" style="margin-bottom:0;">
                             <label>Kepada (To)</label>
-                            <input type="text" id="po_to" list="supplier_list" placeholder="Ketik atau pilih nama supplier..." required>
+                            <input type="text" id="po_to" list="supplier_list"
+                                placeholder="Ketik atau pilih nama supplier..." required>
                             <datalist id="supplier_list"></datalist>
                         </div>
                         <div class="input-group" style="margin-bottom:0;">
@@ -1328,7 +1344,8 @@
                 <div
                     style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
                     <h2 id="detail-modal-title" style="margin: 0; font-size: 1.5rem;">Detail Penawaran</h2>
-                    <button class="btn" style="background: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;"
+                    <button class="btn"
+                        style="background: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;"
                         onclick="document.getElementById('detail-penawaran-modal').classList.remove('active')"><i
                             class="fa-solid fa-times"></i></button>
                 </div>
@@ -1356,10 +1373,10 @@
                             langkah selanjutnya?</p>
                     </div>
                     <div style="display: flex; gap: 10px;">
-                        <button id="btn-detail-po" class="btn"
-                            style="background: var(--warning); display: none;"><i class="fa-solid fa-file-invoice"></i> PR Barang</button>
-                        <button id="btn-detail-spk" class="btn"
-                            style="background: var(--secondary);"><i class="fa-solid fa-clipboard-list"></i> Buat SPK / Produksi</button>
+                        <button id="btn-detail-po" class="btn" style="background: var(--warning); display: none;"><i
+                                class="fa-solid fa-file-invoice"></i> PR Barang</button>
+                        <button id="btn-detail-spk" class="btn" style="background: var(--secondary);"><i
+                                class="fa-solid fa-clipboard-list"></i> Buat SPK / Produksi</button>
                     </div>
                 </div>
 
@@ -1367,9 +1384,11 @@
                 <div id="detail-action-sj"
                     style="display: flex; justify-content: space-between; gap: 10px; padding: 15px; border-radius: 8px; margin-bottom: 1.5rem; border: 1px dashed var(--glass-border);">
                     <button id="btn-detail-sj" class="btn"
-                        style="background: var(--info); flex: 1; justify-content: center;"><i class="fa-solid fa-truck-fast"></i> Buat SJ</button>
+                        style="background: var(--info); flex: 1; justify-content: center;"><i
+                            class="fa-solid fa-truck-fast"></i> Buat SJ</button>
                     <button id="btn-detail-invoice" class="btn"
-                        style="background: var(--warning); flex: 1; justify-content: center;"><i class="fa-solid fa-receipt"></i> Buat Invoice</button>
+                        style="background: var(--warning); flex: 1; justify-content: center;"><i
+                            class="fa-solid fa-receipt"></i> Buat Invoice</button>
                 </div>
 
                 <div
@@ -1419,8 +1438,10 @@
                     </div>
                 </div>
 
-                <div id="detail_spk_progress_container" style="display: none; margin-bottom: 1.5rem; padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.2); border-left: 4px solid var(--primary);">
-                    <h4 style="margin: 0 0 10px 0; color: var(--primary);"><i class="fa-solid fa-industry"></i> Status Produksi (SPK)</h4>
+                <div id="detail_spk_progress_container"
+                    style="display: none; margin-bottom: 1.5rem; padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.2); border-left: 4px solid var(--primary);">
+                    <h4 style="margin: 0 0 10px 0; color: var(--primary);"><i class="fa-solid fa-industry"></i> Status
+                        Produksi (SPK)</h4>
                     <div id="detail_spk_stats" style="font-size: 0.9rem; color: var(--text-main);">
                         <p style="margin:0; color:#aaa;">Memuat status SPK...</p>
                     </div>
@@ -1558,7 +1579,8 @@
                         </div>
                         <div class="input-group" style="flex: 1;">
                             <label>Jumlah Batch</label>
-                            <input type="number" id="spk_batch_count" min="1" required placeholder="1" value="1" style="width: 100%; padding: 0.8rem; border-radius: 10px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main);">
+                            <input type="number" id="spk_batch_count" min="1" required placeholder="1" value="1"
+                                style="width: 100%; padding: 0.8rem; border-radius: 10px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main);">
                         </div>
                     </div>
                     <div class="input-group"
@@ -1581,7 +1603,8 @@
                         <div style="display: flex; gap: 10px;">
                             <input type="text" id="spk_peminta" required placeholder="Nama Kru Produksi (Peminta)"
                                 style="flex: 1;">
-                            <select id="spk_pemberi" multiple required style="flex: 1; padding: 0.8rem; border-radius: 10px; border: 1px solid var(--glass-border); background: var(--card-bg); color: var(--text-main);">
+                            <select id="spk_pemberi" multiple required
+                                style="flex: 1; padding: 0.8rem; border-radius: 10px; border: 1px solid var(--glass-border); background: var(--card-bg); color: var(--text-main);">
                                 <option value="" disabled>Pilih Kru Gudang (Penyetuju)</option>
                             </select>
                         </div>
@@ -1592,6 +1615,37 @@
                             style="flex: 1; background: var(--bg-glass); justify-content: center; color: var(--text-main) !important;">Batal</button>
                         <button type="submit" class="btn" style="flex: 1; justify-content: center;">Terbitkan
                             SPK</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Barang Jadi Modal -->
+        <div id="edit-barang-jadi-modal" class="login-overlay">
+            <div class="login-box" style="max-width: 500px;">
+                <h2 style="margin-bottom: 1.5rem;">Edit Barang Jadi</h2>
+                <form id="edit-barang-jadi-form">
+                    <input type="hidden" id="edit_bj_kode">
+                    <div class="input-group">
+                        <label>Nama Barang</label>
+                        <input type="text" id="edit_bj_nama" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Stok</label>
+                        <input type="number" id="edit_bj_stok" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Harga Jual</label>
+                        <input type="number" id="edit_bj_harga" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Lokasi Gudang</label>
+                        <input type="text" id="edit_bj_lokasi">
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                        <button type="button" class="btn btn-close-edit-bj"
+                            style="flex: 1; background: var(--bg-glass); justify-content: center; color: var(--text-main) !important;">Batal</button>
+                        <button type="submit" class="btn" style="flex: 1; justify-content: center; background: var(--warning);">Simpan</button>
                     </div>
                 </form>
             </div>
@@ -2204,356 +2258,398 @@
             </form>
         </div>
     </div>
-        <!-- Supplier Modal Overlay -->
-        <div id="supplier-modal" class="login-overlay">
-            <div class="login-box" style="max-width: 400px;">
-                <h2 id="supplier-modal-title" style="margin-bottom: 1.5rem;">Form Supplier</h2>
-                <form id="supplier-form">
-                    <input type="hidden" id="supp_id">
-                    <div class="input-group">
-                        <label>Nama Supplier</label>
-                        <input type="text" id="supp_nama" required placeholder="PT Supplier Jaya">
+    <!-- Supplier Modal Overlay -->
+    <div id="supplier-modal" class="login-overlay">
+        <div class="login-box" style="max-width: 400px;">
+            <h2 id="supplier-modal-title" style="margin-bottom: 1.5rem;">Form Supplier</h2>
+            <form id="supplier-form">
+                <input type="hidden" id="supp_id">
+                <div class="input-group">
+                    <label>Nama Supplier</label>
+                    <input type="text" id="supp_nama" required placeholder="PT Supplier Jaya">
+                </div>
+                <div class="input-group" style="margin-top: 15px;">
+                    <label>Kontak / Telepon</label>
+                    <input type="text" id="supp_kontak" placeholder="0812...">
+                </div>
+                <div class="input-group" style="margin-top: 15px;">
+                    <label>Alamat / Keterangan</label>
+                    <textarea id="supp_alamat" rows="3" placeholder="Jl. Industri..."
+                        style="width:100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; resize: vertical;"></textarea>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn" id="btn-close-supplier-modal"
+                        style="flex: 1; background: transparent; border: 1px solid var(--glass-border); color: var(--text-main) !important;">Batal</button>
+                    <button type="submit" class="btn" style="flex: 1; background: var(--primary);">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Customer Modal Overlay -->
+    <div id="customer-modal" class="login-overlay">
+        <div class="login-box" style="max-width: 400px;">
+            <h2 id="customer-modal-title" style="margin-bottom: 1.5rem;">Form Customer</h2>
+            <form id="customer-form">
+                <input type="hidden" id="c_id">
+                <div class="input-group">
+                    <label>Nama Customer</label>
+                    <input type="text" id="c_nama" required placeholder="PT Contoh Abadi">
+                </div>
+                <div class="input-group" style="margin-top: 15px;">
+                    <label>Alamat / Keterangan</label>
+                    <textarea id="c_alamat" rows="3" placeholder="Jl. Raya Kemerdekaan..."
+                        style="width:100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; resize: vertical;"></textarea>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn" id="btn-close-customer-modal"
+                        style="flex: 1; background: transparent; border: 1px solid var(--glass-border); color: var(--text-main) !important;">Batal</button>
+                    <button type="submit" class="btn" style="flex: 1; background: var(--primary);">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Surat Jalan Modal -->
+
+    <div id="surat-jalan-modal" class="login-overlay">
+        <div class="login-box" style="max-width: 800px;">
+            <h2 id="surat-jalan-modal-title" style="margin-bottom: 1.5rem;">Form Surat Jalan</h2>
+            <form id="surat-jalan-form">
+                <input type="hidden" id="sj_items_hidden">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>No Surat Jalan</label>
+                        <input type="text" id="sj_no" placeholder="Auto Generate" disabled
+                            style="background: rgba(255,255,255,0.05); color: #aaa;">
                     </div>
-                    <div class="input-group" style="margin-top: 15px;">
-                        <label>Kontak / Telepon</label>
-                        <input type="text" id="supp_kontak" placeholder="0812...">
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>Tanggal</label>
+                        <input type="date" id="sj_tanggal" required>
                     </div>
-                    <div class="input-group" style="margin-top: 15px;">
-                        <label>Alamat / Keterangan</label>
-                        <textarea id="supp_alamat" rows="3" placeholder="Jl. Industri..."
-                            style="width:100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; resize: vertical;"></textarea>
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>No Penawaran Ref.</label>
+                        <input type="text" id="sj_no_penawaran">
                     </div>
-                    <div style="display: flex; gap: 10px; margin-top: 20px;">
-                        <button type="button" class="btn" id="btn-close-supplier-modal"
-                            style="flex: 1; background: transparent; border: 1px solid var(--glass-border); color: var(--text-main) !important;">Batal</button>
-                        <button type="submit" class="btn" style="flex: 1; background: var(--primary);">Simpan</button>
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>Customer</label>
+                        <input type="text" id="sj_customer" required list="customer-list">
                     </div>
-                </form>
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>Supir</label>
+                        <input type="text" id="sj_supir">
+                    </div>
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>Plat Nomor</label>
+                        <input type="text" id="sj_plat">
+                    </div>
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>Status Pengiriman</label>
+                        <select id="sj_status"
+                            style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border);">
+                            <option value="Dikirim">Dikirim</option>
+                            <option value="Selesai (Diterima)">Selesai (Diterima)</option>
+                            <option value="Batal">Batal</option>
+                        </select>
+                    </div>
+                </div>
+
+                <h4 style="margin-bottom: 10px; color: var(--primary);">Rincian Item Pengiriman</h4>
+                <div class="table-responsive" style="margin-bottom: 1.5rem;">
+                    <table class="glass-table">
+                        <thead>
+                            <tr>
+                                <th>Item / Part Name</th>
+                                <th style="text-align: right; width: 100px;">PO Qty</th>
+                                <th style="text-align: right; width: 100px;">Terkirim</th>
+                                <th style="text-align: right; width: 120px;">Qty Dikirim</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sj-items-tbody">
+                            <tr>
+                                <td colspan="4" style="text-align:center;">Klik "Buat SJ" dari tabel Penawaran untuk
+                                    memuat item</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="input-group">
+                    <label>Catatan</label>
+                    <input type="text" id="sj_catatan">
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
+                    <button type="button" class="btn" id="btn-close-sj-modal"
+                        style="flex: 1; background: var(--bg-glass); justify-content: center; color: var(--text-main) !important;">Batal</button>
+                    <button type="submit" class="btn"
+                        style="flex: 1; justify-content: center; background: var(--primary);">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Invoice Modal -->
+    <div id="invoice-modal" class="login-overlay">
+        <div class="login-box" style="max-width: 800px;">
+            <h2 id="invoice-modal-title" style="margin-bottom: 1.5rem;">Form Invoice</h2>
+            <form id="invoice-form">
+                <input type="hidden" id="inv_items_hidden">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>No Invoice</label>
+                        <input type="text" id="inv_no" placeholder="Auto Generate" disabled
+                            style="background: rgba(255,255,255,0.05); color: #aaa;">
+                    </div>
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>Tanggal</label>
+                        <input type="date" id="inv_tanggal" required>
+                    </div>
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>Jatuh Tempo</label>
+                        <input type="date" id="inv_jatuh_tempo" required>
+                    </div>
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>No Penawaran Ref.</label>
+                        <input type="text" id="inv_no_penawaran">
+                    </div>
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>Customer</label>
+                        <input type="text" id="inv_customer" required list="customer-list">
+                    </div>
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>Total Tagihan (Rp)</label>
+                        <input type="number" id="inv_total" required readonly
+                            style="background: rgba(255,255,255,0.05); color: #aaa;">
+                    </div>
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>Terbayar (Rp)</label>
+                        <input type="number" id="inv_terbayar" value="0">
+                    </div>
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>Status Pembayaran</label>
+                        <select id="inv_status"
+                            style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border);">
+                            <option value="Belum Lunas">Belum Lunas</option>
+                            <option value="Lunas">Lunas</option>
+                            <option value="Batal">Batal</option>
+                        </select>
+                    </div>
+                </div>
+
+                <h4 style="margin-bottom: 10px; color: var(--primary);">Rincian Tagihan</h4>
+                <div class="table-responsive" style="margin-bottom: 1.5rem;">
+                    <table class="glass-table">
+                        <thead>
+                            <tr>
+                                <th>Deskripsi / Item Name</th>
+                                <th style="text-align: right; width: 100px;">Qty</th>
+                                <th style="text-align: right; width: 150px;">Harga Satuan</th>
+                                <th style="text-align: right; width: 150px;">Subtotal</th>
+                                <th style="text-align: center; width: 50px;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inv-items-tbody">
+                            <!-- Baris akan ditambahkan via JS -->
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="5" style="text-align: left; border-top: none; padding-top: 10px;">
+                                    <button type="button" class="btn" id="btn-add-inv-item"
+                                        style="background: var(--bg-glass); border: 1px dashed var(--glass-border); color: var(--text-main); font-size: 0.8rem;"><i
+                                            class="fa-solid fa-plus"></i> Tambah Baris</button>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <div class="input-group">
+                    <label>Catatan</label>
+                    <input type="text" id="inv_catatan">
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
+                    <button type="button" class="btn" id="btn-close-inv-modal"
+                        style="flex: 1; background: var(--bg-glass); justify-content: center; color: var(--text-main) !important;">Batal</button>
+                    <button type="submit" class="btn"
+                        style="flex: 1; justify-content: center; background: var(--primary);">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Print Container for Surat Jalan -->
+    <div id="print-sj-container" class="print-only"
+        style="font-family: 'Times New Roman', serif; font-size: 14px; color: #000; padding: 20px;">
+        <h2 style="text-align: center; margin-bottom: 20px; font-weight: bold; letter-spacing: 1px;">SURAT JALAN</h2>
+
+        <div style="display: flex; align-items: center; margin-bottom: 20px;">
+            <img src="logo.png" style="width: 80px; height: 80px; object-fit: contain; margin-right: 15px;">
+            <div>
+                <h3 id="print_sj_company_name" style="margin: 0; font-size: 16px; font-weight: bold;">PT. Orion Karya
+                    Sejahtera</h3>
+                <p id="print_sj_company_address" style="margin: 2px 0; font-size: 14px;"></p>
             </div>
         </div>
 
-        <!-- Customer Modal Overlay -->
-        <div id="customer-modal" class="login-overlay">
-            <div class="login-box" style="max-width: 400px;">
-                <h2 id="customer-modal-title" style="margin-bottom: 1.5rem;">Form Customer</h2>
-                <form id="customer-form">
-                    <input type="hidden" id="c_id">
-                    <div class="input-group">
-                        <label>Nama Customer</label>
-                        <input type="text" id="c_nama" required placeholder="PT Contoh Abadi">
-                    </div>
-                    <div class="input-group" style="margin-top: 15px;">
-                        <label>Alamat / Keterangan</label>
-                        <textarea id="c_alamat" rows="3" placeholder="Jl. Raya Kemerdekaan..."
-                            style="width:100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; resize: vertical;"></textarea>
-                    </div>
-                    <div style="display: flex; gap: 10px; margin-top: 20px;">
-                        <button type="button" class="btn" id="btn-close-customer-modal"
-                            style="flex: 1; background: transparent; border: 1px solid var(--glass-border); color: var(--text-main) !important;">Batal</button>
-                        <button type="submit" class="btn" style="flex: 1; background: var(--primary);">Simpan</button>
-                    </div>
-                </form>
+        <table style="width: 100%; border: 1px solid #000; margin-bottom: 20px; border-collapse: collapse;">
+            <tr>
+                <td style="width: 50%; padding: 10px; vertical-align: top; border-right: 1px solid #000;">
+                    Kepada:<br>
+                    <strong id="print_sj_customer"></strong>
+                </td>
+                <td style="width: 50%; padding: 10px; vertical-align: top;">
+                    <table style="width: 100%; border: none;">
+                        <tr>
+                            <td style="width: 150px; border:none; padding: 2px;">Nomor Surat Jalan</td>
+                            <td style="border:none; padding: 2px;">: <span id="print_sj_no"></span></td>
+                        </tr>
+                        <tr>
+                            <td style="border:none; padding: 2px;">Tanggal</td>
+                            <td style="border:none; padding: 2px;">: <span id="print_sj_date"></span></td>
+                        </tr>
+                        <tr>
+                            <td style="border:none; padding: 2px;">Nomor PO</td>
+                            <td style="border:none; padding: 2px;">: <span id="print_sj_po"></span></td>
+                        </tr>
+                        <tr>
+                            <td style="border:none; padding: 2px;">No. Polisi</td>
+                            <td style="border:none; padding: 2px;">: <span id="print_sj_plat"></span></td>
+                        </tr>
+                        <tr>
+                            <td style="border:none; padding: 2px;">Nama Pengemudi</td>
+                            <td style="border:none; padding: 2px;">: <span id="print_sj_supir"></span></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+            <thead>
+                <tr>
+                    <th style="border: 1px solid #000; padding: 8px; text-align: center;">No</th>
+                    <th style="border: 1px solid #000; padding: 8px; text-align: left;">Nama Barang</th>
+                    <th style="border: 1px solid #000; padding: 8px; text-align: center;">Satuan</th>
+                    <th style="border: 1px solid #000; padding: 8px; text-align: center;">Jumlah Barang</th>
+                    <th style="border: 1px solid #000; padding: 8px; text-align: center;">Keterangan</th>
+                </tr>
+            </thead>
+            <tbody id="print-sj-items">
+                <!-- Rows injected via JS -->
+            </tbody>
+        </table>
+
+        <div style="margin-top: 30px;">
+            <p style="margin-bottom: 50px;">Tanda Terima</p>
+            <div style="display: flex; justify-content: space-between; text-align: center;">
+                <div style="width: 30%;">
+                    Sopir (<span style="display:inline-block; width:150px; border-bottom:1px solid #000;"></span>)
+                </div>
+                <div style="width: 30%;">
+                    Gudang (<span style="display:inline-block; width:150px; border-bottom:1px solid #000;"></span>)
+                </div>
+                <div style="width: 30%;">
+                    Penerima (<span style="display:inline-block; width:140px; border-bottom:1px solid #000;"></span>)
+                </div>
             </div>
         </div>
+    </div>
 
-        <!-- Surat Jalan Modal -->
+    <!-- Print Container for Invoice -->
+    <div id="print-inv-container" class="print-only"
+        style="font-family: 'Times New Roman', serif; font-size: 14px; color: #000; padding: 20px;">
+        <h2 style="text-align: center; margin-bottom: 20px; font-weight: bold; letter-spacing: 1px;">INVOICE</h2>
 
-        <div id="surat-jalan-modal" class="login-overlay">
-            <div class="login-box" style="max-width: 800px;">
-                <h2 id="surat-jalan-modal-title" style="margin-bottom: 1.5rem;">Form Surat Jalan</h2>
-                <form id="surat-jalan-form">
-                    <input type="hidden" id="sj_items_hidden">
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
-                        <div class="input-group" style="margin-bottom:0;">
-                            <label>No Surat Jalan</label>
-                            <input type="text" id="sj_no" placeholder="Auto Generate" disabled style="background: rgba(255,255,255,0.05); color: #aaa;">
-                        </div>
-                        <div class="input-group" style="margin-bottom:0;">
-                            <label>Tanggal</label>
-                            <input type="date" id="sj_tanggal" required>
-                        </div>
-                        <div class="input-group" style="margin-bottom:0;">
-                            <label>No Penawaran Ref.</label>
-                            <input type="text" id="sj_no_penawaran">
-                        </div>
-                        <div class="input-group" style="margin-bottom:0;">
-                            <label>Customer</label>
-                            <input type="text" id="sj_customer" required list="customer-list">
-                        </div>
-                        <div class="input-group" style="margin-bottom:0;">
-                            <label>Supir</label>
-                            <input type="text" id="sj_supir">
-                        </div>
-                        <div class="input-group" style="margin-bottom:0;">
-                            <label>Plat Nomor</label>
-                            <input type="text" id="sj_plat">
-                        </div>
-                        <div class="input-group" style="margin-bottom:0;">
-                            <label>Status Pengiriman</label>
-                            <select id="sj_status" style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border);">
-                                <option value="Dikirim">Dikirim</option>
-                                <option value="Selesai (Diterima)">Selesai (Diterima)</option>
-                                <option value="Batal">Batal</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <h4 style="margin-bottom: 10px; color: var(--primary);">Rincian Item Pengiriman</h4>
-                    <div class="table-responsive" style="margin-bottom: 1.5rem;">
-                        <table class="glass-table">
-                            <thead>
-                                <tr>
-                                    <th>Item / Part Name</th>
-                                    <th style="text-align: right; width: 100px;">PO Qty</th>
-                                    <th style="text-align: right; width: 100px;">Terkirim</th>
-                                    <th style="text-align: right; width: 120px;">Qty Dikirim</th>
-                                </tr>
-                            </thead>
-                            <tbody id="sj-items-tbody">
-                                <tr>
-                                    <td colspan="4" style="text-align:center;">Klik "Buat SJ" dari tabel Penawaran untuk memuat item</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="input-group">
-                        <label>Catatan</label>
-                        <input type="text" id="sj_catatan">
-                    </div>
-                    
-                    <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
-                        <button type="button" class="btn" id="btn-close-sj-modal"
-                            style="flex: 1; background: var(--bg-glass); justify-content: center; color: var(--text-main) !important;">Batal</button>
-                        <button type="submit" class="btn" style="flex: 1; justify-content: center; background: var(--primary);">Simpan</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Invoice Modal -->
-        <div id="invoice-modal" class="login-overlay">
-            <div class="login-box" style="max-width: 800px;">
-                <h2 id="invoice-modal-title" style="margin-bottom: 1.5rem;">Form Invoice</h2>
-                <form id="invoice-form">
-                    <input type="hidden" id="inv_items_hidden">
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
-                        <div class="input-group" style="margin-bottom:0;">
-                            <label>No Invoice</label>
-                            <input type="text" id="inv_no" placeholder="Auto Generate" disabled style="background: rgba(255,255,255,0.05); color: #aaa;">
-                        </div>
-                        <div class="input-group" style="margin-bottom:0;">
-                            <label>Tanggal</label>
-                            <input type="date" id="inv_tanggal" required>
-                        </div>
-                        <div class="input-group" style="margin-bottom:0;">
-                            <label>Jatuh Tempo</label>
-                            <input type="date" id="inv_jatuh_tempo" required>
-                        </div>
-                        <div class="input-group" style="margin-bottom:0;">
-                            <label>No Penawaran Ref.</label>
-                            <input type="text" id="inv_no_penawaran">
-                        </div>
-                        <div class="input-group" style="margin-bottom:0;">
-                            <label>Customer</label>
-                            <input type="text" id="inv_customer" required list="customer-list">
-                        </div>
-                        <div class="input-group" style="margin-bottom:0;">
-                            <label>Total Tagihan (Rp)</label>
-                            <input type="number" id="inv_total" required readonly style="background: rgba(255,255,255,0.05); color: #aaa;">
-                        </div>
-                        <div class="input-group" style="margin-bottom:0;">
-                            <label>Terbayar (Rp)</label>
-                            <input type="number" id="inv_terbayar" value="0">
-                        </div>
-                        <div class="input-group" style="margin-bottom:0;">
-                            <label>Status Pembayaran</label>
-                            <select id="inv_status" style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border);">
-                                <option value="Belum Lunas">Belum Lunas</option>
-                                <option value="Lunas">Lunas</option>
-                                <option value="Batal">Batal</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <h4 style="margin-bottom: 10px; color: var(--primary);">Rincian Tagihan</h4>
-                    <div class="table-responsive" style="margin-bottom: 1.5rem;">
-                        <table class="glass-table">
-                            <thead>
-                                <tr>
-                                    <th>Deskripsi / Item Name</th>
-                                    <th style="text-align: right; width: 100px;">Qty</th>
-                                    <th style="text-align: right; width: 150px;">Harga Satuan</th>
-                                    <th style="text-align: right; width: 150px;">Subtotal</th>
-                                    <th style="text-align: center; width: 50px;">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="inv-items-tbody">
-                                <!-- Baris akan ditambahkan via JS -->
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colspan="5" style="text-align: left; border-top: none; padding-top: 10px;">
-                                        <button type="button" class="btn" id="btn-add-inv-item" style="background: var(--bg-glass); border: 1px dashed var(--glass-border); color: var(--text-main); font-size: 0.8rem;"><i class="fa-solid fa-plus"></i> Tambah Baris</button>
-                                    </td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                    <div class="input-group">
-                        <label>Catatan</label>
-                        <input type="text" id="inv_catatan">
-                    </div>
-                    
-                    <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
-                        <button type="button" class="btn" id="btn-close-inv-modal"
-                            style="flex: 1; background: var(--bg-glass); justify-content: center; color: var(--text-main) !important;">Batal</button>
-                        <button type="submit" class="btn" style="flex: 1; justify-content: center; background: var(--primary);">Simpan</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Print Container for Surat Jalan -->
-        <div id="print-sj-container" class="print-only" style="font-family: 'Times New Roman', serif; font-size: 14px; color: #000; padding: 20px;">
-            <h2 style="text-align: center; margin-bottom: 20px; font-weight: bold; letter-spacing: 1px;">SURAT JALAN</h2>
-            
-            <div style="display: flex; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+            <div style="width: 60%; display: flex; align-items: flex-start;">
                 <img src="logo.png" style="width: 80px; height: 80px; object-fit: contain; margin-right: 15px;">
                 <div>
-                    <h3 id="print_sj_company_name" style="margin: 0; font-size: 16px; font-weight: bold;">PT. Orion Karya Sejahtera</h3>
-                    <p id="print_sj_company_address" style="margin: 2px 0; font-size: 14px;"></p>
+                    <h3 id="print_inv_company_name" style="margin: 0; font-size: 16px; font-weight: bold;">PT. Orion
+                        Karya Sejahtera</h3>
+                    <p id="print_inv_company_address" style="margin: 2px 0; font-size: 14px;"></p>
                 </div>
             </div>
-            
-            <table style="width: 100%; border: 1px solid #000; margin-bottom: 20px; border-collapse: collapse;">
-                <tr>
-                    <td style="width: 50%; padding: 10px; vertical-align: top; border-right: 1px solid #000;">
-                        Kepada:<br>
-                        <strong id="print_sj_customer"></strong>
-                    </td>
-                    <td style="width: 50%; padding: 10px; vertical-align: top;">
-                        <table style="width: 100%; border: none;">
-                            <tr><td style="width: 150px; border:none; padding: 2px;">Nomor Surat Jalan</td><td style="border:none; padding: 2px;">: <span id="print_sj_no"></span></td></tr>
-                            <tr><td style="border:none; padding: 2px;">Tanggal</td><td style="border:none; padding: 2px;">: <span id="print_sj_date"></span></td></tr>
-                            <tr><td style="border:none; padding: 2px;">Nomor PO</td><td style="border:none; padding: 2px;">: <span id="print_sj_po"></span></td></tr>
-                            <tr><td style="border:none; padding: 2px;">No. Polisi</td><td style="border:none; padding: 2px;">: <span id="print_sj_plat"></span></td></tr>
-                            <tr><td style="border:none; padding: 2px;">Nama Pengemudi</td><td style="border:none; padding: 2px;">: <span id="print_sj_supir"></span></td></tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
-
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
-                <thead>
-                    <tr>
-                        <th style="border: 1px solid #000; padding: 8px; text-align: center;">No</th>
-                        <th style="border: 1px solid #000; padding: 8px; text-align: left;">Nama Barang</th>
-                        <th style="border: 1px solid #000; padding: 8px; text-align: center;">Satuan</th>
-                        <th style="border: 1px solid #000; padding: 8px; text-align: center;">Jumlah Barang</th>
-                        <th style="border: 1px solid #000; padding: 8px; text-align: center;">Keterangan</th>
-                    </tr>
-                </thead>
-                <tbody id="print-sj-items">
-                    <!-- Rows injected via JS -->
-                </tbody>
-            </table>
-
-            <div style="margin-top: 30px;">
-                <p style="margin-bottom: 50px;">Tanda Terima</p>
-                <div style="display: flex; justify-content: space-between; text-align: center;">
-                    <div style="width: 30%;">
-                        Sopir (<span style="display:inline-block; width:150px; border-bottom:1px solid #000;"></span>)
-                    </div>
-                    <div style="width: 30%;">
-                        Gudang (<span style="display:inline-block; width:150px; border-bottom:1px solid #000;"></span>)
-                    </div>
-                    <div style="width: 30%;">
-                        Penerima (<span style="display:inline-block; width:150px; border-bottom:1px solid #000;"></span>)
-                    </div>
-                </div>
+            <div style="width: 40%; text-align: right;">
+                <h2 style="margin: 0; color: #333; font-size: 24px;">INVOICE</h2>
+                <p style="margin: 5px 0 0 0;">No: <strong id="print_inv_no"></strong></p>
             </div>
         </div>
 
-        <!-- Print Container for Invoice -->
-        <div id="print-inv-container" class="print-only" style="font-family: 'Times New Roman', serif; font-size: 14px; color: #000; padding: 20px;">
-            <h2 style="text-align: center; margin-bottom: 20px; font-weight: bold; letter-spacing: 1px;">INVOICE</h2>
-            
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
-                <div style="width: 60%; display: flex; align-items: flex-start;">
-                    <img src="logo.png" style="width: 80px; height: 80px; object-fit: contain; margin-right: 15px;">
-                    <div>
-                        <h3 id="print_inv_company_name" style="margin: 0; font-size: 16px; font-weight: bold;">PT. Orion Karya Sejahtera</h3>
-                        <p id="print_inv_company_address" style="margin: 2px 0; font-size: 14px;"></p>
-                    </div>
-                </div>
-                <div style="width: 40%; text-align: right;">
-                    <h2 style="margin: 0; color: #333; font-size: 24px;">INVOICE</h2>
-                    <p style="margin: 5px 0 0 0;">No: <strong id="print_inv_no"></strong></p>
-                </div>
-            </div>
-            
-            <table style="width: 100%; border: 1px solid #000; margin-bottom: 20px; border-collapse: collapse;">
+        <table style="width: 100%; border: 1px solid #000; margin-bottom: 20px; border-collapse: collapse;">
+            <tr>
+                <td style="width: 50%; padding: 10px; vertical-align: top; border-right: 1px solid #000;">
+                    Tagihan Kepada:<br>
+                    <strong id="print_inv_customer" style="font-size: 16px;"></strong>
+                </td>
+                <td style="width: 50%; padding: 10px; vertical-align: top;">
+                    <table style="width: 100%; border: none;">
+                        <tr>
+                            <td style="width: 120px; border:none; padding: 2px;">Tanggal Invoice</td>
+                            <td style="border:none; padding: 2px;">: <span id="print_inv_date"></span></td>
+                        </tr>
+                        <tr>
+                            <td style="border:none; padding: 2px;">Jatuh Tempo</td>
+                            <td style="border:none; padding: 2px;">: <strong id="print_inv_due"></strong></td>
+                        </tr>
+                        <tr>
+                            <td style="border:none; padding: 2px;">Nomor PO/Ref</td>
+                            <td style="border:none; padding: 2px;">: <span id="print_inv_po"></span></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <thead>
+                <tr style="background-color: #f2f2f2;">
+                    <th style="border: 1px solid #000; padding: 8px; text-align: center;">No</th>
+                    <th style="border: 1px solid #000; padding: 8px; text-align: left;">Deskripsi / Nama Barang</th>
+                    <th style="border: 1px solid #000; padding: 8px; text-align: center;">Qty</th>
+                    <th style="border: 1px solid #000; padding: 8px; text-align: right;">Harga Satuan (Rp)</th>
+                    <th style="border: 1px solid #000; padding: 8px; text-align: right;">Total Harga (Rp)</th>
+                </tr>
+            </thead>
+            <tbody id="print-inv-items">
+                <!-- Rows injected via JS -->
+            </tbody>
+        </table>
+
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
+            <table style="width: 40%; border-collapse: collapse;">
                 <tr>
-                    <td style="width: 50%; padding: 10px; vertical-align: top; border-right: 1px solid #000;">
-                        Tagihan Kepada:<br>
-                        <strong id="print_inv_customer" style="font-size: 16px;"></strong>
-                    </td>
-                    <td style="width: 50%; padding: 10px; vertical-align: top;">
-                        <table style="width: 100%; border: none;">
-                            <tr><td style="width: 120px; border:none; padding: 2px;">Tanggal Invoice</td><td style="border:none; padding: 2px;">: <span id="print_inv_date"></span></td></tr>
-                            <tr><td style="border:none; padding: 2px;">Jatuh Tempo</td><td style="border:none; padding: 2px;">: <strong id="print_inv_due"></strong></td></tr>
-                            <tr><td style="border:none; padding: 2px;">Nomor PO/Ref</td><td style="border:none; padding: 2px;">: <span id="print_inv_po"></span></td></tr>
-                        </table>
-                    </td>
+                    <td style="padding: 5px; font-weight: bold; text-align: right;">Grand Total :</td>
+                    <td
+                        style="padding: 5px; font-weight: bold; text-align: right; border-bottom: 2px solid #000; font-size: 16px;">
+                        Rp <span id="print_inv_total">0</span></td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px; font-weight: bold; text-align: right;">Telah Dibayar :</td>
+                    <td style="padding: 5px; font-weight: bold; text-align: right;">Rp <span
+                            id="print_inv_paid">0</span></td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px; font-weight: bold; text-align: right; color: red;">Sisa Tagihan :</td>
+                    <td style="padding: 5px; font-weight: bold; text-align: right; color: red;">Rp <span
+                            id="print_inv_balance">0</span></td>
                 </tr>
             </table>
-
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                <thead>
-                    <tr style="background-color: #f2f2f2;">
-                        <th style="border: 1px solid #000; padding: 8px; text-align: center;">No</th>
-                        <th style="border: 1px solid #000; padding: 8px; text-align: left;">Deskripsi / Nama Barang</th>
-                        <th style="border: 1px solid #000; padding: 8px; text-align: center;">Qty</th>
-                        <th style="border: 1px solid #000; padding: 8px; text-align: right;">Harga Satuan (Rp)</th>
-                        <th style="border: 1px solid #000; padding: 8px; text-align: right;">Total Harga (Rp)</th>
-                    </tr>
-                </thead>
-                <tbody id="print-inv-items">
-                    <!-- Rows injected via JS -->
-                </tbody>
-            </table>
-
-            <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
-                <table style="width: 40%; border-collapse: collapse;">
-                    <tr>
-                        <td style="padding: 5px; font-weight: bold; text-align: right;">Grand Total :</td>
-                        <td style="padding: 5px; font-weight: bold; text-align: right; border-bottom: 2px solid #000; font-size: 16px;">Rp <span id="print_inv_total">0</span></td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 5px; font-weight: bold; text-align: right;">Telah Dibayar :</td>
-                        <td style="padding: 5px; font-weight: bold; text-align: right;">Rp <span id="print_inv_paid">0</span></td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 5px; font-weight: bold; text-align: right; color: red;">Sisa Tagihan :</td>
-                        <td style="padding: 5px; font-weight: bold; text-align: right; color: red;">Rp <span id="print_inv_balance">0</span></td>
-                    </tr>
-                </table>
-            </div>
-
-            <div style="margin-top: 20px;">
-                <div style="float: right; text-align: center; width: 250px;">
-                    <p style="margin-bottom: 60px;">Hormat Kami,</p>
-                    <p style="margin: 0; border-bottom: 1px solid #000; font-weight: bold;">( Bag. Finance / Akuntansi )</p>
-                    <p style="margin: 0;">PT. Orion Karya Sejahtera</p>
-                </div>
-                <div style="clear: both;"></div>
-            </div>
-            
-            <div style="margin-top: 30px; font-size: 12px; font-style: italic;">
-                Catatan: Pembayaran dapat ditransfer ke Rekening BCA: 1234567890 a/n PT. Orion Karya Sejahtera.
-            </div>
         </div>
+
+        <div style="margin-top: 20px;">
+            <div style="float: right; text-align: center; width: 250px;">
+                <p style="margin-bottom: 60px;">Hormat Kami,</p>
+                <p style="margin: 0; border-bottom: 1px solid #000; font-weight: bold;">( Bag. Finance / Akuntansi )</p>
+                <p style="margin: 0;">PT. Orion Karya Sejahtera</p>
+            </div>
+            <div style="clear: both;"></div>
+        </div>
+
+        <div style="margin-top: 30px; font-size: 12px; font-style: italic;">
+            Catatan: Pembayaran dapat ditransfer ke Rekening BCA: 1234567890 a/n PT. Orion Karya Sejahtera.
+        </div>
+    </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
@@ -2575,7 +2671,7 @@
     </datalist>
 
     <script src="js/api.js?v=31"></script>
-    <script src="js/app.js?v=42"></script>
+    <script src="js/app.js?v=51"></script>
 </body>
 
 </html>

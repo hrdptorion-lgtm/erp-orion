@@ -143,6 +143,12 @@ function doPost(e) {
       case 'delete_barang_jadi':
         response = deleteBarangJadi(payload);
         break;
+      case 'edit_barang_jadi':
+        response = editBarangJadi(payload);
+        break;
+      case 'get_pmo_bom':
+        response = getPMO();
+        break;
       case 'delete_bom':
         response = deleteBOM(payload);
         break;

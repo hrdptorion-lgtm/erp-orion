@@ -37,6 +37,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    document.getElementById('edit-barang-jadi-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            kode_barang: document.getElementById('edit_bj_kode').value,
+            nama_barang: document.getElementById('edit_bj_nama').value,
+            stok: document.getElementById('edit_bj_stok').value,
+            harga_jual: document.getElementById('edit_bj_harga').value,
+            lokasi_gudang: document.getElementById('edit_bj_lokasi').value
+        };
+        const btn = e.target.querySelector('button[type="submit"]');
+        const ogText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+        btn.disabled = true;
+
+        const response = await window.ERPAPI.request('edit_barang_jadi', payload);
+        btn.innerHTML = ogText;
+        btn.disabled = false;
+
+        if (response.status === 'success') {
+            showToast?.(`✅ ${response.message}`, 'success', 3000);
+            document.getElementById('edit-barang-jadi-modal').classList.remove('active');
+            loadBarangJadiData();
+        } else {
+            showToast?.(`❌ ${response.message}`, 'error', 5000);
+        }
+    });
+
     // --- Toast Notification System ---
     function showToast(message, type = 'info', duration = 4000) {
         const toast = document.createElement('div');
@@ -1519,7 +1546,10 @@ async function loadBarangJadiData(isBackgroundSync = false) {
             
             let actionBtns = '';
             if (isAdmin) {
-                actionBtns = `<button class="btn btn-delete-barang-jadi" data-kode="${item.kode_barang || item.kode}" data-nama="${item.nama_barang || item.nama}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--danger);"><i class="fa-solid fa-trash"></i></button>`;
+                actionBtns = `
+                <button class="btn btn-edit-barang-jadi" data-kode="${item.kode_barang || item.kode}" data-nama="${item.nama_barang || item.nama}" data-stok="${item.stok}" data-harga="${item.harga_jual}" data-lokasi="${item.lokasi_gudang}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--warning); margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn btn-delete-barang-jadi" data-kode="${item.kode_barang || item.kode}" data-nama="${item.nama_barang || item.nama}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--danger);"><i class="fa-solid fa-trash"></i></button>
+                `;
             } else {
                 actionBtns = '-';
             }
@@ -1544,6 +1574,19 @@ async function loadBarangJadiData(isBackgroundSync = false) {
                 tbody.appendChild(tr);
 
             if (isAdmin) {
+                const btnEdit = tr.querySelector('.btn-edit-barang-jadi');
+                if (btnEdit) {
+                    btnEdit.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        document.getElementById('edit_bj_kode').value = btnEdit.getAttribute('data-kode');
+                        document.getElementById('edit_bj_nama').value = btnEdit.getAttribute('data-nama');
+                        document.getElementById('edit_bj_stok').value = btnEdit.getAttribute('data-stok');
+                        document.getElementById('edit_bj_harga').value = btnEdit.getAttribute('data-harga');
+                        document.getElementById('edit_bj_lokasi').value = btnEdit.getAttribute('data-lokasi');
+                        document.getElementById('edit-barang-jadi-modal').classList.add('active');
+                    });
+                }
+
                 const btnDel = tr.querySelector('.btn-delete-barang-jadi');
                 if (btnDel) {
                     btnDel.addEventListener('click', async (e) => {
@@ -2046,6 +2089,8 @@ async function loadPenawaranData(isBackgroundSync = false) {
                 document.getElementById('print_ttd_company').textContent = cachedSettings['NAMA_PERUSAHAAN'] || 'PT Orion Karya Sejahtera';
                 document.getElementById('print_ttd_customer').textContent = item.customer;
 
+                document.body.classList.remove('printing-sj', 'printing-inv', 'printing-po');
+                document.body.classList.add('printing-po');
                 window.print();
             });
         });
@@ -2448,6 +2493,11 @@ async function loadBOMData(isBackgroundSync = false) {
             tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
         }
     }
+
+    // Handle print finish globally
+    window.addEventListener('afterprint', () => {
+        document.body.classList.remove('printing-sj', 'printing-inv', 'printing-po');
+    });
 
     // Fetch Stock for datalist concurrently
     window.ERPAPI.request('get_stock').then(stockRes => {
@@ -5133,11 +5183,9 @@ function printSuratJalan(item) {
         tbody.innerHTML = `<tr><td colspan="5" style="border: 1px solid #000; padding: 5px; text-align: center;">Tidak ada barang</td></tr>`;
     }
     
+    document.body.classList.remove('printing-sj', 'printing-inv', 'printing-po');
     document.body.classList.add('printing-sj');
     window.print();
-    setTimeout(() => {
-        document.body.classList.remove('printing-sj');
-    }, 1000);
 }
 
 document.getElementById('btn-add-surat-jalan')?.addEventListener('click', () => {
@@ -5366,11 +5414,9 @@ function printInvoice(item) {
     const sisa = parseInt(item.sisa_tagihan || item.total_tagihan || 0);
     document.getElementById('print_inv_balance').textContent = sisa.toLocaleString('id-ID');
     
+    document.body.classList.remove('printing-sj', 'printing-inv', 'printing-po');
     document.body.classList.add('printing-inv');
     window.print();
-    setTimeout(() => {
-        document.body.classList.remove('printing-inv');
-    }, 1000);
 }
 
 function calculateInvoiceTotal() {
