@@ -391,6 +391,8 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (targetViewId === 'approval') loadApprovalData();
         else if (targetViewId === 'customer') loadCustomerData();
         else if (targetViewId === 'supplier') loadSupplierData();
+        else if (targetViewId === 'surat-jalan') loadSuratJalanData();
+        else if (targetViewId === 'invoice') loadInvoiceData();
         else if (targetViewId === 'dashboard') loadDashboardData();
 
         if (typeof updateGlobalFAB === 'function') updateGlobalFAB(targetViewId);
@@ -404,7 +406,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const poEl = document.getElementById('dashboard-po');
                 if (poEl) poEl.textContent = poOut;
             }
-
             const rmRes = await window.ERPAPI.request('get_stock');
             if (rmRes.status === 'success' && rmRes.data) {
                 const rmKritis = rmRes.data.filter(s => parseFloat(s.stok) <= 10).length; // Stok <= 10 dianggap kritis
@@ -4737,6 +4738,38 @@ async function openDetailPenawaran(item) {
             document.querySelector(`.btn-po-penawaran[data-item*="${item.no_penawaran}"]`)?.click();
             document.getElementById('detail-penawaran-modal').classList.remove('active');
         };
+        
+        const btnSJ = document.getElementById('btn-detail-sj');
+        if (btnSJ) {
+            btnSJ.onclick = (e) => {
+                e.stopPropagation();
+                document.getElementById('detail-penawaran-modal').classList.remove('active');
+                document.querySelector('[data-target="surat-jalan"]')?.click();
+                setTimeout(() => {
+                    document.getElementById('btn-add-surat-jalan')?.click();
+                    document.getElementById('sj_no_penawaran').value = item.no_penawaran || '';
+                    document.getElementById('sj_customer').value = item.customer || '';
+                    document.getElementById('sj_items_hidden').value = JSON.stringify(items || []);
+                }, 300);
+            };
+        }
+        
+        const btnInvoice = document.getElementById('btn-detail-invoice');
+        if (btnInvoice) {
+            btnInvoice.onclick = (e) => {
+                e.stopPropagation();
+                document.getElementById('detail-penawaran-modal').classList.remove('active');
+                document.querySelector('[data-target="invoice"]')?.click();
+                setTimeout(() => {
+                    document.getElementById('btn-add-invoice')?.click();
+                    document.getElementById('inv_no_penawaran').value = item.no_penawaran || '';
+                    document.getElementById('inv_customer').value = item.customer || '';
+                    document.getElementById('inv_total').value = item.total_harga || 0;
+                    document.getElementById('inv_items_hidden').value = JSON.stringify(items || []);
+                }, 300);
+            };
+        }
+        
     } else {
         actionDiv.style.display = 'none';
     }
@@ -4868,3 +4901,197 @@ document.getElementById('btn-close-customer-detail')?.addEventListener('click', 
 document.getElementById('btn-close-user-detail')?.addEventListener('click', () => document.getElementById('user-detail-modal').classList.remove('active'));
 document.getElementById('btn-close-barang-jadi-detail')?.addEventListener('click', () => document.getElementById('barang-jadi-detail-modal').classList.remove('active'));
 document.getElementById('btn-close-spk-detail')?.addEventListener('click', () => document.getElementById('spk-detail-modal').classList.remove('active'));
+
+// --- SURAT JALAN (DO) ---
+let suratJalanData = [];
+
+async function loadSuratJalanData(isBackgroundSync = false) {
+    const tbody = document.getElementById('table-surat-jalan');
+    if (tbody && !isBackgroundSync) tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+    
+    const response = await window.ERPAPI.request('get_surat_jalan');
+    if (response.status === 'success' && response.data) {
+        suratJalanData = response.data;
+        if (tbody) renderSuratJalanTable();
+    } else {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--danger);">Gagal memuat data surat jalan</td></tr>';
+    }
+}
+
+function renderSuratJalanTable() {
+    const tbody = document.getElementById('table-surat-jalan');
+    tbody.innerHTML = '';
+    if (suratJalanData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Tidak ada data surat jalan.</td></tr>';
+        return;
+    }
+    suratJalanData.forEach(sj => {
+        const tr = document.createElement('tr');
+        let badgeClass = 'badge-warning';
+        if (sj.status === 'Selesai (Diterima)') badgeClass = 'badge-success';
+        else if (sj.status === 'Batal') badgeClass = 'badge-danger';
+        
+        let actionBtns = `<button class="btn btn-delete-sj" data-no="${sj.no_sj}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i class="fa-solid fa-trash"></i></button>`;
+        
+        tr.innerHTML = `
+            <td><strong>${sj.no_sj}</strong></td>
+            <td>${sj.tanggal || '-'}</td>
+            <td>${sj.no_penawaran || '-'}</td>
+            <td>${sj.customer || '-'}</td>
+            <td><span class="badge ${badgeClass}">${sj.status || 'Dikirim'}</span></td>
+            <td>${actionBtns}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+    
+    document.querySelectorAll('.btn-delete-sj').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const no = e.currentTarget.getAttribute('data-no');
+            if(confirm(`Hapus Surat Jalan ${no}?`)) {
+                e.currentTarget.closest('tr').style.display = 'none';
+                const res = await window.ERPAPI.request('delete_surat_jalan', { no_sj: no });
+                if(res.status === 'success') loadSuratJalanData(true);
+                else { showToast?.(res.message, 'danger'); loadSuratJalanData(true); }
+            }
+        });
+    });
+}
+
+document.getElementById('btn-add-surat-jalan')?.addEventListener('click', () => {
+    document.getElementById('surat-jalan-form').reset();
+    document.getElementById('sj_no').value = '';
+    document.getElementById('sj_items_hidden').value = '';
+    document.getElementById('sj_tanggal').valueAsDate = new Date();
+    document.getElementById('surat-jalan-modal').classList.add('active');
+});
+
+document.getElementById('btn-close-sj-modal')?.addEventListener('click', () => {
+    document.getElementById('surat-jalan-modal').classList.remove('active');
+});
+
+document.getElementById('surat-jalan-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    document.getElementById('surat-jalan-modal').classList.remove('active');
+    
+    let items = [];
+    try { items = JSON.parse(document.getElementById('sj_items_hidden').value); } catch(e){}
+    
+    const payload = {
+        no_sj: document.getElementById('sj_no').value,
+        tanggal: document.getElementById('sj_tanggal').value,
+        no_penawaran: document.getElementById('sj_no_penawaran').value,
+        customer: document.getElementById('sj_customer').value,
+        supir: document.getElementById('sj_supir').value,
+        plat_nomor: document.getElementById('sj_plat').value,
+        status: document.getElementById('sj_status').value,
+        catatan: document.getElementById('sj_catatan').value,
+        items: items
+    };
+    
+    showToast?.('Menyimpan Surat Jalan...', 'info');
+    const res = await window.ERPAPI.request('save_surat_jalan', payload);
+    if(res.status === 'success') {
+        showToast?.('Surat Jalan berhasil disimpan', 'success');
+        loadSuratJalanData(true);
+    } else {
+        showToast?.('Gagal: ' + res.message, 'danger');
+    }
+});
+
+// --- INVOICE PENAGIHAN ---
+let invoiceData = [];
+
+async function loadInvoiceData(isBackgroundSync = false) {
+    const tbody = document.getElementById('table-invoice');
+    if (tbody && !isBackgroundSync) tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+    
+    const response = await window.ERPAPI.request('get_invoices');
+    if (response.status === 'success' && response.data) {
+        invoiceData = response.data;
+        if (tbody) renderInvoiceTable();
+    } else {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--danger);">Gagal memuat data invoice</td></tr>';
+    }
+}
+
+function renderInvoiceTable() {
+    const tbody = document.getElementById('table-invoice');
+    tbody.innerHTML = '';
+    if (invoiceData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Tidak ada data invoice.</td></tr>';
+        return;
+    }
+    invoiceData.forEach(inv => {
+        const tr = document.createElement('tr');
+        let badgeClass = 'badge-warning';
+        if (inv.status_pembayaran === 'Lunas') badgeClass = 'badge-success';
+        else if (inv.status_pembayaran === 'Batal') badgeClass = 'badge-danger';
+        
+        let actionBtns = `<button class="btn btn-delete-inv" data-no="${inv.no_invoice}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i class="fa-solid fa-trash"></i></button>`;
+        
+        tr.innerHTML = `
+            <td><strong>${inv.no_invoice}</strong></td>
+            <td>${inv.tanggal || '-'}</td>
+            <td>${inv.customer || '-'}</td>
+            <td>${formatRupiah(inv.total_tagihan || 0)}</td>
+            <td><span class="badge ${badgeClass}">${inv.status_pembayaran || 'Belum Lunas'}</span></td>
+            <td>${actionBtns}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+    
+    document.querySelectorAll('.btn-delete-inv').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const no = e.currentTarget.getAttribute('data-no');
+            if(confirm(`Hapus Invoice ${no}?`)) {
+                e.currentTarget.closest('tr').style.display = 'none';
+                const res = await window.ERPAPI.request('delete_invoice', { no_invoice: no });
+                if(res.status === 'success') loadInvoiceData(true);
+                else { showToast?.(res.message, 'danger'); loadInvoiceData(true); }
+            }
+        });
+    });
+}
+
+document.getElementById('btn-add-invoice')?.addEventListener('click', () => {
+    document.getElementById('invoice-form').reset();
+    document.getElementById('inv_no').value = '';
+    document.getElementById('inv_items_hidden').value = '';
+    document.getElementById('inv_tanggal').valueAsDate = new Date();
+    document.getElementById('inv_jatuh_tempo').valueAsDate = new Date(Date.now() + 30*24*60*60*1000); // +30 days
+    document.getElementById('invoice-modal').classList.add('active');
+});
+
+document.getElementById('btn-close-inv-modal')?.addEventListener('click', () => {
+    document.getElementById('invoice-modal').classList.remove('active');
+});
+
+document.getElementById('invoice-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    document.getElementById('invoice-modal').classList.remove('active');
+    
+    let items = [];
+    try { items = JSON.parse(document.getElementById('inv_items_hidden').value); } catch(e){}
+    
+    const payload = {
+        no_invoice: document.getElementById('inv_no').value,
+        tanggal: document.getElementById('inv_tanggal').value,
+        jatuh_tempo: document.getElementById('inv_jatuh_tempo').value,
+        no_penawaran: document.getElementById('inv_no_penawaran').value,
+        customer: document.getElementById('inv_customer').value,
+        total_tagihan: document.getElementById('inv_total').value,
+        terbayar: document.getElementById('inv_terbayar').value,
+        status_pembayaran: document.getElementById('inv_status').value,
+        catatan: document.getElementById('inv_catatan').value,
+        items: items
+    };
+    
+    showToast?.('Menyimpan Invoice...', 'info');
+    const res = await window.ERPAPI.request('save_invoice', payload);
+    if(res.status === 'success') {
+        showToast?.('Invoice berhasil disimpan', 'success');
+        loadInvoiceData(true);
+    } else {
+        showToast?.('Gagal: ' + res.message, 'danger');
+    }
+});

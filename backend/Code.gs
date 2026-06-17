@@ -158,6 +158,24 @@ function doPost(e) {
       case 'delete_supplier':
         response = deleteSupplier(payload);
         break;
+      case 'get_surat_jalan':
+        response = getSuratJalan();
+        break;
+      case 'save_surat_jalan':
+        response = saveSuratJalan(payload);
+        break;
+      case 'delete_surat_jalan':
+        response = deleteSuratJalan(payload);
+        break;
+      case 'get_invoices':
+        response = getInvoices();
+        break;
+      case 'save_invoice':
+        response = saveInvoice(payload);
+        break;
+      case 'delete_invoice':
+        response = deleteInvoice(payload);
+        break;
       default:
         response = { status: 'error', message: 'Action tidak dikenali: ' + action };
         break;

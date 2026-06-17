@@ -1613,3 +1613,189 @@ function fixBOMSwappedData() {
   
   SpreadsheetApp.getUi().alert(`Berhasil memperbaiki ${fixedCount} data BOM yang tertukar!`);
 }
+
+// ==========================================
+// PENGIRIMAN (SURAT JALAN) & INVOICE
+// ==========================================
+
+function getSuratJalan() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Surat Jalan');
+  if (!sheet) return { status: 'success', data: [] };
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length <= 1) return { status: 'success', data: [] };
+  const headers = values[0];
+  const data = values.slice(1).map(row => {
+    let obj = {};
+    headers.forEach((h, i) => {
+      let key = h.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/^_+|_+$/g, '');
+      obj[key] = row[i];
+    });
+    return obj;
+  });
+  return { status: 'success', data: data };
+}
+
+function saveSuratJalan(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('DB Surat Jalan');
+  if (!sheet) {
+    sheet = ss.insertSheet('DB Surat Jalan');
+    sheet.appendRow(['No SJ', 'Tanggal', 'No Penawaran', 'Customer', 'Supir', 'Plat Nomor', 'Status', 'Catatan', 'Items']);
+    sheet.getRange(1, 1, 1, 9).setFontWeight('bold');
+  }
+  
+  const values = sheet.getDataRange().getDisplayValues();
+  const headers = values[0];
+  const sjIdx = headers.findIndex(h => /no.*sj/i.test(h));
+  
+  const noSJ = payload.no_sj || ('SJ-' + Date.now());
+  const itemsStr = typeof payload.items === 'string' ? payload.items : JSON.stringify(payload.items || []);
+  
+  let found = false;
+  if (payload.no_sj && sjIdx !== -1) {
+    for (let i = 1; i < values.length; i++) {
+      if (String(values[i][sjIdx]).trim() === String(payload.no_sj).trim()) {
+        const hMap = {};
+        headers.forEach((h, idx) => hMap[h.toLowerCase().trim()] = idx);
+        
+        if (hMap['tanggal'] !== undefined) sheet.getRange(i + 1, hMap['tanggal'] + 1).setValue(payload.tanggal || values[i][hMap['tanggal']]);
+        if (hMap['no penawaran'] !== undefined) sheet.getRange(i + 1, hMap['no penawaran'] + 1).setValue(payload.no_penawaran || values[i][hMap['no penawaran']]);
+        if (hMap['customer'] !== undefined) sheet.getRange(i + 1, hMap['customer'] + 1).setValue(payload.customer || values[i][hMap['customer']]);
+        if (hMap['supir'] !== undefined) sheet.getRange(i + 1, hMap['supir'] + 1).setValue(payload.supir || values[i][hMap['supir']]);
+        if (hMap['plat nomor'] !== undefined) sheet.getRange(i + 1, hMap['plat nomor'] + 1).setValue(payload.plat_nomor || values[i][hMap['plat nomor']]);
+        if (hMap['status'] !== undefined) sheet.getRange(i + 1, hMap['status'] + 1).setValue(payload.status || values[i][hMap['status']]);
+        if (hMap['catatan'] !== undefined) sheet.getRange(i + 1, hMap['catatan'] + 1).setValue(payload.catatan || values[i][hMap['catatan']]);
+        if (hMap['items'] !== undefined) sheet.getRange(i + 1, hMap['items'] + 1).setValue(itemsStr);
+        found = true;
+        break;
+      }
+    }
+  }
+  
+  if (!found) {
+    const newRow = headers.map(h => {
+      const hl = h.toLowerCase().trim();
+      if (hl.includes('no sj')) return noSJ;
+      if (hl === 'tanggal') return payload.tanggal || Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy');
+      if (hl === 'no penawaran') return payload.no_penawaran || '';
+      if (hl === 'customer') return payload.customer || '';
+      if (hl === 'supir') return payload.supir || '';
+      if (hl === 'plat nomor') return payload.plat_nomor || '';
+      if (hl === 'status') return payload.status || 'Dikirim';
+      if (hl === 'catatan') return payload.catatan || '';
+      if (hl === 'items') return itemsStr;
+      return '';
+    });
+    sheet.appendRow(newRow);
+  }
+  
+  return { status: 'success', message: 'Surat Jalan berhasil disimpan.', no_sj: noSJ };
+}
+
+function deleteSuratJalan(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Surat Jalan');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Surat Jalan tidak ditemukan.' };
+  const values = sheet.getDataRange().getDisplayValues();
+  const sjIdx = values[0].findIndex(h => /no.*sj/i.test(h));
+  if(sjIdx === -1) return {status: 'error', message: 'Struktur tidak valid.'};
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][sjIdx]).trim() === String(payload.no_sj).trim()) {
+      sheet.deleteRow(i + 1);
+      return { status: 'success', message: 'Surat Jalan berhasil dihapus.' };
+    }
+  }
+  return { status: 'error', message: 'Surat Jalan tidak ditemukan.' };
+}
+
+function getInvoices() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Invoice');
+  if (!sheet) return { status: 'success', data: [] };
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length <= 1) return { status: 'success', data: [] };
+  const headers = values[0];
+  const data = values.slice(1).map(row => {
+    let obj = {};
+    headers.forEach((h, i) => {
+      let key = h.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/^_+|_+$/g, '');
+      obj[key] = row[i];
+    });
+    return obj;
+  });
+  return { status: 'success', data: data };
+}
+
+function saveInvoice(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('DB Invoice');
+  if (!sheet) {
+    sheet = ss.insertSheet('DB Invoice');
+    sheet.appendRow(['No Invoice', 'Tanggal', 'Jatuh Tempo', 'No Penawaran', 'Customer', 'Total Tagihan', 'Terbayar', 'Sisa Tagihan', 'Status Pembayaran', 'Items', 'Catatan']);
+    sheet.getRange(1, 1, 1, 11).setFontWeight('bold');
+  }
+  
+  const values = sheet.getDataRange().getDisplayValues();
+  const headers = values[0];
+  const invIdx = headers.findIndex(h => /no.*invoice/i.test(h));
+  
+  const noInv = payload.no_invoice || ('INV-' + Date.now());
+  const itemsStr = typeof payload.items === 'string' ? payload.items : JSON.stringify(payload.items || []);
+  
+  let found = false;
+  if (payload.no_invoice && invIdx !== -1) {
+    for (let i = 1; i < values.length; i++) {
+      if (String(values[i][invIdx]).trim() === String(payload.no_invoice).trim()) {
+        const hMap = {};
+        headers.forEach((h, idx) => hMap[h.toLowerCase().trim()] = idx);
+        
+        if (hMap['tanggal'] !== undefined) sheet.getRange(i + 1, hMap['tanggal'] + 1).setValue(payload.tanggal || values[i][hMap['tanggal']]);
+        if (hMap['jatuh tempo'] !== undefined) sheet.getRange(i + 1, hMap['jatuh tempo'] + 1).setValue(payload.jatuh_tempo || values[i][hMap['jatuh tempo']]);
+        if (hMap['no penawaran'] !== undefined) sheet.getRange(i + 1, hMap['no penawaran'] + 1).setValue(payload.no_penawaran || values[i][hMap['no penawaran']]);
+        if (hMap['customer'] !== undefined) sheet.getRange(i + 1, hMap['customer'] + 1).setValue(payload.customer || values[i][hMap['customer']]);
+        if (hMap['total tagihan'] !== undefined) sheet.getRange(i + 1, hMap['total tagihan'] + 1).setValue(payload.total_tagihan || values[i][hMap['total tagihan']]);
+        if (hMap['terbayar'] !== undefined) sheet.getRange(i + 1, hMap['terbayar'] + 1).setValue(payload.terbayar || values[i][hMap['terbayar']] || 0);
+        if (hMap['sisa tagihan'] !== undefined) sheet.getRange(i + 1, hMap['sisa tagihan'] + 1).setValue(payload.sisa_tagihan || values[i][hMap['sisa tagihan']] || 0);
+        if (hMap['status pembayaran'] !== undefined) sheet.getRange(i + 1, hMap['status pembayaran'] + 1).setValue(payload.status_pembayaran || values[i][hMap['status pembayaran']]);
+        if (hMap['items'] !== undefined) sheet.getRange(i + 1, hMap['items'] + 1).setValue(itemsStr);
+        if (hMap['catatan'] !== undefined) sheet.getRange(i + 1, hMap['catatan'] + 1).setValue(payload.catatan || values[i][hMap['catatan']]);
+        found = true;
+        break;
+      }
+    }
+  }
+  
+  if (!found) {
+    const newRow = headers.map(h => {
+      const hl = h.toLowerCase().trim();
+      if (hl.includes('no invoice')) return noInv;
+      if (hl === 'tanggal') return payload.tanggal || Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy');
+      if (hl === 'jatuh tempo') return payload.jatuh_tempo || '';
+      if (hl === 'no penawaran') return payload.no_penawaran || '';
+      if (hl === 'customer') return payload.customer || '';
+      if (hl === 'total tagihan') return payload.total_tagihan || 0;
+      if (hl === 'terbayar') return payload.terbayar || 0;
+      if (hl === 'sisa tagihan') return payload.sisa_tagihan || payload.total_tagihan || 0;
+      if (hl === 'status pembayaran') return payload.status_pembayaran || 'Belum Lunas';
+      if (hl === 'items') return itemsStr;
+      if (hl === 'catatan') return payload.catatan || '';
+      return '';
+    });
+    sheet.appendRow(newRow);
+  }
+  
+  return { status: 'success', message: 'Invoice berhasil disimpan.', no_invoice: noInv };
+}
+
+function deleteInvoice(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Invoice');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Invoice tidak ditemukan.' };
+  const values = sheet.getDataRange().getDisplayValues();
+  const invIdx = values[0].findIndex(h => /no.*invoice/i.test(h));
+  if(invIdx === -1) return {status: 'error', message: 'Struktur tidak valid.'};
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][invIdx]).trim() === String(payload.no_invoice).trim()) {
+      sheet.deleteRow(i + 1);
+      return { status: 'success', message: 'Invoice berhasil dihapus.' };
+    }
+  }
+  return { status: 'error', message: 'Invoice tidak ditemukan.' };
+}

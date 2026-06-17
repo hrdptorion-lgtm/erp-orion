@@ -231,6 +231,18 @@ class ERPAPI {
             };
         } else if (action === 'save_settings') {
             return { status: 'success', message: 'Pengaturan berhasil disimpan.' };
+        } else if (action === 'get_surat_jalan') {
+            return { status: 'success', data: [] };
+        } else if (action === 'save_surat_jalan') {
+            return { status: 'success', message: 'Surat Jalan berhasil disimpan (Simulasi).' };
+        } else if (action === 'delete_surat_jalan') {
+            return { status: 'success', message: 'Surat Jalan dihapus.' };
+        } else if (action === 'get_invoices') {
+            return { status: 'success', data: [] };
+        } else if (action === 'save_invoice') {
+            return { status: 'success', message: 'Invoice berhasil disimpan (Simulasi).' };
+        } else if (action === 'delete_invoice') {
+            return { status: 'success', message: 'Invoice dihapus.' };
         } else {
             return { status: 'error', message: 'Action tidak dikenali.' };
         }
