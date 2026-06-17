@@ -2841,6 +2841,12 @@ document.getElementById('btn-close-bom')?.addEventListener('click', () => {
     bomModal.classList.remove('active');
 });
 
+document.querySelectorAll('.btn-close-edit-bj').forEach(b => {
+    b.addEventListener('click', () => {
+        document.getElementById('edit-barang-jadi-modal').classList.remove('active');
+    });
+});
+
 bomForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
