@@ -1068,7 +1068,7 @@
                     <div class="input-group">
                         <label>Role</label>
                         <select id="u_role"
-                            style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
+                            style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border);">
                             <option value="Admin" style="color: #000;">Admin</option>
                             <option value="Marketing" style="color: #000;">Marketing</option>
                             <option value="Finance / Accounting" style="color: #000;">Finance / Accounting</option>
@@ -1146,7 +1146,7 @@
                     <div class="input-group">
                         <label>Alamat Perusahaan</label>
                         <textarea id="set_alamat" rows="3" placeholder="Jl. Sudirman No 1..."
-                            style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);"
+                            style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border);"
                             required></textarea>
                     </div>
                     <div class="input-group">
@@ -1328,54 +1328,66 @@
                 <div
                     style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
                     <h2 id="detail-modal-title" style="margin: 0; font-size: 1.5rem;">Detail Penawaran</h2>
-                    <button class="btn" style="background: none; color: #fff; font-size: 1.2rem; cursor: pointer;"
+                    <button class="btn" style="background: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;"
                         onclick="document.getElementById('detail-penawaran-modal').classList.remove('active')"><i
                             class="fa-solid fa-times"></i></button>
                 </div>
 
                 <div
-                    style="display: flex; gap: 10px; align-items: center; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 1.5rem;">
+                    style="display: flex; gap: 10px; align-items: center; background: var(--bg-glass); padding: 10px; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid var(--glass-border);">
                     <label style="margin: 0; font-weight: bold; width: 120px;">Ubah Status:</label>
                     <select id="detail_status"
-                        style="flex: 1; padding: 0.5rem; border-radius: 6px; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid var(--glass-border);">
+                        style="flex: 1; padding: 0.5rem; border-radius: 6px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border);">
                         <option value="Draft" style="color:#000">Draft</option>
                         <option value="Penawaran" style="color:#000">Penawaran</option>
                         <option value="Proses" style="color:#000">Proses</option>
                         <option value="Approved" style="color:#000">Approved</option>
                         <option value="Rejected" style="color:#000">Rejected</option>
-                        <option value="Finish" style="color:#000">Finish</option>
                     </select>
-                    <button id="btn-update-detail-status" class="btn btn-primary"
-                        style="padding: 0.5rem 1rem;">Simpan</button>
+                    <button id="btn-save-status" class="btn" style="background: var(--primary);">Simpan</button>
                 </div>
 
                 <div id="detail-action-produksi"
-                    style="display: none; justify-content: flex-end; gap: 10px; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border);">
-                    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                    <button id="btn-detail-sj" class="btn btn-info" style="background: var(--info);"><i class="fa-solid fa-truck"></i> Buat SJ</button>
-                    <button id="btn-detail-invoice" class="btn btn-warning" style="background: var(--warning); color: #000;"><i class="fa-solid fa-file-invoice"></i> Buat Invoice</button>
-                    <button id="btn-detail-spk" class="btn btn-success"><i class="fa-solid fa-industry"></i> Lanjut SPK Produksi</button>
+                    style="display: none; justify-content: space-between; background: var(--gradient-1); padding: 15px; border-radius: 8px; margin-bottom: 1.5rem; align-items: center; border: 1px solid var(--primary-glow);">
+                    <div>
+                        <p style="margin: 0 0 5px 0; font-weight: bold; color: var(--text-main);"><i
+                                class="fa-solid fa-industry"></i> Tindakan Lanjutan</p>
+                        <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">Penawaran ini disetujui. Apa
+                            langkah selanjutnya?</p>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="btn-detail-po" class="btn"
+                            style="background: var(--warning); display: none;"><i class="fa-solid fa-file-invoice"></i> PR Barang</button>
+                        <button id="btn-detail-spk" class="btn"
+                            style="background: var(--secondary);"><i class="fa-solid fa-clipboard-list"></i> Buat SPK / Produksi</button>
+                    </div>
                 </div>
-                    <button id="btn-detail-po" class="btn btn-warning"><i class="fa-solid fa-cart-shopping"></i> PR
-                        Barang</button>
+
+                <!-- NEW: Action buttons for Pengiriman & Invoice -->
+                <div id="detail-action-sj"
+                    style="display: flex; justify-content: space-between; gap: 10px; padding: 15px; border-radius: 8px; margin-bottom: 1.5rem; border: 1px dashed var(--glass-border);">
+                    <button id="btn-detail-sj" class="btn"
+                        style="background: var(--info); flex: 1; justify-content: center;"><i class="fa-solid fa-truck-fast"></i> Buat SJ</button>
+                    <button id="btn-detail-invoice" class="btn"
+                        style="background: var(--warning); flex: 1; justify-content: center;"><i class="fa-solid fa-receipt"></i> Buat Invoice</button>
                 </div>
 
                 <div
                     style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; font-size: 0.95rem;">
                     <div>
-                        <p style="margin: 0 0 5px 0; color: #aaa;">Customer</p>
+                        <p style="margin: 0 0 5px 0; color: var(--text-muted);">Customer</p>
                         <p id="detail_customer" style="margin: 0; font-weight: 600;">-</p>
                     </div>
                     <div>
-                        <p style="margin: 0 0 5px 0; color: #aaa;">Tanggal</p>
+                        <p style="margin: 0 0 5px 0; color: var(--text-muted);">Tanggal</p>
                         <p id="detail_tanggal" style="margin: 0; font-weight: 600;">-</p>
                     </div>
                 </div>
 
                 <div style="margin-bottom: 1.5rem;">
-                    <p style="margin: 0 0 5px 0; color: #aaa;">Narasi / Keterangan</p>
+                    <p style="margin: 0 0 5px 0; color: var(--text-muted);">Narasi / Keterangan</p>
                     <p id="detail_narasi"
-                        style="margin: 0; background: rgba(0,0,0,0.1); padding: 10px; border-radius: 6px; white-space: pre-wrap;">
+                        style="margin: 0; background: var(--bg-glass); padding: 10px; border-radius: 6px; white-space: pre-wrap; border: 1px solid var(--glass-border);">
                         -</p>
                 </div>
 
@@ -1409,7 +1421,7 @@
 
                 <div id="detail_spk_progress_container" style="display: none; margin-bottom: 1.5rem; padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.2); border-left: 4px solid var(--primary);">
                     <h4 style="margin: 0 0 10px 0; color: var(--primary);"><i class="fa-solid fa-industry"></i> Status Produksi (SPK)</h4>
-                    <div id="detail_spk_stats" style="font-size: 0.9rem; color: #fff;">
+                    <div id="detail_spk_stats" style="font-size: 0.9rem; color: var(--text-main);">
                         <p style="margin:0; color:#aaa;">Memuat status SPK...</p>
                     </div>
                 </div>
@@ -1439,7 +1451,7 @@
                     <div class="input-group">
                         <label>Customer <span style="color:var(--danger)">*</span></label>
                         <select id="p_customer" required
-                            style="width: 100%; border:1px solid var(--glass-border); padding:0.8rem; background:rgba(255,255,255,0.05); color:#fff; border-radius:10px;">
+                            style="width: 100%; border:1px solid var(--glass-border); padding:0.8rem; background:var(--bg-glass); color:var(--text-main); border-radius:10px;">
                             <option value="">Pilih atau ketik nama Customer...</option>
                         </select>
                     </div>
@@ -1499,7 +1511,7 @@
                     <div class="input-group" style="margin-top: 15px;">
                         <label>Narasi / Deskripsi / Catatan Tambahan</label>
                         <textarea id="p_narasi" rows="4" placeholder="Misal: Harga sudah termasuk ongkos kirim..."
-                            style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);"></textarea>
+                            style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border);"></textarea>
                     </div>
                     <div class="input-group">
                         <label>Down Payment (DP)</label>
@@ -1508,7 +1520,7 @@
                     <div class="input-group">
                         <label>Status Penawaran</label>
                         <select id="p_status"
-                            style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
+                            style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border);">
                             <option value="Penawaran" style="color: #000;">Penawaran</option>
                             <option value="Rejected" style="color: #000;">Rejected</option>
                             <option value="Approved" style="color: #000;">Approved</option>
@@ -1883,7 +1895,7 @@
                 margin: 0 0 0.5rem;
                 font-size: 1.15rem;
                 font-weight: 700;
-                color: #fff;
+                color: var(--text-main);
             ">Konfirmasi Hapus</h3>
             <!-- Message -->
             <p id="confirm-dialog-message" style="
@@ -1916,7 +1928,7 @@
                     border-radius: 10px;
                     border: none;
                     background: linear-gradient(135deg, #ef4444, #dc2626);
-                    color: #fff;
+                    color: var(--text-main);
                     font-size: 0.9rem;
                     font-weight: 600;
                     cursor: pointer;
@@ -2023,7 +2035,7 @@
                 right: 24px;
                 background: rgba(255, 255, 255, 0.12);
                 border: 1px solid rgba(255, 255, 255, 0.2);
-                color: #fff;
+                color: var(--text-main);
                 width: 44px;
                 height: 44px;
                 border-radius: 50%;
@@ -2053,7 +2065,7 @@
                 margin-top: 12px;
                 background: rgba(255, 255, 255, 0.1);
                 border: 1px solid rgba(255, 255, 255, 0.2);
-                color: #fff;
+                color: var(--text-main);
                 padding: 7px 18px;
                 border-radius: 20px;
                 font-size: 0.82rem;
@@ -2104,7 +2116,7 @@
                     <label>Role/Jabatan untuk tahapan ini</label>
                     <input type="text" id="atasan_input" list="role-datalist" required
                         placeholder="Contoh: Manager Operasional"
-                        style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
+                        style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border);">
                     <datalist id="role-datalist">
                         <!-- Diisi via JS -->
                     </datalist>
@@ -2163,7 +2175,7 @@
                 <div class="input-group">
                     <label>Jenis Transaksi</label>
                     <select id="pc_jenis" required
-                        style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
+                        style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border);">
                         <option value="Keluar">Uang Keluar</option>
                         <option value="Masuk">Uang Masuk</option>
                     </select>
@@ -2179,7 +2191,7 @@
                 <div class="input-group">
                     <label>Kategori COA / Pos Akuntansi</label>
                     <input type="text" id="pc_coa" list="coa-datalist" required placeholder="Contoh: Biaya Listrik"
-                        style="width: 100%; padding: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
+                        style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border);">
                     <datalist id="coa-datalist">
                         <!-- Diisi via JS -->
                     </datalist>
