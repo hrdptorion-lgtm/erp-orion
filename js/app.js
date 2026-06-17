@@ -4741,15 +4741,68 @@ async function openDetailPenawaran(item) {
         
         const btnSJ = document.getElementById('btn-detail-sj');
         if (btnSJ) {
-            btnSJ.onclick = (e) => {
+            btnSJ.onclick = async (e) => {
                 e.stopPropagation();
+                
+                // Fetch existing SJ data if not already fetched
+                if (!suratJalanData || suratJalanData.length === 0) {
+                    const res = await window.ERPAPI.request('get_surat_jalan');
+                    if (res.status === 'success' && res.data) {
+                        suratJalanData = res.data;
+                    }
+                }
+                
+                // Calculate delivered qty for each item in this PO
+                const deliveredMap = {}; // key: item name, value: total delivered
+                suratJalanData.forEach(sj => {
+                    if (sj.no_penawaran === item.no_penawaran && sj.status !== 'Batal') {
+                        let sjItems = [];
+                        try { sjItems = JSON.parse(sj.items || '[]'); } catch(e){}
+                        sjItems.forEach(sji => {
+                            const iname = String(sji.nama || sji.item || '').trim();
+                            deliveredMap[iname] = (deliveredMap[iname] || 0) + parseInt(sji.qty || 0);
+                        });
+                    }
+                });
+
                 document.getElementById('detail-penawaran-modal').classList.remove('active');
                 document.querySelector('[data-target="surat-jalan"]')?.click();
+                
                 setTimeout(() => {
-                    document.getElementById('btn-add-surat-jalan')?.click();
+                    document.getElementById('surat-jalan-form').reset();
+                    document.getElementById('sj_no').value = '';
+                    document.getElementById('sj_items_hidden').value = JSON.stringify(items || []);
+                    document.getElementById('sj_tanggal').valueAsDate = new Date();
                     document.getElementById('sj_no_penawaran').value = item.no_penawaran || '';
                     document.getElementById('sj_customer').value = item.customer || '';
-                    document.getElementById('sj_items_hidden').value = JSON.stringify(items || []);
+                    
+                    const tbody = document.getElementById('sj-items-tbody');
+                    if (tbody) {
+                        tbody.innerHTML = '';
+                        if (!items || items.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Tidak ada item</td></tr>';
+                        } else {
+                            items.forEach((it, idx) => {
+                                const iname = String(it.nama || it.part_name || '').trim();
+                                const poQty = parseInt(it.qty || 0);
+                                const delivered = deliveredMap[iname] || 0;
+                                const remaining = Math.max(0, poQty - delivered);
+                                
+                                const tr = document.createElement('tr');
+                                tr.innerHTML = `
+                                    <td>${iname}<input type="hidden" class="sj-item-name" value="${iname}"></td>
+                                    <td style="text-align: right;">${poQty}</td>
+                                    <td style="text-align: right; color: var(--success);">${delivered}</td>
+                                    <td>
+                                        <input type="number" class="sj-item-qty" min="0" max="${remaining}" value="${remaining}" style="width: 100%; padding: 0.4rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 4px;">
+                                    </td>
+                                `;
+                                tbody.appendChild(tr);
+                            });
+                        }
+                    }
+                    
+                    document.getElementById('surat-jalan-modal').classList.add('active');
                 }, 300);
             };
         }
@@ -4932,6 +4985,7 @@ function renderSuratJalanTable() {
         else if (sj.status === 'Batal') badgeClass = 'badge-danger';
         
         let actionBtns = `
+            <button class="btn btn-edit-sj" data-idx="${suratJalanData.indexOf(sj)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(16, 185, 129, 0.2); color: var(--secondary); margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>
             <button class="btn btn-print-sj" data-idx="${suratJalanData.indexOf(sj)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(59, 130, 246, 0.2); color: #60a5fa; margin-right: 5px;"><i class="fa-solid fa-print"></i></button>
             <button class="btn btn-delete-sj" data-no="${sj.no_sj}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i class="fa-solid fa-trash"></i></button>
         `;
@@ -4951,6 +5005,52 @@ function renderSuratJalanTable() {
         btn.addEventListener('click', (e) => {
             const idx = e.currentTarget.getAttribute('data-idx');
             printSuratJalan(suratJalanData[idx]);
+        });
+    });
+
+    document.querySelectorAll('.btn-edit-sj').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const idx = e.currentTarget.getAttribute('data-idx');
+            const item = suratJalanData[idx];
+            
+            document.getElementById('surat-jalan-form').reset();
+            document.getElementById('sj_no').value = item.no_sj || '';
+            document.getElementById('sj_tanggal').value = item.tanggal ? item.tanggal.split('/').reverse().join('-') : '';
+            document.getElementById('sj_no_penawaran').value = item.no_penawaran || '';
+            document.getElementById('sj_customer').value = item.customer || '';
+            document.getElementById('sj_supir').value = item.supir || '';
+            document.getElementById('sj_plat').value = item.plat_nomor || '';
+            document.getElementById('sj_status').value = item.status || 'Dikirim';
+            document.getElementById('sj_catatan').value = item.catatan || '';
+            
+            let sjItems = [];
+            try { sjItems = typeof item.items === 'string' ? JSON.parse(item.items) : (item.items || []); } catch(e){}
+            document.getElementById('sj_items_hidden').value = JSON.stringify(sjItems);
+            
+            const tbody = document.getElementById('sj-items-tbody');
+            if (tbody) {
+                tbody.innerHTML = '';
+                if (sjItems.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Tidak ada item</td></tr>';
+                } else {
+                    sjItems.forEach(it => {
+                        const iname = String(it.nama || it.item || '').trim();
+                        const qty = parseInt(it.qty || 0);
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${iname}<input type="hidden" class="sj-item-name" value="${iname}"></td>
+                            <td style="text-align: right;">-</td>
+                            <td style="text-align: right; color: var(--success);">-</td>
+                            <td>
+                                <input type="number" class="sj-item-qty" min="0" value="${qty}" style="width: 100%; padding: 0.4rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 4px;">
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            }
+            
+            document.getElementById('surat-jalan-modal').classList.add('active');
         });
     });
 
@@ -5021,11 +5121,39 @@ document.getElementById('btn-close-sj-modal')?.addEventListener('click', () => {
 
 document.getElementById('surat-jalan-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    document.getElementById('surat-jalan-modal').classList.remove('active');
     
     let items = [];
-    try { items = JSON.parse(document.getElementById('sj_items_hidden').value); } catch(e){}
+    // Read from the dynamic table if it has items
+    const rows = document.querySelectorAll('#sj-items-tbody tr');
+    let hasDynamicItems = false;
     
+    rows.forEach(tr => {
+        const nameInput = tr.querySelector('.sj-item-name');
+        const qtyInput = tr.querySelector('.sj-item-qty');
+        if (nameInput && qtyInput) {
+            hasDynamicItems = true;
+            const qty = parseInt(qtyInput.value || 0);
+            if (qty > 0) {
+                items.push({
+                    nama: nameInput.value,
+                    qty: qty
+                });
+            }
+        }
+    });
+
+    // Fallback if table wasn't used or is empty (e.g., manual SJ without PO link)
+    if (!hasDynamicItems) {
+        try { items = JSON.parse(document.getElementById('sj_items_hidden').value); } catch(e){}
+    }
+
+    if (items.length === 0) {
+        alert("Peringatan: Tidak ada item yang dikirim (Qty = 0) atau tidak ada item valid.");
+        return; // prevent submit
+    }
+
+    document.getElementById('surat-jalan-modal').classList.remove('active');
+
     const payload = {
         no_sj: document.getElementById('sj_no').value,
         tanggal: document.getElementById('sj_tanggal').value,
