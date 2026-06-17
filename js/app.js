@@ -1548,7 +1548,7 @@ async function loadBarangJadiData(isBackgroundSync = false) {
             if (isAdmin) {
                 actionBtns = `
                 <button class="btn btn-edit-barang-jadi" data-kode="${item.kode_barang || item.kode}" data-nama="${item.nama_barang || item.nama}" data-stok="${item.stok}" data-harga="${item.harga_jual}" data-lokasi="${item.lokasi_gudang}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--warning); margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>
-                <button class="btn btn-delete-barang-jadi" data-kode="${item.kode_barang || item.kode}" data-nama="${item.nama_barang || item.nama}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--danger);"><i class="fa-solid fa-trash"></i></button>
+                <button class="btn btn-reset-barang-jadi" data-kode="${item.kode_barang || item.kode}" data-nama="${item.nama_barang || item.nama}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--danger);"><i class="fa-solid fa-rotate-left"></i></button>
                 `;
             } else {
                 actionBtns = '-';
@@ -1587,27 +1587,26 @@ async function loadBarangJadiData(isBackgroundSync = false) {
                     });
                 }
 
-                const btnDel = tr.querySelector('.btn-delete-barang-jadi');
-                if (btnDel) {
-                    btnDel.addEventListener('click', async (e) => {
+                const btnReset = tr.querySelector('.btn-reset-barang-jadi');
+                if (btnReset) {
+                    btnReset.addEventListener('click', async (e) => {
                         e.stopPropagation();
-                        const kode = btnDel.getAttribute('data-kode');
-                        const nama = btnDel.getAttribute('data-nama');
+                        const kode = btnReset.getAttribute('data-kode');
+                        const nama = btnReset.getAttribute('data-nama');
                         const ok = await showConfirm({
-                            title: 'Hapus Barang Jadi',
-                            message: `Yakin ingin menghapus Barang Jadi <strong>${nama} (${kode})</strong>?`,
-                            icon: '🗑️', confirmText: 'Ya, Hapus', cancelText: 'Batal'
+                            title: 'Reset Stok Barang Jadi',
+                            message: `Yakin ingin mereset stok Barang Jadi <strong>${nama} (${kode})</strong> menjadi 0?`,
+                            icon: '🔄', confirmText: 'Ya, Reset', cancelText: 'Batal'
                         });
                         if (!ok) return;
                         
-                        tr.style.display = 'none';
-                        if (typeof showToast !== 'undefined') showToast('Menghapus Barang Jadi...', 'info');
-                        window.ERPAPI.request('delete_barang_jadi', { kode: kode }).then(res => {
+                        if (typeof showToast !== 'undefined') showToast('Mereset stok Barang Jadi...', 'info');
+                        window.ERPAPI.request('edit_barang_jadi', { kode_barang: kode, stok: 0 }).then(res => {
                             if (res.status === 'success') {
-                                if (typeof showToast !== 'undefined') showToast(`✅ ${nama} dihapus`, 'success');
+                                if (typeof showToast !== 'undefined') showToast(`✅ Stok ${nama} direset ke 0`, 'success');
                                 loadBarangJadiData(true);
                             } else {
-                                if (typeof showToast !== 'undefined') showToast('❌ Gagal menghapus Barang Jadi', 'error');
+                                if (typeof showToast !== 'undefined') showToast('❌ Gagal mereset stok', 'error');
                                 loadBarangJadiData(true);
                             }
                         });

@@ -1594,7 +1594,9 @@ function deleteBOM(payload) {
   for (let i = 1; i < values.length; i++) {
     if (String(values[i][kodeIdx]).trim() === String(payload.kode_barang).trim()) {
       sheet.deleteRow(i + 1);
-      return { status: 'success', message: 'Data BOM berhasil dihapus.' };
+      // Auto-delete from Barang Jadi as requested
+      try { deleteBarangJadi({ kode: payload.kode_barang }); } catch(e) {}
+      return { status: 'success', message: 'Data BOM dan Barang Jadi berhasil dihapus.' };
     }
   }
   return { status: 'error', message: 'Data BOM tidak ditemukan.' };
