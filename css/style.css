@@ -822,6 +822,23 @@ tbody tr:hover {
     font-family: serif;
   }
 
+  body.printing-sj #print-container,
+  body.printing-sj #print-area,
+  body.printing-sj #print-inv-container {
+    display: none !important;
+  }
+
+  body.printing-inv #print-container,
+  body.printing-inv #print-area,
+  body.printing-inv #print-sj-container {
+    display: none !important;
+  }
+
+  body:not(.printing-sj):not(.printing-inv) #print-sj-container,
+  body:not(.printing-sj):not(.printing-inv) #print-inv-container {
+    display: none !important;
+  }
+
   .po-header hr {
     border: 1px solid #000;
     margin-bottom: 10px;

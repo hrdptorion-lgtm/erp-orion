@@ -2354,7 +2354,140 @@
                 </form>
             </div>
         </div>
+        <!-- Print Container for Surat Jalan -->
+        <div id="print-sj-container" class="print-only" style="font-family: 'Times New Roman', serif; font-size: 14px; color: #000; padding: 20px;">
+            <h2 style="text-align: center; margin-bottom: 20px; font-weight: bold; letter-spacing: 1px;">SURAT JALAN</h2>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 id="print_sj_company_name" style="margin: 0; font-size: 16px; font-weight: bold;">PT. Orion Karya Sejahtera</h3>
+                <p id="print_sj_company_address" style="margin: 2px 0; font-size: 14px;"></p>
+            </div>
+            
+            <table style="width: 100%; border: 1px solid #000; margin-bottom: 20px; border-collapse: collapse;">
+                <tr>
+                    <td style="width: 50%; padding: 10px; vertical-align: top; border-right: 1px solid #000;">
+                        Kepada:<br>
+                        <strong id="print_sj_customer"></strong>
+                    </td>
+                    <td style="width: 50%; padding: 10px; vertical-align: top;">
+                        <table style="width: 100%; border: none;">
+                            <tr><td style="width: 150px; border:none; padding: 2px;">Nomor Surat Jalan</td><td style="border:none; padding: 2px;">: <span id="print_sj_no"></span></td></tr>
+                            <tr><td style="border:none; padding: 2px;">Tanggal</td><td style="border:none; padding: 2px;">: <span id="print_sj_date"></span></td></tr>
+                            <tr><td style="border:none; padding: 2px;">Nomor PO</td><td style="border:none; padding: 2px;">: <span id="print_sj_po"></span></td></tr>
+                            <tr><td style="border:none; padding: 2px;">No. Polisi</td><td style="border:none; padding: 2px;">: <span id="print_sj_plat"></span></td></tr>
+                            <tr><td style="border:none; padding: 2px;">Nama Pengemudi</td><td style="border:none; padding: 2px;">: <span id="print_sj_supir"></span></td></tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
 
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                <thead>
+                    <tr>
+                        <th style="border: 1px solid #000; padding: 8px; text-align: center;">No</th>
+                        <th style="border: 1px solid #000; padding: 8px; text-align: left;">Nama Barang</th>
+                        <th style="border: 1px solid #000; padding: 8px; text-align: center;">Satuan</th>
+                        <th style="border: 1px solid #000; padding: 8px; text-align: center;">Jumlah Barang</th>
+                        <th style="border: 1px solid #000; padding: 8px; text-align: center;">Keterangan</th>
+                    </tr>
+                </thead>
+                <tbody id="print-sj-items">
+                    <!-- Rows injected via JS -->
+                </tbody>
+            </table>
+
+            <div style="margin-top: 30px;">
+                <p style="margin-bottom: 50px;">Tanda Terima</p>
+                <div style="display: flex; justify-content: space-between; text-align: center;">
+                    <div style="width: 30%;">
+                        Sopir (<span style="display:inline-block; width:150px; border-bottom:1px solid #000;"></span>)
+                    </div>
+                    <div style="width: 30%;">
+                        Gudang (<span style="display:inline-block; width:150px; border-bottom:1px solid #000;"></span>)
+                    </div>
+                    <div style="width: 30%;">
+                        Penerima (<span style="display:inline-block; width:150px; border-bottom:1px solid #000;"></span>)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Print Container for Invoice -->
+        <div id="print-inv-container" class="print-only" style="font-family: 'Times New Roman', serif; font-size: 14px; color: #000; padding: 20px;">
+            <h2 style="text-align: center; margin-bottom: 20px; font-weight: bold; letter-spacing: 1px;">INVOICE</h2>
+            
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                <div style="width: 50%;">
+                    <h3 id="print_inv_company_name" style="margin: 0; font-size: 16px; font-weight: bold;">PT. Orion Karya Sejahtera</h3>
+                    <p id="print_inv_company_address" style="margin: 2px 0; font-size: 14px;"></p>
+                </div>
+                <div style="width: 40%; text-align: right;">
+                    <h2 style="margin: 0; color: #333; font-size: 24px;">INVOICE</h2>
+                    <p style="margin: 5px 0 0 0;">No: <strong id="print_inv_no"></strong></p>
+                </div>
+            </div>
+            
+            <table style="width: 100%; border: 1px solid #000; margin-bottom: 20px; border-collapse: collapse;">
+                <tr>
+                    <td style="width: 50%; padding: 10px; vertical-align: top; border-right: 1px solid #000;">
+                        Tagihan Kepada:<br>
+                        <strong id="print_inv_customer" style="font-size: 16px;"></strong>
+                    </td>
+                    <td style="width: 50%; padding: 10px; vertical-align: top;">
+                        <table style="width: 100%; border: none;">
+                            <tr><td style="width: 120px; border:none; padding: 2px;">Tanggal Invoice</td><td style="border:none; padding: 2px;">: <span id="print_inv_date"></span></td></tr>
+                            <tr><td style="border:none; padding: 2px;">Jatuh Tempo</td><td style="border:none; padding: 2px;">: <strong id="print_inv_due"></strong></td></tr>
+                            <tr><td style="border:none; padding: 2px;">Nomor PO/Ref</td><td style="border:none; padding: 2px;">: <span id="print_inv_po"></span></td></tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <thead>
+                    <tr style="background-color: #f2f2f2;">
+                        <th style="border: 1px solid #000; padding: 8px; text-align: center;">No</th>
+                        <th style="border: 1px solid #000; padding: 8px; text-align: left;">Deskripsi / Nama Barang</th>
+                        <th style="border: 1px solid #000; padding: 8px; text-align: center;">Qty</th>
+                        <th style="border: 1px solid #000; padding: 8px; text-align: right;">Harga Satuan (Rp)</th>
+                        <th style="border: 1px solid #000; padding: 8px; text-align: right;">Total Harga (Rp)</th>
+                    </tr>
+                </thead>
+                <tbody id="print-inv-items">
+                    <!-- Rows injected via JS -->
+                </tbody>
+            </table>
+
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
+                <table style="width: 40%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 5px; font-weight: bold; text-align: right;">Grand Total :</td>
+                        <td style="padding: 5px; font-weight: bold; text-align: right; border-bottom: 2px solid #000; font-size: 16px;">Rp <span id="print_inv_total">0</span></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px; font-weight: bold; text-align: right;">Telah Dibayar :</td>
+                        <td style="padding: 5px; font-weight: bold; text-align: right;">Rp <span id="print_inv_paid">0</span></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px; font-weight: bold; text-align: right; color: red;">Sisa Tagihan :</td>
+                        <td style="padding: 5px; font-weight: bold; text-align: right; color: red;">Rp <span id="print_inv_balance">0</span></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <div style="float: right; text-align: center; width: 250px;">
+                    <p style="margin-bottom: 60px;">Hormat Kami,</p>
+                    <p style="margin: 0; border-bottom: 1px solid #000; font-weight: bold;">( Bag. Finance / Akuntansi )</p>
+                    <p style="margin: 0;">PT. Orion Karya Sejahtera</p>
+                </div>
+                <div style="clear: both;"></div>
+            </div>
+            
+            <div style="margin-top: 30px; font-size: 12px; font-style: italic;">
+                Catatan: Pembayaran dapat ditransfer ke Rekening BCA: 1234567890 a/n PT. Orion Karya Sejahtera.
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>

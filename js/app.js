@@ -4931,7 +4931,10 @@ function renderSuratJalanTable() {
         if (sj.status === 'Selesai (Diterima)') badgeClass = 'badge-success';
         else if (sj.status === 'Batal') badgeClass = 'badge-danger';
         
-        let actionBtns = `<button class="btn btn-delete-sj" data-no="${sj.no_sj}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i class="fa-solid fa-trash"></i></button>`;
+        let actionBtns = `
+            <button class="btn btn-print-sj" data-idx="${suratJalanData.indexOf(sj)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(59, 130, 246, 0.2); color: #60a5fa; margin-right: 5px;"><i class="fa-solid fa-print"></i></button>
+            <button class="btn btn-delete-sj" data-no="${sj.no_sj}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i class="fa-solid fa-trash"></i></button>
+        `;
         
         tr.innerHTML = `
             <td><strong>${sj.no_sj}</strong></td>
@@ -4944,6 +4947,13 @@ function renderSuratJalanTable() {
         tbody.appendChild(tr);
     });
     
+    document.querySelectorAll('.btn-print-sj').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const idx = e.currentTarget.getAttribute('data-idx');
+            printSuratJalan(suratJalanData[idx]);
+        });
+    });
+
     document.querySelectorAll('.btn-delete-sj').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const no = e.currentTarget.getAttribute('data-no');
@@ -4955,6 +4965,47 @@ function renderSuratJalanTable() {
             }
         });
     });
+}
+
+function printSuratJalan(item) {
+    document.getElementById('print_sj_company_name').textContent = cachedSettings['NAMA_PERUSAHAAN'] || 'PT. Orion Karya Sejahtera';
+    document.getElementById('print_sj_company_address').innerHTML = (cachedSettings['ALAMAT'] || '') + '<br>' + (cachedSettings['NO_TELP'] || '');
+    
+    document.getElementById('print_sj_customer').textContent = item.customer || '-';
+    document.getElementById('print_sj_no').textContent = item.no_sj || '-';
+    document.getElementById('print_sj_date').textContent = item.tanggal || '-';
+    document.getElementById('print_sj_po').textContent = item.no_penawaran || '-';
+    document.getElementById('print_sj_plat').textContent = item.plat_nomor || '-';
+    document.getElementById('print_sj_supir').textContent = item.supir || '-';
+    
+    const tbody = document.getElementById('print-sj-items');
+    tbody.innerHTML = '';
+    
+    let items = [];
+    try { items = typeof item.items === 'string' ? JSON.parse(item.items) : (item.items || []); } catch(e){}
+    
+    if(items && items.length > 0) {
+        items.forEach((it, i) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: center;">${i+1}</td>
+                    <td style="border: 1px solid #000; padding: 5px;">${it.nama || it.item || '-'}</td>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: center;">${it.satuan || 'Pcs'}</td>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: center;">${it.qty || 0}</td>
+                    <td style="border: 1px solid #000; padding: 5px;">${it.keterangan || ''}</td>
+                </tr>
+            `;
+        });
+    } else {
+        tbody.innerHTML = `<tr><td colspan="5" style="border: 1px solid #000; padding: 5px; text-align: center;">Tidak ada barang</td></tr>`;
+    }
+    
+    document.body.classList.add('printing-sj');
+    window.print();
+    setTimeout(() => {
+        document.body.classList.remove('printing-sj');
+    }, 1000);
+}
 }
 
 document.getElementById('btn-add-surat-jalan')?.addEventListener('click', () => {
@@ -5027,7 +5078,10 @@ function renderInvoiceTable() {
         if (inv.status_pembayaran === 'Lunas') badgeClass = 'badge-success';
         else if (inv.status_pembayaran === 'Batal') badgeClass = 'badge-danger';
         
-        let actionBtns = `<button class="btn btn-delete-inv" data-no="${inv.no_invoice}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i class="fa-solid fa-trash"></i></button>`;
+        let actionBtns = `
+            <button class="btn btn-print-inv" data-idx="${invoiceData.indexOf(inv)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(59, 130, 246, 0.2); color: #60a5fa; margin-right: 5px;"><i class="fa-solid fa-print"></i></button>
+            <button class="btn btn-delete-inv" data-no="${inv.no_invoice}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i class="fa-solid fa-trash"></i></button>
+        `;
         
         tr.innerHTML = `
             <td><strong>${inv.no_invoice}</strong></td>
@@ -5040,6 +5094,13 @@ function renderInvoiceTable() {
         tbody.appendChild(tr);
     });
     
+    document.querySelectorAll('.btn-print-inv').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const idx = e.currentTarget.getAttribute('data-idx');
+            printInvoice(invoiceData[idx]);
+        });
+    });
+
     document.querySelectorAll('.btn-delete-inv').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const no = e.currentTarget.getAttribute('data-no');
@@ -5051,6 +5112,51 @@ function renderInvoiceTable() {
             }
         });
     });
+}
+
+function printInvoice(item) {
+    document.getElementById('print_inv_company_name').textContent = cachedSettings['NAMA_PERUSAHAAN'] || 'PT. Orion Karya Sejahtera';
+    document.getElementById('print_inv_company_address').innerHTML = (cachedSettings['ALAMAT'] || '') + '<br>' + (cachedSettings['NO_TELP'] || '');
+    
+    document.getElementById('print_inv_customer').textContent = item.customer || '-';
+    document.getElementById('print_inv_no').textContent = item.no_invoice || '-';
+    document.getElementById('print_inv_date').textContent = item.tanggal || '-';
+    document.getElementById('print_inv_due').textContent = item.jatuh_tempo || '-';
+    document.getElementById('print_inv_po').textContent = item.no_penawaran || '-';
+    
+    const tbody = document.getElementById('print-inv-items');
+    tbody.innerHTML = '';
+    
+    let items = [];
+    try { items = typeof item.items === 'string' ? JSON.parse(item.items) : (item.items || []); } catch(e){}
+    
+    if(items && items.length > 0) {
+        items.forEach((it, i) => {
+            const sub = (it.qty || 0) * (it.harga || 0);
+            tbody.innerHTML += `
+                <tr>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: center;">${i+1}</td>
+                    <td style="border: 1px solid #000; padding: 5px;">${it.nama || it.item || '-'}</td>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: center;">${it.qty || 0} ${it.satuan || 'Pcs'}</td>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: right;">${parseInt(it.harga || 0).toLocaleString('id-ID')}</td>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: right;">${sub.toLocaleString('id-ID')}</td>
+                </tr>
+            `;
+        });
+    } else {
+        tbody.innerHTML = `<tr><td colspan="5" style="border: 1px solid #000; padding: 5px; text-align: center;">Tidak ada barang</td></tr>`;
+    }
+    
+    document.getElementById('print_inv_total').textContent = parseInt(item.total_tagihan || 0).toLocaleString('id-ID');
+    document.getElementById('print_inv_paid').textContent = parseInt(item.terbayar || 0).toLocaleString('id-ID');
+    const sisa = parseInt(item.sisa_tagihan || item.total_tagihan || 0);
+    document.getElementById('print_inv_balance').textContent = sisa.toLocaleString('id-ID');
+    
+    document.body.classList.add('printing-inv');
+    window.print();
+    setTimeout(() => {
+        document.body.classList.remove('printing-inv');
+    }, 1000);
 }
 
 document.getElementById('btn-add-invoice')?.addEventListener('click', () => {
