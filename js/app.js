@@ -273,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.addEventListener('input', (e) => {
         if (e.target.classList && e.target.classList.contains('number-format')) {
-            e.target.value = formatRibuan(e.target.value);
+            e.target.value = window.formatRibuan(e.target.value);
         }
     });
 
@@ -883,10 +883,10 @@ function openDataModal(title, data = null) {
     document.getElementById('f_kode').value = data ? data.kode : '';
     document.getElementById('f_kode').readOnly = !!data; // readonly if editing
     document.getElementById('f_nama').value = data ? data.nama : '';
-    document.getElementById('f_stok').value = data && data.stok ? formatRibuan(data.stok) : '';
+    document.getElementById('f_stok').value = data && data.stok ? window.formatRibuan(data.stok) : '';
     document.getElementById('f_satuan').value = data && data.satuan ? data.satuan : '';
     document.getElementById('f_lokasi').value = data ? data.lokasi : '';
-    document.getElementById('f_harga').value = data && data.harga ? formatRibuan(data.harga) : '';
+    document.getElementById('f_harga').value = data && data.harga ? window.formatRibuan(data.harga) : '';
     document.getElementById('f_spesifikasi').value = data && data.spesifikasi && data.spesifikasi !== 'undefined' ? data.spesifikasi : '';
 
     dataModal.classList.add('active');
@@ -1782,7 +1782,7 @@ async function loadPenawaranData(isBackgroundSync = false) {
                     custSelect.value = item.customer;
                 }
                 document.getElementById('p_total_harga_display').textContent = (parseInt(String(item.total_harga || '0').replace(/[^0-9]/g, '')) || 0).toLocaleString('id-ID');
-                document.getElementById('p_dp').value = formatRibuan(parseInt(String(item.down_payment || item.dp || '0').replace(/[^0-9]/g, '')) || 0);
+                document.getElementById('p_dp').value = window.formatRibuan(parseInt(String(item.down_payment || item.dp || '0').replace(/[^0-9]/g, '')) || 0);
                 document.getElementById('p_narasi').value = item.narasi || '';
                 document.getElementById('p_status').value = item.status || 'Penawaran';
                 
@@ -2139,8 +2139,8 @@ function addPenawaranItemRow(itemData = {}) {
             <select class="pi-part-name" required style="padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
                 ${optionsHtml}
             </select>
-            <input type="text" class="pi-moq number-format" placeholder="Qty (PCS)" value="${pMoq ? formatRibuan(pMoq) : ''}" required style="padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
-            <input type="text" class="pi-idr number-format" placeholder="Harga (Rp)" value="${pIdr ? formatRibuan(pIdr) : ''}" required style="padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            <input type="text" class="pi-moq number-format" placeholder="Qty (PCS)" value="${pMoq ? window.formatRibuan(pMoq) : ''}" required style="padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            <input type="text" class="pi-idr number-format" placeholder="Harga (Rp)" value="${pIdr ? window.formatRibuan(pIdr) : ''}" required style="padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
             <button type="button" class="btn btn-remove-p-row" style="background: var(--danger); padding: 0.6rem;"><i class="fa-solid fa-trash"></i></button>
         `;
     div.querySelector('.btn-remove-p-row').addEventListener('click', () => {
@@ -2156,7 +2156,7 @@ function addPenawaranItemRow(itemData = {}) {
         const selectedOpt = inputName.options[inputName.selectedIndex];
         if (selectedOpt && selectedOpt.getAttribute('data-harga')) {
             const hg = parseInt(selectedOpt.getAttribute('data-harga')) || 0;
-            div.querySelector('.pi-idr').value = formatRibuan(hg);
+            div.querySelector('.pi-idr').value = window.formatRibuan(hg);
             calculatePenawaranTotal();
         }
     });
@@ -2175,7 +2175,7 @@ function addPenawaranItemRow(itemData = {}) {
             const listOpt = Array.from(document.getElementById('bom-items-list')?.options || []).find(o => o.value === value);
             if (listOpt && listOpt.getAttribute('data-harga')) {
                 const hg = parseInt(listOpt.getAttribute('data-harga')) || 0;
-                div.querySelector('.pi-idr').value = formatRibuan(hg);
+                div.querySelector('.pi-idr').value = window.formatRibuan(hg);
                 calculatePenawaranTotal();
             }
         }
@@ -2626,8 +2626,8 @@ function addMaterialRow(kode = '', nama = '', qty = '1', harga = '') {
     div.innerHTML = `
             <input type="text" class="mat-kode" placeholder="Kode Mat" value="${kode}" style="flex: 1; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
             <input type="text" list="bom-bahan-baku-list" class="mat-nama" placeholder="Nama Material" value="${nama}" required style="flex: 2; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
-            <input type="text" class="mat-qty number-format" placeholder="Qty" value="${qty ? formatRibuan(qty) : ''}" required style="flex: 1; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
-            <input type="text" class="mat-harga number-format" placeholder="Total Biaya Mat." value="${harga ? formatRibuan(harga) : ''}" required style="flex: 1.5; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            <input type="text" class="mat-qty number-format" placeholder="Qty" value="${qty ? window.formatRibuan(qty) : ''}" required style="flex: 1; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            <input type="text" class="mat-harga number-format" placeholder="Total Biaya Mat." value="${harga ? window.formatRibuan(harga) : ''}" required style="flex: 1.5; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
             <button type="button" class="btn btn-remove-row" style="background: var(--danger); padding: 0.6rem;"><i class="fa-solid fa-trash"></i></button>
         `;
     div.querySelector('.btn-remove-row').addEventListener('click', () => {
@@ -2646,7 +2646,7 @@ function addMaterialRow(kode = '', nama = '', qty = '1', harga = '') {
             if (match) {
                 const hrg = match.getAttribute('data-harga');
                 const kod = match.getAttribute('data-kode');
-                if (hrg) div.querySelector('.mat-harga').value = formatRibuan(hrg);
+                if (hrg) div.querySelector('.mat-harga').value = window.formatRibuan(hrg);
                 if (kod) div.querySelector('.mat-kode').value = kod;
                 calculateTotalBiaya();
             }
@@ -5237,7 +5237,7 @@ function renderInvoiceTable() {
             <td><strong>${inv.no_invoice}</strong></td>
             <td>${inv.tanggal || '-'}</td>
             <td>${inv.customer || '-'}</td>
-            <td>${formatRupiah(inv.total_tagihan || 0)}</td>
+            <td>${window.formatRupiah(inv.total_tagihan || 0)}</td>
             <td><span class="badge ${badgeClass}">${inv.status_pembayaran || 'Belum Lunas'}</span></td>
             <td>${actionBtns}</td>
         `;
@@ -5355,7 +5355,7 @@ function calculateInvoiceTotal() {
             const qty = parseFloat(qtyInput.value || 0);
             const price = parseFloat(priceInput.value || 0);
             const subtotal = qty * price;
-            subtotalTd.textContent = formatRupiah(subtotal);
+            subtotalTd.textContent = window.formatRupiah(subtotal);
             total += subtotal;
         }
     });
