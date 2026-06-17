@@ -512,6 +512,28 @@ function createPOInternal(payload) {
     po_payment_term: payload.po_payment_term || '',
     po_validity: payload.po_validity || ''
   };
+
+  // Auto-register new supplier
+  if (payload.po_to && payload.po_to.trim() !== '') {
+    let suppSheet = ss.getSheetByName('DB Supplier');
+    if (!suppSheet) {
+      suppSheet = ss.insertSheet('DB Supplier');
+      suppSheet.appendRow(['ID Supplier', 'Nama Supplier', 'Kontak / Telepon', 'Alamat', 'Tanggal Terdaftar']);
+      suppSheet.getRange(1, 1, 1, 5).setFontWeight('bold');
+    }
+    const suppValues = suppSheet.getDataRange().getDisplayValues();
+    let found = false;
+    for (let i = 1; i < suppValues.length; i++) {
+      if (String(suppValues[i][1]).trim().toLowerCase() === String(payload.po_to).trim().toLowerCase()) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      const newSuppId = 'SUPP-' + Date.now();
+      suppSheet.appendRow([newSuppId, payload.po_to.trim(), '-', '-', new Date().toLocaleDateString('id-ID')]);
+    }
+  }
   
   sheet.appendRow([
     noPO,
@@ -759,6 +781,67 @@ function deleteCustomer(payload) {
     }
   }
   return { status: 'error', message: 'Customer tidak ditemukan.' };
+}
+
+function getSuppliers() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Supplier');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Supplier tidak ditemukan.' };
+  
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length <= 1) return { status: 'success', data: [] };
+  
+  const headers = values[0];
+  const data = values.slice(1).map(row => {
+    let obj = {};
+    headers.forEach((h, i) => {
+      obj[String(h).toLowerCase().replace(/[\/ ]/g, '_')] = row[i];
+    });
+    return obj;
+  });
+  
+  return { status: 'success', data: data };
+}
+
+function saveSupplier(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('DB Supplier');
+  if (!sheet) {
+    sheet = ss.insertSheet('DB Supplier');
+    sheet.appendRow(['ID Supplier', 'Nama Supplier', 'Kontak / Telepon', 'Alamat', 'Tanggal Terdaftar']);
+    sheet.getRange(1, 1, 1, 5).setFontWeight('bold');
+  }
+
+  const values = sheet.getDataRange().getDisplayValues();
+  if (payload.id) {
+    // Edit
+    for (let i = 1; i < values.length; i++) {
+      if (String(values[i][0]).trim() === String(payload.id).trim()) {
+        sheet.getRange(i + 1, 2).setValue(payload.nama || '');
+        sheet.getRange(i + 1, 3).setValue(payload.kontak || '');
+        sheet.getRange(i + 1, 4).setValue(payload.alamat || '');
+        return { status: 'success', message: 'Supplier berhasil diupdate.' };
+      }
+    }
+  }
+
+  // Tambah baru
+  const newSuppId = 'SUPP-' + Date.now();
+  sheet.appendRow([newSuppId, payload.nama || '', payload.kontak || '', payload.alamat || '', new Date().toLocaleDateString('id-ID')]);
+  return { status: 'success', message: 'Supplier baru berhasil ditambahkan.' };
+}
+
+function deleteSupplier(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Supplier');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Supplier tidak ditemukan.' };
+  
+  const values = sheet.getDataRange().getDisplayValues();
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][0]).trim() === String(payload.id).trim()) {
+      sheet.deleteRow(i + 1);
+      return { status: 'success', message: 'Supplier berhasil dihapus.' };
+    }
+  }
+  return { status: 'error', message: 'Supplier tidak ditemukan.' };
 }
 
 function savePenawaran(payload) {

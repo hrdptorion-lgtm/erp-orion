@@ -149,6 +149,15 @@ function doPost(e) {
       case 'delete_spk':
         response = deleteSPK(payload);
         break;
+      case 'get_suppliers':
+        response = getSuppliers();
+        break;
+      case 'save_supplier':
+        response = saveSupplier(payload);
+        break;
+      case 'delete_supplier':
+        response = deleteSupplier(payload);
+        break;
       default:
         response = { status: 'error', message: 'Action tidak dikenali: ' + action };
         break;

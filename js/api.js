@@ -159,6 +159,18 @@ class ERPAPI {
             return { status: 'success', message: 'Data Customer berhasil disimpan (Simulasi).' };
         } else if (action === 'delete_customer') {
             return { status: 'success', message: 'Data Customer berhasil dihapus (Simulasi).' };
+        } else if (action === 'get_suppliers') {
+            return {
+                status: 'success',
+                data: [
+                    { id_supplier: 'SUPP-001', nama_supplier: 'PT Baja Makmur', kontak___telepon: '0812345678', alamat: 'Kawasan Industri MM2100' },
+                    { id_supplier: 'SUPP-002', nama_supplier: 'Toko Elektronik Surya', kontak___telepon: '081999888', alamat: 'Glodok Jakarta' }
+                ]
+            };
+        } else if (action === 'save_supplier') {
+            return { status: 'success', message: 'Data Supplier berhasil disimpan (Simulasi).' };
+        } else if (action === 'delete_supplier') {
+            return { status: 'success', message: 'Data Supplier berhasil dihapus (Simulasi).' };
         } else if (action === 'save_penawaran') {
             return { status: 'success', message: 'Data Penawaran berhasil disimpan (Simulasi).' };
         } else if (action === 'delete_penawaran') {

@@ -160,6 +160,10 @@
                         <i class="fa-solid fa-users"></i>
                         <span>Master Customer</span>
                     </li>
+                    <li class="nav-item admin-only" data-target="supplier">
+                        <i class="fa-solid fa-truck-field"></i>
+                        <span>Data Supplier</span>
+                    </li>
                     <li class="nav-item super-admin-only" data-target="approval">
                         <i class="fa-solid fa-diagram-project"></i>
                         <span>Alur Approval</span>
@@ -806,7 +810,8 @@
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
                         <div class="input-group" style="margin-bottom:0;">
                             <label>Kepada (To)</label>
-                            <input type="text" id="po_to" placeholder="Nama Perusahaan Tujuan" required>
+                            <input type="text" id="po_to" list="supplier_list" placeholder="Ketik atau pilih nama supplier..." required>
+                            <datalist id="supplier_list"></datalist>
                         </div>
                         <div class="input-group" style="margin-bottom:0;">
                             <label>Perhatian (Attn)</label>
@@ -1211,6 +1216,38 @@
                         <tbody id="table-customer">
                             <tr>
                                 <td colspan="5" style="text-align: center;">Memuat data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-supplier" class="view">
+            <div class="data-section">
+                <div class="section-header">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input type="text" id="search-supplier" placeholder="Cari nama atau ID..."
+                            style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main); min-width: 200px;">
+                        <button class="btn admin-only" id="btn-add-supplier"><i class="fa-solid fa-plus"></i> Tambah
+                            Supplier</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID Supplier</th>
+                                <th>Nama Supplier</th>
+                                <th>Kontak / Telepon</th>
+                                <th>Alamat</th>
+                                <th>Tanggal Daftar</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-supplier">
+                            <tr>
+                                <td colspan="6" style="text-align: center;">Memuat data...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -2084,6 +2121,34 @@
                 </div>
             </form>
         </div>
+        <!-- Supplier Modal Overlay -->
+        <div id="supplier-modal" class="login-overlay">
+            <div class="login-box" style="max-width: 400px;">
+                <h2 id="supplier-modal-title" style="margin-bottom: 1.5rem;">Form Supplier</h2>
+                <form id="supplier-form">
+                    <input type="hidden" id="supp_id">
+                    <div class="input-group">
+                        <label>Nama Supplier</label>
+                        <input type="text" id="supp_nama" required placeholder="PT Supplier Jaya">
+                    </div>
+                    <div class="input-group" style="margin-top: 15px;">
+                        <label>Kontak / Telepon</label>
+                        <input type="text" id="supp_kontak" placeholder="0812...">
+                    </div>
+                    <div class="input-group" style="margin-top: 15px;">
+                        <label>Alamat / Keterangan</label>
+                        <textarea id="supp_alamat" rows="3" placeholder="Jl. Industri..."
+                            style="width:100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; resize: vertical;"></textarea>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="button" class="btn" id="btn-close-supplier-modal"
+                            style="flex: 1; background: transparent; border: 1px solid var(--glass-border); color: var(--text-main) !important;">Batal</button>
+                        <button type="submit" class="btn" style="flex: 1; background: var(--primary);">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Customer Modal Overlay -->
         <div id="customer-modal" class="login-overlay">
             <div class="login-box" style="max-width: 400px;">

@@ -390,6 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (targetViewId === 'profil' || targetViewId === 'coa') loadSettingsData();
         else if (targetViewId === 'approval') loadApprovalData();
         else if (targetViewId === 'customer') loadCustomerData();
+        else if (targetViewId === 'supplier') loadSupplierData();
         else if (targetViewId === 'dashboard') loadDashboardData();
 
         if (typeof updateGlobalFAB === 'function') updateGlobalFAB(targetViewId);
@@ -1383,6 +1384,7 @@ function addPOItemRow(kode = '', nama = '', harga = '', qty = '1', satuan = 'pcs
 document.getElementById('btn-add-po-item')?.addEventListener('click', () => addPOItemRow());
 
 document.getElementById('btn-add-po-internal')?.addEventListener('click', () => {
+    if (supplierData.length === 0) loadSupplierData(true);
     poForm.reset();
     poItemsTbody.innerHTML = '';
     addPOItemRow();
@@ -4384,6 +4386,165 @@ document.getElementById('customer-form')?.addEventListener('submit', async e => 
         } else {
             if (typeof showToast !== 'undefined') showToast('❌ Gagal: ' + (res.message || 'Gagal menyimpan customer'), 'danger');
             loadCustomerData(true);
+        }
+    });
+});
+
+// --- MASTER SUPPLIER ---
+let supplierData = [];
+
+async function loadSupplierData(isBackgroundSync = false) {
+    const tbody = document.getElementById('table-supplier');
+    if (tbody && !isBackgroundSync) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+    }
+
+    const response = await window.ERPAPI.request('get_suppliers');
+    if (response.status === 'success' && response.data) {
+        supplierData = response.data;
+        if (tbody) renderSupplierTable();
+        populateSupplierList();
+    } else {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--danger);">Gagal memuat data supplier</td></tr>';
+    }
+}
+
+function renderSupplierTable() {
+    const tbody = document.getElementById('table-supplier');
+    const searchInput = document.getElementById('search-supplier');
+    const query = searchInput ? searchInput.value.toLowerCase() : '';
+
+    let filtered = supplierData.filter(s => {
+        return (s.id_supplier || '').toLowerCase().includes(query) || (s.nama_supplier || '').toLowerCase().includes(query);
+    });
+
+    tbody.innerHTML = '';
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Tidak ada data supplier.</td></tr>';
+        return;
+    }
+
+    filtered.forEach(s => {
+        const tr = document.createElement('tr');
+        let actionBtns = `<button class="btn btn-edit-supplier" data-id="${s.id_supplier}" data-nama="${s.nama_supplier}" data-kontak="${s.kontak___telepon || s['kontak_/_telepon'] || ''}" data-alamat="${s.alamat || ''}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>`;
+        
+        const session = localStorage.getItem('erp_session');
+        if (session) {
+            const user = JSON.parse(session);
+            if (user.role === 'Direktur') {
+                actionBtns += `<button class="btn btn-delete-supplier" data-id="${s.id_supplier}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i class="fa-solid fa-trash"></i></button>`;
+            }
+        }
+        
+        tr.innerHTML = `
+            <td>${s.id_supplier}</td>
+            <td style="font-weight: 600;">${s.nama_supplier}</td>
+            <td>${s.kontak___telepon || s['kontak_/_telepon'] || '-'}</td>
+            <td>${s.alamat || '-'}</td>
+            <td>${s.tanggal_terdaftar || '-'}</td>
+            <td>${actionBtns}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+    
+    document.querySelectorAll('.btn-edit-supplier').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const tr = e.target.closest('tr');
+            if(!tr) return;
+            const b = tr.querySelector('.btn-edit-supplier');
+            document.getElementById('supp_id').value = b.dataset.id;
+            document.getElementById('supp_nama').value = b.dataset.nama;
+            document.getElementById('supp_kontak').value = b.dataset.kontak;
+            document.getElementById('supp_alamat').value = b.dataset.alamat;
+            document.getElementById('supplier-modal-title').textContent = 'Edit Supplier';
+            document.getElementById('supplier-modal').classList.add('active');
+        });
+    });
+    
+    document.querySelectorAll('.btn-delete-supplier').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const tr = e.target.closest('tr');
+            if(!tr) return;
+            const b = tr.querySelector('.btn-delete-supplier');
+            if(confirm('Hapus supplier ini?')) {
+                tr.style.display = 'none';
+                const res = await window.ERPAPI.request('delete_supplier', { id: b.dataset.id });
+                if(res.status === 'success') {
+                    showToast?.('Supplier dihapus', 'success');
+                    loadSupplierData(true);
+                } else {
+                    showToast?.(res.message, 'error');
+                    loadSupplierData(true);
+                }
+            }
+        });
+    });
+}
+
+function populateSupplierList() {
+    const dataList = document.getElementById('supplier_list');
+    if (!dataList) return;
+    dataList.innerHTML = '';
+    supplierData.forEach(s => {
+        if(s.nama_supplier) {
+            const option = document.createElement('option');
+            option.value = s.nama_supplier;
+            dataList.appendChild(option);
+        }
+    });
+}
+
+document.getElementById('search-supplier')?.addEventListener('input', renderSupplierTable);
+
+document.getElementById('btn-add-supplier')?.addEventListener('click', () => {
+    document.getElementById('supplier-modal-title').textContent = 'Tambah Supplier Baru';
+    document.getElementById('supplier-form').reset();
+    document.getElementById('supp_id').value = '';
+    document.getElementById('supplier-modal').classList.add('active');
+});
+
+document.getElementById('btn-close-supplier-modal')?.addEventListener('click', () => {
+    document.getElementById('supplier-modal').classList.remove('active');
+});
+
+document.getElementById('supplier-form')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    document.getElementById('supplier-modal').classList.remove('active');
+    
+    const payload = {
+        id: document.getElementById('supp_id').value,
+        nama: document.getElementById('supp_nama').value,
+        kontak: document.getElementById('supp_kontak').value,
+        alamat: document.getElementById('supp_alamat').value
+    };
+    
+    const isEdit = !!payload.id;
+    const tbody = document.getElementById('table-supplier');
+    if (tbody) {
+        if (!isEdit) {
+            const tr = document.createElement('tr');
+            tr.style.opacity = '0.6';
+            tr.innerHTML = `
+                <td><i class="fa-solid fa-spinner fa-spin"></i></td>
+                <td style="font-weight: 500;">${payload.nama}</td>
+                <td>${payload.kontak}</td>
+                <td>${payload.alamat}</td>
+                <td>Hari ini</td>
+                <td><span class="badge badge-warning">Menyimpan...</span></td>
+            `;
+            tbody.insertBefore(tr, tbody.firstChild);
+        }
+    }
+    
+    if (typeof showToast !== 'undefined') showToast('Menyimpan Supplier...', 'info');
+    
+    window.ERPAPI.request('save_supplier', payload).then(res => {
+        if(res.status === 'success') {
+            if (typeof showToast !== 'undefined') showToast('✅ Supplier tersimpan!', 'success');
+            loadSupplierData(true);
+        } else {
+            if (typeof showToast !== 'undefined') showToast('❌ Gagal: ' + (res.message || 'Gagal'), 'danger');
+            loadSupplierData(true);
         }
     });
 });
