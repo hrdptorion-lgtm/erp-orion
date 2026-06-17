@@ -1638,10 +1638,17 @@ function getSuratJalan() {
 function saveSuratJalan(payload) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName('DB Surat Jalan');
+  const defaultHeaders = ['No SJ', 'Tanggal', 'No Penawaran', 'Customer', 'Supir', 'Plat Nomor', 'Status', 'Catatan', 'Items'];
   if (!sheet) {
     sheet = ss.insertSheet('DB Surat Jalan');
-    sheet.appendRow(['No SJ', 'Tanggal', 'No Penawaran', 'Customer', 'Supir', 'Plat Nomor', 'Status', 'Catatan', 'Items']);
+    sheet.appendRow(defaultHeaders);
     sheet.getRange(1, 1, 1, 9).setFontWeight('bold');
+  } else {
+    // Check if empty
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(defaultHeaders);
+      sheet.getRange(1, 1, 1, 9).setFontWeight('bold');
+    }
   }
   
   const values = sheet.getDataRange().getDisplayValues();

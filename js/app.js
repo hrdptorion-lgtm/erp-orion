@@ -1866,20 +1866,19 @@ async function loadPenawaranData(isBackgroundSync = false) {
                         window.ERPAPI.request('get_inventory')
                     ]);
                     if (resInv.status === 'success' && resInv.data) cachedInventoryData = resInv.data;
-                    if (resBom.status === 'success' && resBom.data) {
-                        cachedBOMData = resBom.data;
-                        if (selectKode) {
-                            selectKode.innerHTML = '<option value="" disabled selected>-- Pilih Barang Jadi --</option>';
-                            resBom.data.forEach(bom => {
-                                const opt = document.createElement('option');
-                                opt.value = bom.kode_barang;
-                                opt.textContent = `${bom.kode_barang} - ${bom.nama_barang}`;
-                                selectKode.appendChild(opt);
-                            });
-                        }
-                    }
+                    if (resBom.status === 'success' && resBom.data) cachedBOMData = resBom.data;
                 }
                 
+                if (selectKode) {
+                    selectKode.innerHTML = '<option value="" disabled selected>-- Pilih Barang Jadi --</option>';
+                    cachedBOMData.forEach(bom => {
+                        const opt = document.createElement('option');
+                        opt.value = bom.kode_barang;
+                        opt.textContent = `${bom.kode_barang} - ${bom.nama_barang}`;
+                        selectKode.appendChild(opt);
+                    });
+                }
+
                 let partNames = '';
                 try {
                     const rincian = typeof item.rincian_item === 'string' ? JSON.parse(item.rincian_item) : item.rincian_item;
@@ -1895,16 +1894,16 @@ async function loadPenawaranData(isBackgroundSync = false) {
                     if (matchedBom) {
                         selectKode.value = matchedBom.kode_barang;
                     } else {
-                        let existingCustom = Array.from(selectKode.options).find(o => o.value === 'Custom');
+                        let existingCustom = Array.from(selectKode.options).find(o => o.value === partNames);
                         if (!existingCustom) {
                             const option = document.createElement('option');
-                            option.value = 'Custom';
+                            option.value = partNames || ('Custom-' + item.no_penawaran);
                             option.text = partNames || 'Dari Penawaran ' + item.no_penawaran;
                             selectKode.add(option);
                         } else {
                             existingCustom.text = partNames || 'Dari Penawaran ' + item.no_penawaran;
                         }
-                        selectKode.value = 'Custom';
+                        selectKode.value = partNames || ('Custom-' + item.no_penawaran);
                     }
                     
                     new TomSelect('#spk_kode_jadi', {
@@ -4792,7 +4791,7 @@ async function openDetailPenawaran(item) {
                         } else {
                             items.forEach((it, idx) => {
                                 const iname = String(it.nama || it.part_name || '').trim();
-                                const poQty = parseInt(it.qty || 0);
+                                const poQty = parseInt(it.qty || it.moq_pcs || 0);
                                 const delivered = deliveredMap[iname] || 0;
                                 const remaining = Math.max(0, poQty - delivered);
                                 

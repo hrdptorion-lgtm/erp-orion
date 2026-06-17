@@ -829,10 +829,32 @@ tbody tr:hover {
     display: none !important;
   }
 
+  body.printing-sj #print-sj-container,
+  body.printing-sj #print-sj-container * {
+    visibility: visible;
+  }
+  body.printing-sj #print-sj-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
   body.printing-inv #print-container,
   body.printing-inv #print-area,
   body.printing-inv #print-sj-container {
     display: none !important;
+  }
+
+  body.printing-inv #print-inv-container,
+  body.printing-inv #print-inv-container * {
+    visibility: visible;
+  }
+  body.printing-inv #print-inv-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
   }
 
   body:not(.printing-sj):not(.printing-inv) #print-sj-container,
