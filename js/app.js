@@ -5130,11 +5130,18 @@ function printSuratJalan(item) {
 }
 
 document.getElementById('btn-add-surat-jalan')?.addEventListener('click', () => {
-    document.getElementById('surat-jalan-form').reset();
-    document.getElementById('sj_no').value = '';
-    document.getElementById('sj_items_hidden').value = '';
-    document.getElementById('sj_tanggal').valueAsDate = new Date();
-    document.getElementById('surat-jalan-modal').classList.add('active');
+    try {
+        console.log("btn-add-surat-jalan clicked");
+        document.getElementById('surat-jalan-form').reset();
+        document.getElementById('sj_no').value = '';
+        document.getElementById('sj_items_hidden').value = '';
+        document.getElementById('sj_tanggal').valueAsDate = new Date();
+        document.getElementById('surat-jalan-modal').classList.add('active');
+        console.log("surat-jalan-modal opened");
+    } catch (error) {
+        console.error("Error in btn-add-surat-jalan:", error);
+        alert("ERROR Surat Jalan: " + error.message);
+    }
 });
 
 document.getElementById('btn-close-sj-modal')?.addEventListener('click', () => {
@@ -5394,15 +5401,22 @@ document.getElementById('btn-add-inv-item')?.addEventListener('click', () => {
 });
 
 document.getElementById('btn-add-invoice')?.addEventListener('click', () => {
-    document.getElementById('invoice-form').reset();
-    document.getElementById('inv_no').value = '';
-    document.getElementById('inv_items_hidden').value = '';
-    document.getElementById('inv_tanggal').valueAsDate = new Date();
-    document.getElementById('inv_jatuh_tempo').valueAsDate = new Date(Date.now() + 30*24*60*60*1000); // +30 days
-    document.getElementById('inv-items-tbody').innerHTML = '';
-    addInvoiceItemRow(); // start with 1 empty row
-    calculateInvoiceTotal();
-    document.getElementById('invoice-modal').classList.add('active');
+    try {
+        console.log("btn-add-invoice clicked");
+        document.getElementById('invoice-form').reset();
+        document.getElementById('inv_no').value = '';
+        document.getElementById('inv_items_hidden').value = '';
+        document.getElementById('inv_tanggal').valueAsDate = new Date();
+        document.getElementById('inv_jatuh_tempo').valueAsDate = new Date(Date.now() + 30*24*60*60*1000); // +30 days
+        document.getElementById('inv-items-tbody').innerHTML = '';
+        addInvoiceItemRow(); // start with 1 empty row
+        calculateInvoiceTotal();
+        document.getElementById('invoice-modal').classList.add('active');
+        console.log("invoice-modal opened");
+    } catch (error) {
+        console.error("Error in btn-add-invoice:", error);
+        alert("ERROR Invoice: " + error.message);
+    }
 });
 
 document.getElementById('btn-close-inv-modal')?.addEventListener('click', () => {
