@@ -4813,12 +4813,29 @@ async function openDetailPenawaran(item) {
                 e.stopPropagation();
                 document.getElementById('detail-penawaran-modal').classList.remove('active');
                 document.querySelector('[data-target="invoice"]')?.click();
+                
                 setTimeout(() => {
-                    document.getElementById('btn-add-invoice')?.click();
+                    document.getElementById('invoice-form').reset();
+                    document.getElementById('inv_no').value = '';
+                    document.getElementById('inv_tanggal').valueAsDate = new Date();
+                    document.getElementById('inv_jatuh_tempo').valueAsDate = new Date(Date.now() + 30*24*60*60*1000);
                     document.getElementById('inv_no_penawaran').value = item.no_penawaran || '';
                     document.getElementById('inv_customer').value = item.customer || '';
-                    document.getElementById('inv_total').value = item.total_harga || 0;
-                    document.getElementById('inv_items_hidden').value = JSON.stringify(items || []);
+                    document.getElementById('inv_total').value = 0;
+                    
+                    const tbody = document.getElementById('inv-items-tbody');
+                    if (tbody) {
+                        tbody.innerHTML = '';
+                        if (!items || items.length === 0) {
+                            addInvoiceItemRow();
+                        } else {
+                            items.forEach(it => {
+                                addInvoiceItemRow(it);
+                            });
+                        }
+                    }
+                    
+                    document.getElementById('invoice-modal').classList.add('active');
                 }, 300);
             };
         }
@@ -5206,6 +5223,7 @@ function renderInvoiceTable() {
         else if (inv.status_pembayaran === 'Batal') badgeClass = 'badge-danger';
         
         let actionBtns = `
+            <button class="btn btn-edit-inv" data-idx="${invoiceData.indexOf(inv)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(16, 185, 129, 0.2); color: var(--secondary); margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>
             <button class="btn btn-print-inv" data-idx="${invoiceData.indexOf(inv)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(59, 130, 246, 0.2); color: #60a5fa; margin-right: 5px;"><i class="fa-solid fa-print"></i></button>
             <button class="btn btn-delete-inv" data-no="${inv.no_invoice}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i class="fa-solid fa-trash"></i></button>
         `;
@@ -5225,6 +5243,42 @@ function renderInvoiceTable() {
         btn.addEventListener('click', (e) => {
             const idx = e.currentTarget.getAttribute('data-idx');
             printInvoice(invoiceData[idx]);
+        });
+    });
+
+    document.querySelectorAll('.btn-edit-inv').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const idx = e.currentTarget.getAttribute('data-idx');
+            const item = invoiceData[idx];
+            
+            document.getElementById('invoice-form').reset();
+            document.getElementById('inv_no').value = item.no_invoice || '';
+            document.getElementById('inv_tanggal').value = item.tanggal ? item.tanggal.split('/').reverse().join('-') : '';
+            document.getElementById('inv_jatuh_tempo').value = item.jatuh_tempo ? item.jatuh_tempo.split('/').reverse().join('-') : '';
+            document.getElementById('inv_no_penawaran').value = item.no_penawaran || '';
+            document.getElementById('inv_customer').value = item.customer || '';
+            document.getElementById('inv_total').value = item.total_tagihan || 0;
+            document.getElementById('inv_terbayar').value = item.terbayar || 0;
+            document.getElementById('inv_status').value = item.status_pembayaran || 'Belum Lunas';
+            document.getElementById('inv_catatan').value = item.catatan || '';
+            
+            let invItems = [];
+            try { invItems = typeof item.items === 'string' ? JSON.parse(item.items) : (item.items || []); } catch(err){}
+            document.getElementById('inv_items_hidden').value = JSON.stringify(invItems);
+            
+            const tbodyObj = document.getElementById('inv-items-tbody');
+            if (tbodyObj) {
+                tbodyObj.innerHTML = '';
+                if (invItems.length === 0) {
+                    addInvoiceItemRow();
+                } else {
+                    invItems.forEach(it => {
+                        addInvoiceItemRow(it);
+                    });
+                }
+            }
+            
+            document.getElementById('invoice-modal').classList.add('active');
         });
     });
 
@@ -5286,12 +5340,63 @@ function printInvoice(item) {
     }, 1000);
 }
 
+function calculateInvoiceTotal() {
+    let total = 0;
+    document.querySelectorAll('#inv-items-tbody tr').forEach(tr => {
+        const qtyInput = tr.querySelector('.inv-item-qty');
+        const priceInput = tr.querySelector('.inv-item-price');
+        const subtotalTd = tr.querySelector('.inv-item-subtotal');
+        if(qtyInput && priceInput && subtotalTd) {
+            const qty = parseFloat(qtyInput.value || 0);
+            const price = parseFloat(priceInput.value || 0);
+            const subtotal = qty * price;
+            subtotalTd.textContent = formatRupiah(subtotal);
+            total += subtotal;
+        }
+    });
+    document.getElementById('inv_total').value = total;
+}
+
+function addInvoiceItemRow(item = {}) {
+    const tbody = document.getElementById('inv-items-tbody');
+    const tr = document.createElement('tr');
+    
+    const desc = item.nama || item.part_name || '';
+    const qty = item.qty || 1;
+    const price = item.harga_satuan || item.price || 0;
+    
+    tr.innerHTML = `
+        <td><input type="text" class="inv-item-desc" value="${desc}" placeholder="Nama barang / Jasa" required style="width: 100%; padding: 0.4rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 4px;"></td>
+        <td><input type="number" class="inv-item-qty" value="${qty}" min="1" required style="width: 100%; padding: 0.4rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 4px;"></td>
+        <td><input type="number" class="inv-item-price" value="${price}" min="0" required style="width: 100%; padding: 0.4rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 4px;"></td>
+        <td style="text-align: right;" class="inv-item-subtotal">Rp 0</td>
+        <td style="text-align: center;"><button type="button" class="btn btn-remove-inv-item" style="padding: 0.4rem; background: transparent; color: var(--danger); border: none;"><i class="fa-solid fa-trash"></i></button></td>
+    `;
+    
+    tr.querySelector('.inv-item-qty').addEventListener('input', calculateInvoiceTotal);
+    tr.querySelector('.inv-item-price').addEventListener('input', calculateInvoiceTotal);
+    tr.querySelector('.btn-remove-inv-item').addEventListener('click', () => {
+        tr.remove();
+        calculateInvoiceTotal();
+    });
+    
+    tbody.appendChild(tr);
+    calculateInvoiceTotal();
+}
+
+document.getElementById('btn-add-inv-item')?.addEventListener('click', () => {
+    addInvoiceItemRow();
+});
+
 document.getElementById('btn-add-invoice')?.addEventListener('click', () => {
     document.getElementById('invoice-form').reset();
     document.getElementById('inv_no').value = '';
     document.getElementById('inv_items_hidden').value = '';
     document.getElementById('inv_tanggal').valueAsDate = new Date();
     document.getElementById('inv_jatuh_tempo').valueAsDate = new Date(Date.now() + 30*24*60*60*1000); // +30 days
+    document.getElementById('inv-items-tbody').innerHTML = '';
+    addInvoiceItemRow(); // start with 1 empty row
+    calculateInvoiceTotal();
     document.getElementById('invoice-modal').classList.add('active');
 });
 
@@ -5301,10 +5406,39 @@ document.getElementById('btn-close-inv-modal')?.addEventListener('click', () => 
 
 document.getElementById('invoice-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    document.getElementById('invoice-modal').classList.remove('active');
     
     let items = [];
-    try { items = JSON.parse(document.getElementById('inv_items_hidden').value); } catch(e){}
+    const rows = document.querySelectorAll('#inv-items-tbody tr');
+    let hasDynamicItems = false;
+    
+    rows.forEach(tr => {
+        const descInput = tr.querySelector('.inv-item-desc');
+        const qtyInput = tr.querySelector('.inv-item-qty');
+        const priceInput = tr.querySelector('.inv-item-price');
+        if (descInput && qtyInput && priceInput) {
+            hasDynamicItems = true;
+            const qty = parseFloat(qtyInput.value || 0);
+            if (qty > 0 && descInput.value.trim() !== '') {
+                items.push({
+                    nama: descInput.value.trim(),
+                    qty: qty,
+                    harga_satuan: parseFloat(priceInput.value || 0),
+                    subtotal: qty * parseFloat(priceInput.value || 0)
+                });
+            }
+        }
+    });
+
+    if (!hasDynamicItems) {
+        try { items = JSON.parse(document.getElementById('inv_items_hidden').value); } catch(e){}
+    }
+
+    if (items.length === 0) {
+        alert("Peringatan: Tidak ada rincian tagihan yang valid.");
+        return;
+    }
+
+    document.getElementById('invoice-modal').classList.remove('active');
     
     const payload = {
         no_invoice: document.getElementById('inv_no').value,
