@@ -703,12 +703,13 @@ tbody tr:hover {
 }
 
 .login-overlay.active {
-  opacity: 1;
-  pointer-events: auto;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
 }
 
 .login-box {
-  background: rgba(15, 23, 42, 0.9);
+  background: rgba(15, 23, 42, 1);
   border: 1px solid var(--glass-border);
   padding: 3rem 2.5rem;
   border-radius: 24px;

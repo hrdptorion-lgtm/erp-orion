@@ -4777,7 +4777,10 @@ async function openDetailPenawaran(item) {
                     document.getElementById('surat-jalan-form').reset();
                     document.getElementById('sj_no').value = '';
                     document.getElementById('sj_items_hidden').value = JSON.stringify(items || []);
-                    document.getElementById('sj_tanggal').valueAsDate = new Date();
+                    const today = new Date();
+                    const offset = today.getTimezoneOffset() * 60000;
+                    const localDate = new Date(today.getTime() - offset).toISOString().split('T')[0];
+                    document.getElementById('sj_tanggal').value = localDate;
                     document.getElementById('sj_no_penawaran').value = item.no_penawaran || '';
                     document.getElementById('sj_customer').value = item.customer || '';
                     
@@ -4822,8 +4825,10 @@ async function openDetailPenawaran(item) {
                 setTimeout(() => {
                     document.getElementById('invoice-form').reset();
                     document.getElementById('inv_no').value = '';
-                    document.getElementById('inv_tanggal').valueAsDate = new Date();
-                    document.getElementById('inv_jatuh_tempo').valueAsDate = new Date(Date.now() + 30*24*60*60*1000);
+                    const today = new Date();
+                    const offset = today.getTimezoneOffset() * 60000;
+                    document.getElementById('inv_tanggal').value = new Date(today.getTime() - offset).toISOString().split('T')[0];
+                    document.getElementById('inv_jatuh_tempo').value = new Date(today.getTime() - offset + 30*24*60*60*1000).toISOString().split('T')[0];
                     document.getElementById('inv_no_penawaran').value = item.no_penawaran || '';
                     document.getElementById('inv_customer').value = item.customer || '';
                     document.getElementById('inv_total').value = 0;
@@ -4875,8 +4880,6 @@ document.getElementById('btn-update-detail-status')?.addEventListener('click', a
     } else {
         showToast(res.message || 'Gagal mengupdate status', 'danger');
     }
-});
-
 });
 
 // Global event listener for table row clicks to trigger detail/edit actions
@@ -5142,7 +5145,10 @@ document.getElementById('btn-add-surat-jalan')?.addEventListener('click', () => 
     document.getElementById('surat-jalan-form').reset();
     document.getElementById('sj_no').value = '';
     document.getElementById('sj_items_hidden').value = '';
-    document.getElementById('sj_tanggal').valueAsDate = new Date();
+    const today = new Date();
+    const offset = today.getTimezoneOffset() * 60000;
+    const localDate = new Date(today.getTime() - offset).toISOString().split('T')[0];
+    document.getElementById('sj_tanggal').value = localDate;
     
     const tbody = document.getElementById('sj-items-tbody');
     if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Gunakan tombol dari Detail PO untuk fitur korelasi otomatis</td></tr>';
@@ -5420,8 +5426,10 @@ document.getElementById('btn-add-invoice')?.addEventListener('click', () => {
     document.getElementById('invoice-form').reset();
     document.getElementById('inv_no').value = '';
     document.getElementById('inv_items_hidden').value = '';
-    document.getElementById('inv_tanggal').valueAsDate = new Date();
-    document.getElementById('inv_jatuh_tempo').valueAsDate = new Date(Date.now() + 30*24*60*60*1000); // +30 days
+    const today = new Date();
+    const offset = today.getTimezoneOffset() * 60000;
+    document.getElementById('inv_tanggal').value = new Date(today.getTime() - offset).toISOString().split('T')[0];
+    document.getElementById('inv_jatuh_tempo').value = new Date(today.getTime() - offset + 30*24*60*60*1000).toISOString().split('T')[0]; // +30 days
     document.getElementById('inv-items-tbody').innerHTML = '';
     addInvoiceItemRow(); // start with 1 empty row
     calculateInvoiceTotal();
@@ -5489,4 +5497,6 @@ document.getElementById('invoice-form')?.addEventListener('submit', async (e) =>
     } else {
         showToast?.('Gagal: ' + res.message, 'danger');
     }
+});
+
 });
