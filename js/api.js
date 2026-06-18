@@ -52,9 +52,12 @@ class ERPAPI {
                     localStorage.setItem(`erp_cache_${action}`, JSON.stringify(jsonResponse));
                 }
 
-                if (jsonResponse.status === 'error' && jsonResponse.message && jsonResponse.message.includes('Action tidak dikenali')) {
-                    console.warn(`[API] Action ${action} belum di-deploy di server. Menggunakan mock data.`);
-                    return ERPAPI.getMockData(action);
+                if (jsonResponse.status === 'error' && jsonResponse.message) {
+                    console.warn(`[API] Server mengembalikan error:`, jsonResponse.message);
+                    if (jsonResponse.message.includes('Action tidak dikenali') && action.startsWith('get_')) {
+                        console.warn(`[API] Action ${action} belum di-deploy di server. Menggunakan mock data.`);
+                        return ERPAPI.getMockData(action);
+                    }
                 }
 
                 return jsonResponse;

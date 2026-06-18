@@ -27,5 +27,5 @@ function setupDatabase() {
     sheet.getRange(1, 1, 1, info.cols.length).setFontWeight("bold").setBackground("#d9edf7");
   });
   
-  SpreadsheetApp.getUi().alert("Setup Database Selesai!");
+  Logger.log("Setup Database Selesai!");
 }
