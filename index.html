@@ -497,7 +497,7 @@
                         </thead>
                         <tbody id="table-bahan-baku">
                             <tr>
-                                <td colspan="5" style="text-align: center;">Memuat data...</td>
+                                <td colspan="6" style="text-align: center;">Memuat data...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -597,7 +597,7 @@
                         </thead>
                         <tbody id="table-bom">
                             <tr>
-                                <td colspan="5" style="text-align: center;">Memuat data...</td>
+                                <td colspan="6" style="text-align: center;">Memuat data...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1310,6 +1310,7 @@
                             <tr>
                                 <th>ID Customer</th>
                                 <th>Nama Customer</th>
+                                <th>Kontak / Telepon</th>
                                 <th>Alamat / Keterangan</th>
                                 <th>Tanggal Daftar</th>
                                 <th>Aksi</th>
@@ -1317,7 +1318,7 @@
                         </thead>
                         <tbody id="table-customer">
                             <tr>
-                                <td colspan="5" style="text-align: center;">Memuat data...</td>
+                                <td colspan="6" style="text-align: center;">Memuat data...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1877,11 +1878,7 @@
                         <td id="print_no"
                             style="font-weight: bold; border: none; padding: 2px; background-color: #b3cde3;">-</td>
                     </tr>
-                    <tr>
-                        <td style="border: none; padding: 2px;">Your Enq No</td>
-                        <td style="border: none; padding: 2px;">:</td>
-                        <td id="print_enq_no" style="border: none; padding: 2px;">-</td>
-                    </tr>
+
                     <tr>
                         <td style="border: none; padding: 2px;">Date</td>
                         <td style="border: none; padding: 2px;">:</td>
@@ -1892,32 +1889,19 @@
                         <td style="border: none; padding: 2px;">:</td>
                         <td id="print_rev_date" style="border: none; padding: 2px;">-</td>
                     </tr>
-                    <tr>
-                        <td style="border: none; padding: 2px;">Maker of Brand</td>
-                        <td style="border: none; padding: 2px;">:</td>
-                        <td id="print_maker" style="border: none; padding: 2px;">-</td>
-                    </tr>
+
                     <tr>
                         <td style="border: none; padding: 2px;">Time of Delivery</td>
                         <td style="border: none; padding: 2px;">:</td>
                         <td id="print_delivery" style="border: none; padding: 2px;">-</td>
                     </tr>
-                    <tr>
-                        <td style="border: none; padding: 2px;">Incoterm</td>
-                        <td style="border: none; padding: 2px;">:</td>
-                        <td id="print_incoterm" style="border: none; padding: 2px;">-</td>
-                    </tr>
+
                     <tr>
                         <td style="border: none; padding: 2px;">Term of Payment</td>
                         <td style="border: none; padding: 2px;">:</td>
                         <td id="print_payment" style="border: none; padding: 2px;">-</td>
                     </tr>
-                    <tr>
-                        <td style="border: none; padding: 2px;">Time of Validity</td>
-                        <td style="border: none; padding: 2px;">:</td>
-                        <td id="print_validity" style="color: blue; font-weight: bold; border: none; padding: 2px;">-
-                        </td>
-                    </tr>
+
                     <tr>
                         <td colspan="3" style="border: none; padding: 2px; font-size: 9px; font-style: italic;">This
                             Quotation is subject to change with or without notice</td>
@@ -2367,6 +2351,10 @@
                 <div class="input-group">
                     <label>Nama Customer</label>
                     <input type="text" id="c_nama" required placeholder="PT Contoh Abadi">
+                </div>
+                <div class="input-group" style="margin-top: 15px;">
+                    <label>Kontak / Telepon</label>
+                    <input type="text" id="c_kontak" placeholder="0812...">
                 </div>
                 <div class="input-group" style="margin-top: 15px;">
                     <label>Alamat / Keterangan</label>

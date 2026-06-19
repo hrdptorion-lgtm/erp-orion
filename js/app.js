@@ -2271,14 +2271,10 @@ async function loadPenawaranData(isBackgroundSync = false) {
                 document.getElementById('print_to_address').textContent = custAddress;
 
                 document.getElementById('print_to_attn').textContent = info.attn || '-';
-                document.getElementById('print_enq_no').textContent = info.enq_no || '-';
-                document.getElementById('print_rev_date').textContent = info.rev_date || '-';
-                document.getElementById('print_maker').textContent = info.maker || '-';
-                document.getElementById('print_delivery').textContent = info.delivery || '-';
-                document.getElementById('print_incoterm').textContent = info.incoterm || '-';
-                document.getElementById('print_payment').textContent = info.payment || '-';
-                document.getElementById('print_validity').textContent = info.validity || '-';
-
+                                document.getElementById('print_rev_date').textContent = info.rev_date || '-';
+                                document.getElementById('print_delivery').textContent = info.delivery || '-';
+                                document.getElementById('print_payment').textContent = info.payment || '-';
+                
                 // Items mapping
                 let items = [];
                 try {

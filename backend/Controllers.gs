@@ -807,7 +807,8 @@ function saveCustomer(payload) {
     for (let i = 1; i < values.length; i++) {
       if (String(values[i][0]).trim() === String(payload.id).trim()) {
         sheet.getRange(i + 1, 2).setValue(payload.nama || '');
-        sheet.getRange(i + 1, 3).setValue(payload.alamat || '');
+        sheet.getRange(i + 1, 3).setValue(payload.kontak || '');
+        sheet.getRange(i + 1, 4).setValue(payload.alamat || '');
         return { status: 'success', message: 'Customer berhasil diupdate.' };
       }
     }
@@ -815,7 +816,7 @@ function saveCustomer(payload) {
 
   // Tambah baru
   const newCustId = 'CUST-' + Date.now();
-  sheet.appendRow([newCustId, payload.nama || '', payload.alamat || '', new Date().toLocaleDateString('id-ID')]);
+  sheet.appendRow([newCustId, payload.nama || '', payload.kontak || '', payload.alamat || '', new Date().toLocaleDateString('id-ID')]);
   return { status: 'success', message: 'Customer baru berhasil ditambahkan.' };
 }
 
