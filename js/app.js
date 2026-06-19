@@ -487,29 +487,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadDashboardData() {
         try {
-            const poRes = await window.ERPAPI.request('get_po_internal');
-            if (poRes.status === 'success' && poRes.data) {
-                const poOut = poRes.data.filter(p => String(p.status).toUpperCase() !== 'SELESAI').length;
+            // Jalankan request secara paralel untuk mempercepat loading
+            const [poReq, rmReq, pnwReq, bomReq] = await Promise.allSettled([
+                window.ERPAPI.request('get_po_internal'),
+                window.ERPAPI.request('get_stock'),
+                window.ERPAPI.request('get_penawaran'),
+                window.ERPAPI.request('get_bom')
+            ]);
+
+            if (poReq.status === 'fulfilled' && poReq.value.status === 'success' && poReq.value.data) {
+                const poOut = poReq.value.data.filter(p => String(p.status).toUpperCase() !== 'SELESAI').length;
                 const poEl = document.getElementById('dashboard-po');
                 if (poEl) poEl.textContent = poOut;
             }
-            const rmRes = await window.ERPAPI.request('get_stock');
-            if (rmRes.status === 'success' && rmRes.data) {
-                const rmKritis = rmRes.data.filter(s => parseFloat(s.stok) <= 10).length; // Stok <= 10 dianggap kritis
+
+            if (rmReq.status === 'fulfilled' && rmReq.value.status === 'success' && rmReq.value.data) {
+                const rmKritis = rmReq.value.data.filter(s => parseFloat(s.stok) <= 10).length; // Stok <= 10 dianggap kritis
                 const rmEl = document.getElementById('dashboard-rm');
                 if (rmEl) rmEl.textContent = rmKritis;
             }
 
-            const pnwRes = await window.ERPAPI.request('get_penawaran');
-            if (pnwRes.status === 'success' && pnwRes.data) {
-                const invUnpaid = pnwRes.data.filter(p => String(p.status).toUpperCase() === 'PENAWARAN').length;
+            if (pnwReq.status === 'fulfilled' && pnwReq.value.status === 'success' && pnwReq.value.data) {
+                const invUnpaid = pnwReq.value.data.filter(p => String(p.status).toUpperCase() === 'PENAWARAN').length;
                 const invEl = document.getElementById('dashboard-invoice');
                 if (invEl) invEl.textContent = invUnpaid;
             }
 
-            const bomRes = await window.ERPAPI.request('get_bom');
-            if (bomRes.status === 'success' && bomRes.data) {
-                const bmoCount = bomRes.data.length;
+            if (bomReq.status === 'fulfilled' && bomReq.value.status === 'success' && bomReq.value.data) {
+                const bmoCount = bomReq.value.data.length;
                 const bmoEl = document.getElementById('dashboard-bmo');
                 if (bmoEl) bmoEl.textContent = bmoCount;
             }
@@ -648,6 +653,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 { id: 'btn-export-stock', label: 'Export Data', icon: 'fa-file-export', color: 'var(--warning)' }
             ],
             'sales': [{ id: 'btn-add-penawaran', label: 'Buat Penawaran', icon: 'fa-plus', color: 'var(--secondary)' }],
+            'po-customer': [{ id: 'btn-add-po-customer', label: 'Buat PO dari Penawaran', icon: 'fa-plus', color: 'var(--secondary)' }],
             'po-internal': [{ id: 'btn-add-po-internal', label: 'Buat Pengajuan', icon: 'fa-plus', color: 'var(--primary)' }],
             'bom': [{ id: 'btn-add-bom', label: 'Buat BOM Baru', icon: 'fa-plus', color: 'var(--accent)' }],
             'produksi': [{ id: 'btn-run-spk', label: 'Selesaikan SPK', icon: 'fa-play', color: 'var(--secondary)' }],
@@ -2432,7 +2438,7 @@ document.addEventListener('DOMContentLoaded', () => {
         div.style.alignItems = 'center';
 
         const list = document.getElementById('bom-items-list');
-        let optionsHtml = '<option value="">Pilih Produk / Item</option>';
+        let optionsHtml = '<option value="">Ketik Nama Produk / Item...</option>';
         let found = false;
         if (list) {
             Array.from(list.options).forEach(opt => {
@@ -3217,7 +3223,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td><i class="fa-solid fa-spinner fa-spin"></i></td>
                 <td>${namaBOM}</td>
                 <td><span class="badge badge-warning">Menyimpan...</span></td>
-                <td>Rp ${parseInt(totalBiaya).toLocaleString('id-ID')}</td>
+                <td>Rp ${parseInt(payload.total_biaya).toLocaleString('id-ID')}</td>
                 <td></td>
             `;
                 tbody.insertBefore(tr, tbody.firstChild);
@@ -3233,7 +3239,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const cells = targetRow.querySelectorAll('td');
                     if (cells.length > 3) {
                         cells[1].textContent = namaBOM;
-                        cells[3].textContent = 'Rp ' + parseInt(totalBiaya).toLocaleString('id-ID');
+                        cells[3].textContent = 'Rp ' + parseInt(payload.total_biaya).toLocaleString('id-ID');
                     }
                 }
             }
@@ -6192,7 +6198,11 @@ const MENUS = [
     { id: 'produksi', name: 'SPK Produksi' },
     { id: 'finance', name: 'Finance / Petty Cash' },
     { id: 'laporan-kas', name: 'Laporan Kas' },
-    { id: 'invoice', name: 'Invoice' }
+    { id: 'invoice', name: 'Invoice' },
+    { id: 'coa', name: 'Chart of Accounts (COA)' },
+    { id: 'customer', name: 'Master Customer' },
+    { id: 'supplier', name: 'Master Supplier' },
+    { id: 'admin', name: 'Manajemen User' }
 ];
 
 async function loadRBACData() {
@@ -6810,3 +6820,25 @@ function renderLaporanKasTable(data) {
     document.getElementById('summary-kas-masuk').textContent = `Rp ${totalMasuk.toLocaleString('id-ID')}`;
     document.getElementById('summary-kas-keluar').textContent = `Rp ${totalKeluar.toLocaleString('id-ID')}`;
 }
+
+// Global Table Search Logic
+document.addEventListener('input', function(e) {
+    if (e.target && e.target.classList.contains('table-search')) {
+        const targetId = e.target.getAttribute('data-target');
+        const tbody = document.getElementById(targetId);
+        if (!tbody) return;
+
+        const query = e.target.value.toLowerCase();
+        const rows = tbody.querySelectorAll('tr');
+
+        rows.forEach(row => {
+            // Skip placeholders like "Memuat data..." or "Tidak ada data"
+            if (row.children.length === 1 && row.children[0].colSpan > 1) {
+                return;
+            }
+
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+        });
+    }
+});

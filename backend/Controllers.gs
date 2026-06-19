@@ -972,6 +972,7 @@ function savePenawaran(payload) {
       sheet.getRange(i + 1, 7).setValue(payload.status || 'Penawaran');
       sheet.getRange(i + 1, 8).setValue(payload.narasi || '');
       sheet.getRange(i + 1, 9).setValue(infoStr);
+      handleAutoBOM(payload, noDoc);
       return { status: 'success', message: 'Penawaran berhasil diupdate.', no_doc: noDoc };
     }
   }
@@ -987,7 +988,68 @@ function savePenawaran(payload) {
     payload.narasi || '',
     infoStr
   ]);
+  handleAutoBOM(payload, noDoc);
   return { status: 'success', message: 'Penawaran berhasil disimpan.', no_doc: noDoc };
+}
+
+function handleAutoBOM(payload, noDoc) {
+  let rincianArr = [];
+  if (Array.isArray(payload.rincian_item)) rincianArr = payload.rincian_item;
+  else if (typeof payload.rincian_item === 'string') {
+    try { rincianArr = JSON.parse(payload.rincian_item); } catch(e){}
+  }
+
+  const bomSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB BOM');
+  if (bomSheet && rincianArr.length > 0) {
+    const bomData = bomSheet.getDataRange().getValues();
+    if (bomData.length < 1) return;
+    const bomHeaders = bomData[0];
+    const bNamaIdx = bomHeaders.findIndex(h => String(h).trim().toLowerCase() === 'nama barang');
+    const bKodeIdx = bomHeaders.findIndex(h => String(h).trim().toLowerCase() === 'kode barang jadi');
+    const bProsesIdx = bomHeaders.findIndex(h => String(h).trim().toLowerCase() === 'rincian proses');
+
+    if (payload.status === 'Reject' || payload.status === 'Rejected' || payload.status === 'Ditolak') {
+      if (bProsesIdx !== -1 && bKodeIdx !== -1) {
+        for (let i = bomData.length - 1; i >= 1; i--) {
+          const prosesVal = String(bomData[i][bProsesIdx]);
+          if (prosesVal.includes(`[AUTO-BOM:${noDoc}]`)) {
+             try { deleteBarangJadi({ kode: bomData[i][bKodeIdx] }); } catch(e){}
+             bomSheet.deleteRow(i + 1);
+          }
+        }
+      }
+    } else {
+      if (bNamaIdx !== -1) {
+        rincianArr.forEach(item => {
+          const itemName = item.part_name || '';
+          if (itemName) {
+            const exists = bomData.some((row, i) => i > 0 && String(row[bNamaIdx]).trim().toLowerCase() === itemName.trim().toLowerCase());
+            if (!exists) {
+              const newKode = 'FG-' + Math.floor(Math.random() * 1000000);
+              const newRow = bomHeaders.map(h => {
+                const hl = String(h).trim().toLowerCase();
+                if (hl === 'kode barang jadi') return newKode;
+                if (hl === 'nama barang') return itemName.trim();
+                if (hl === 'rincian proses') return `[AUTO-BOM:${noDoc}]`;
+                if (hl === 'rincian material' || hl === 'gambar') return '';
+                if (hl === 'total biaya material') return 0;
+                return '';
+              });
+              bomSheet.appendRow(newRow);
+              bomData.push(newRow);
+              
+              try {
+                const bjSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Master Barang Jadi');
+                if (bjSheet) {
+                   bjSheet.appendRow([newKode, itemName.trim(), '-', 0, '-', 0, '-']);
+                }
+              } catch(e) {}
+            }
+          }
+        });
+      }
+    }
+  }
 }
 
 function deletePenawaran(payload) {

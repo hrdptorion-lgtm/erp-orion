@@ -185,7 +185,7 @@
                 <ul class="submenu" id="submenu-finance">
                     <li class="nav-item" data-target="finance">
                         <i class="fa-solid fa-cash-register"></i>
-                        <span>Kasir & Petty Cash</span>
+                        <span> </span>
                     </li>
                     <li class="nav-item" data-target="invoice">
                         <i class="fa-solid fa-receipt"></i>
@@ -398,9 +398,13 @@
         <!-- View: Sales (Penawaran) -->
         <div id="view-sales" class="view">
             <div class="data-section">
-                <div class="section-header">
+                <div class="section-header"
+                    style="justify-content: space-between; display: flex; flex-wrap: wrap; gap: 10px;">
                     <button class="btn" id="btn-add-penawaran" style="background: var(--secondary);"><i
                             class="fa-solid fa-plus"></i> Buat Penawaran</button>
+                    <input type="text" class="table-search" data-target="table-penawaran"
+                        placeholder="Cari penawaran..."
+                        style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main); min-width: 200px;">
                 </div>
                 <div class="table-container">
                     <table>
@@ -429,9 +433,13 @@
         <!-- View: PO Customer -->
         <div id="view-po-customer" class="view">
             <div class="data-section">
-                <div class="section-header">
+                <div class="section-header"
+                    style="justify-content: space-between; display: flex; flex-wrap: wrap; gap: 10px;">
                     <button class="btn" id="btn-add-po-customer" style="background: var(--secondary);"><i
                             class="fa-solid fa-plus"></i> Buat PO dari Penawaran</button>
+                    <input type="text" class="table-search" data-target="table-po-customer"
+                        placeholder="Cari PO Customer..."
+                        style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main); min-width: 200px;">
                 </div>
                 <div class="table-container">
                     <table>
@@ -515,9 +523,13 @@
         <div id="view-po-internal" class="view">
 
             <div class="data-section">
-                <div class="section-header">
+                <div class="section-header"
+                    style="justify-content: space-between; display: flex; flex-wrap: wrap; gap: 10px;">
                     <button class="btn" id="btn-add-po-internal" style="background: var(--accent);"><i
                             class="fa-solid fa-plus"></i> Buat Pengajuan Belanja</button>
+                    <input type="text" class="table-search" data-target="table-po-internal"
+                        placeholder="Cari PO Internal..."
+                        style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main); min-width: 200px;">
                 </div>
                 <div class="table-container">
                     <table>
@@ -545,8 +557,11 @@
         <!-- View: Penerimaan Barang (GRN) -->
         <div id="view-grn" class="view">
             <div class="data-section">
-                <div class="section-header">
+                <div class="section-header"
+                    style="justify-content: space-between; display: flex; flex-wrap: wrap; gap: 10px;">
                     <h3>Daftar PO Siap Terima</h3>
+                    <input type="text" class="table-search" data-target="table-grn" placeholder="Cari PO..."
+                        style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main); min-width: 200px;">
                 </div>
                 <div class="table-container">
                     <table>
@@ -572,8 +587,12 @@
         <!-- View: Inventori Barang Jadi -->
         <div id="view-barang-jadi" class="view">
             <div class="data-section">
-                <div class="section-header">
+                <div class="section-header"
+                    style="justify-content: space-between; display: flex; flex-wrap: wrap; gap: 10px;">
                     <h3>Daftar Barang Jadi</h3>
+                    <input type="text" class="table-search" data-target="table-barang-jadi"
+                        placeholder="Cari Barang Jadi..."
+                        style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main); min-width: 200px;">
                 </div>
                 <div class="table-container">
                     <table>
@@ -600,10 +619,15 @@
         <!-- View: BOM & Sampel -->
         <div id="view-bom" class="view">
             <div class="data-section">
-                <div class="section-header">
-                    <h3>DB Komposisi & PMO Sampel</h3>
-                    <button class="btn" id="btn-add-bom" style="background: var(--accent);"><i
-                            class="fa-solid fa-plus"></i> Buat BOM Baru</button>
+                <div class="section-header"
+                    style="justify-content: space-between; display: flex; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <h3>DB Komposisi & PMO Sampel</h3>
+                        <button class="btn" id="btn-add-bom" style="background: var(--accent);"><i
+                                class="fa-solid fa-plus"></i> Buat BOM Baru</button>
+                    </div>
+                    <input type="text" class="table-search" data-target="table-bom" placeholder="Cari BOM..."
+                        style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main); min-width: 200px;">
                 </div>
                 <div class="table-container">
                     <table>
@@ -629,10 +653,15 @@
         <!-- View: Produksi -->
         <div id="view-produksi" class="view">
             <div class="data-section">
-                <div class="section-header">
-                    <h3>Jadwal & SPK Produksi</h3>
-                    <button class="btn" id="btn-run-spk" style="background: var(--secondary);"><i
-                            class="fa-solid fa-plus"></i> Buat SPK Produksi</button>
+                <div class="section-header"
+                    style="justify-content: space-between; display: flex; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <h3>Jadwal & SPK Produksi</h3>
+                        <button class="btn" id="btn-run-spk" style="background: var(--secondary);"><i
+                                class="fa-solid fa-plus"></i> Buat SPK Produksi</button>
+                    </div>
+                    <input type="text" class="table-search" data-target="table-produksi" placeholder="Cari SPK..."
+                        style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main); min-width: 200px;">
                 </div>
                 <div class="table-container">
                     <table>
@@ -690,25 +719,32 @@
         <!-- View: Laporan Kas -->
         <div id="view-laporan-kas" class="view">
             <div class="data-section">
-                <div class="section-header" style="display: flex; flex-direction: column; gap: 1rem; align-items: stretch;">
+                <div class="section-header"
+                    style="display: flex; flex-direction: column; gap: 1rem; align-items: stretch;">
                     <h3>Laporan Arus Kas (Berdasarkan COA)</h3>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <div class="input-group" style="flex: 1; min-width: 150px; margin-bottom: 0;">
                             <label>Dari Tanggal</label>
-                            <input type="date" id="filter-kas-start" style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border);">
+                            <input type="date" id="filter-kas-start"
+                                style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border);">
                         </div>
                         <div class="input-group" style="flex: 1; min-width: 150px; margin-bottom: 0;">
                             <label>Sampai Tanggal</label>
-                            <input type="date" id="filter-kas-end" style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border);">
+                            <input type="date" id="filter-kas-end"
+                                style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border);">
                         </div>
-                        <div class="input-group" style="flex: 2; min-width: 250px; margin-bottom: 0; position: relative;">
+                        <div class="input-group"
+                            style="flex: 2; min-width: 250px; margin-bottom: 0; position: relative;">
                             <label>Filter Kategori COA</label>
                             <input type="hidden" id="filter-kas-coa">
-                            <div id="filter-kas-coa-display" class="custom-tree-select" style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                                <span id="filter-kas-coa-display-text" style="color: #999;">-- Semua Kategori COA --</span>
+                            <div id="filter-kas-coa-display" class="custom-tree-select"
+                                style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                                <span id="filter-kas-coa-display-text" style="color: #999;">-- Semua Kategori COA
+                                    --</span>
                                 <i class="fa-solid fa-chevron-down"></i>
                             </div>
-                            <div id="filter-kas-coa-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-main); border: 1px solid var(--glass-border); border-radius: 10px; z-index: 100; max-height: 250px; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.5); margin-top: 5px;">
+                            <div id="filter-kas-coa-dropdown"
+                                style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-main); border: 1px solid var(--glass-border); border-radius: 10px; z-index: 100; max-height: 250px; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.5); margin-top: 5px;">
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
                                     <tbody id="filter-kas-coa-tree-body">
                                     </tbody>
@@ -716,20 +752,23 @@
                             </div>
                         </div>
                         <div style="display: flex; align-items: flex-end;">
-                            <button class="btn" id="btn-filter-kas" style="padding: 0.8rem 1.5rem; height: 46px;"><i class="fa-solid fa-search"></i> Cari</button>
+                            <button class="btn" id="btn-filter-kas" style="padding: 0.8rem 1.5rem; height: 46px;"><i
+                                    class="fa-solid fa-search"></i> Cari</button>
                         </div>
                     </div>
                 </div>
 
                 <div class="stats-grid" style="margin-bottom: 1.5rem;">
-                    <div class="stat-card" style="background: rgba(0, 255, 136, 0.1); border-color: rgba(0, 255, 136, 0.2);">
+                    <div class="stat-card"
+                        style="background: rgba(0, 255, 136, 0.1); border-color: rgba(0, 255, 136, 0.2);">
                         <div class="stat-header">
                             <span>Total Masuk (Filtered)</span>
                             <div class="stat-icon icon-green"><i class="fa-solid fa-arrow-down"></i></div>
                         </div>
                         <div class="stat-value" id="summary-kas-masuk">Rp 0</div>
                     </div>
-                    <div class="stat-card" style="background: rgba(255, 68, 68, 0.1); border-color: rgba(255, 68, 68, 0.2);">
+                    <div class="stat-card"
+                        style="background: rgba(255, 68, 68, 0.1); border-color: rgba(255, 68, 68, 0.2);">
                         <div class="stat-header">
                             <span>Total Keluar (Filtered)</span>
                             <div class="stat-icon icon-orange"><i class="fa-solid fa-arrow-up"></i></div>
@@ -752,7 +791,8 @@
                         </thead>
                         <tbody id="table-laporan-kas">
                             <tr>
-                                <td colspan="6" style="text-align: center;">Pilih filter dan klik Cari untuk menampilkan data</td>
+                                <td colspan="6" style="text-align: center;">Pilih filter dan klik Cari untuk menampilkan
+                                    data</td>
                             </tr>
                         </tbody>
                     </table>
@@ -763,10 +803,16 @@
         <!-- View: Surat Jalan -->
         <div id="view-surat-jalan" class="view">
             <div class="data-section">
-                <div class="section-header">
-                    <h3>Pengiriman (Surat Jalan)</h3>
-                    <button class="btn" id="btn-add-surat-jalan" style="background: var(--accent);"><i
-                            class="fa-solid fa-plus"></i> Buat Surat Jalan Manual</button>
+                <div class="section-header"
+                    style="justify-content: space-between; display: flex; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <h3>Pengiriman (Surat Jalan)</h3>
+                        <button class="btn" id="btn-add-surat-jalan" style="background: var(--accent);"><i
+                                class="fa-solid fa-plus"></i> Buat Surat Jalan Manual</button>
+                    </div>
+                    <input type="text" class="table-search" data-target="table-surat-jalan"
+                        placeholder="Cari Surat Jalan..."
+                        style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main); min-width: 200px;">
                 </div>
                 <div class="table-container">
                     <table>
@@ -793,10 +839,15 @@
         <!-- View: Invoice -->
         <div id="view-invoice" class="view">
             <div class="data-section">
-                <div class="section-header">
-                    <h3>Invoice Penagihan</h3>
-                    <button class="btn" id="btn-add-invoice" style="background: var(--accent);"><i
-                            class="fa-solid fa-plus"></i> Buat Invoice Manual</button>
+                <div class="section-header"
+                    style="justify-content: space-between; display: flex; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <h3>Invoice Penagihan</h3>
+                        <button class="btn" id="btn-add-invoice" style="background: var(--accent);"><i
+                                class="fa-solid fa-plus"></i> Buat Invoice Manual</button>
+                    </div>
+                    <input type="text" class="table-search" data-target="table-invoice" placeholder="Cari Invoice..."
+                        style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main); min-width: 200px;">
                 </div>
                 <div class="table-container">
                     <table>
@@ -824,8 +875,11 @@
         <!-- View: Admin (User Management) -->
         <div id="view-admin" class="view">
             <div class="data-section">
-                <div class="section-header">
+                <div class="section-header"
+                    style="justify-content: space-between; display: flex; flex-wrap: wrap; gap: 10px;">
                     <button class="btn" id="btn-add-user"><i class="fa-solid fa-user-plus"></i> Tambah User</button>
+                    <input type="text" class="table-search" data-target="table-admin" placeholder="Cari User..."
+                        style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main); min-width: 200px;">
                 </div>
                 <div class="table-container">
                     <table>
