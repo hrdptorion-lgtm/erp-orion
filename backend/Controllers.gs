@@ -281,22 +281,28 @@ function saveStock(payload) {
   const values = sheet.getDataRange().getDisplayValues();
   const headers = values[0];
   const kodeIdx = headers.findIndex(h => /kode/i.test(h));
+  const mapPayload = (h, payload, currentValue) => {
+    const hLow = String(h).toLowerCase().trim();
+    if (hLow.includes('kode')) return payload.kode || currentValue || ('RM' + Math.floor(Math.random()*10000));
+    if (hLow.includes('nama')) return payload.nama !== undefined ? payload.nama : currentValue;
+    if (hLow.includes('satuan') && !hLow.includes('harga')) return payload.satuan !== undefined ? payload.satuan : currentValue;
+    if (hLow.includes('stok')) return payload.stok !== undefined ? payload.stok : currentValue;
+    if (hLow.includes('lokasi')) return payload.lokasi !== undefined ? payload.lokasi : currentValue;
+    if (hLow.includes('harga')) return payload.harga !== undefined ? payload.harga : currentValue;
+    if (hLow.includes('spesifikasi')) return payload.spesifikasi !== undefined ? payload.spesifikasi : currentValue;
+    return currentValue !== undefined ? currentValue : '';
+  };
+
   // Check if updating existing
   for (let i = 1; i < values.length; i++) {
     if (String(values[i][kodeIdx]).trim() === String(payload.kode).trim()) {
-      const rowData = headers.map(h => {
-        const key = String(h).toLowerCase().replace(/ /g, '_');
-        return payload[key] !== undefined ? payload[key] : values[i][headers.indexOf(h)];
-      });
+      const rowData = headers.map(h => mapPayload(h, payload, values[i][headers.indexOf(h)]));
       sheet.getRange(i + 1, 1, 1, rowData.length).setValues([rowData]);
       return { status: 'success', message: 'Data bahan baku berhasil diperbarui.' };
     }
   }
-  const rowData = headers.map(h => {
-    const key = String(h).toLowerCase().replace(/ /g, '_');
-    if (/kode/i.test(h)) return payload.kode || ('RM' + Math.floor(Math.random()*10000));
-    return payload[key] !== undefined ? payload[key] : '';
-  });
+
+  const rowData = headers.map(h => mapPayload(h, payload, ''));
   sheet.appendRow(rowData);
   return { status: 'success', message: 'Data bahan baku berhasil disimpan.' };
 }
@@ -1487,12 +1493,20 @@ function saveBOM(payload) {
   }
 
   // Upload Gambar Utama (jika ada)
-  let gambarUrl = '';
+  let gambarUrl = payload.gambar || '';
   if (payload.gambar_base64) {
     try {
       gambarUrl = uploadToDrive(payload.gambar_base64, payload.gambar_mime || 'image/jpeg', 'BOM_' + payload.kode_barang + '_' + Date.now());
     } catch(e) {
       return { status: 'error', message: 'Error Gambar Utama: ' + e.message };
+    }
+  } else if (gambarUrl && gambarUrl.startsWith('data:image')) {
+    try {
+      const mime = gambarUrl.match(/data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+).*,.*/)[1];
+      const b64 = gambarUrl.split(',')[1];
+      gambarUrl = uploadToDrive(b64, mime, 'BOM_' + payload.kode_barang + '_' + Date.now());
+    } catch(e) {
+      return { status: 'error', message: 'Error Gambar Utama (data URI): ' + e.message };
     }
   }
 
@@ -1512,6 +1526,15 @@ function saveBOM(payload) {
           prosGambarUrl = uploadToDrive(p.gambar_base64, p.gambar_mime || 'image/jpeg', 'PROS_' + payload.kode_barang + '_' + i + '_' + Date.now());
         } catch (e) {
           return { status: 'error', message: 'Error Gambar Rincian Proses #' + (i+1) + ': ' + e.message };
+        }
+      } else if (prosGambarUrl && prosGambarUrl.startsWith('data:image')) {
+        try {
+          const mimeMatch = prosGambarUrl.match(/data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+).*,.*/);
+          const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+          const b64 = prosGambarUrl.split(',')[1];
+          prosGambarUrl = uploadToDrive(b64, mime, 'PROS_' + payload.kode_barang + '_' + i + '_' + Date.now());
+        } catch (e) {
+          return { status: 'error', message: 'Error Gambar Rincian Proses (data URI) #' + (i+1) + ': ' + e.message };
         }
       }
       

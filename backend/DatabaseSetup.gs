@@ -2,9 +2,9 @@ function setupDatabase() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   
   const sheetsInfo = [
-    { name: 'DB Master Bahan Baku', cols: ['Kode Material', 'Nama Material', 'Spesifikasi', 'Stok', 'Lokasi (Rak/Zona)', 'Harga Satuan'] },
+    { name: 'DB Master Bahan Baku', cols: ['Kode Material', 'Nama Material', 'Satuan', 'Stok', 'Lokasi (Rak/Zona)', 'Harga Satuan', 'Spesifikasi'] },
     { name: 'DB Master Barang Jadi', cols: ['Kode Barang', 'Nama Barang', 'Stok', 'Harga Jual', 'Lokasi Gudang'] },
-    { name: 'DB BOM', cols: ['Kode Barang Jadi', 'Nama Barang', 'Rincian Material', 'Total Biaya Material', 'Rincian Proses'] },
+    { name: 'DB BOM', cols: ['Kode Barang Jadi', 'Nama Barang', 'Rincian Material', 'Total Biaya Material', 'Rincian Proses', 'Gambar'] },
     { name: 'DB PO Supplier', cols: ['No PO', 'Tanggal', 'Item', 'Qty Pesanan', 'Status Penerimaan (GRN)'] },
     { name: 'DB SPK Produksi', cols: ['No SPK', 'Tanggal', 'Kode Barang Jadi', 'Qty Produksi', 'Peminta', 'Pemberi', 'Status', 'Bahan Baku (JSON)'] },
     { name: 'DB Penawaran', cols: ['No Penawaran', 'Tanggal', 'Customer', 'Rincian Item', 'Total Harga', 'Down Payment', 'Status', 'Narasi', 'Info Tambahan'] },
@@ -14,7 +14,8 @@ function setupDatabase() {
     { name: 'DB Transaksi Gudang', cols: ['ID Transaksi', 'Tanggal', 'Jenis (IN/OUT)', 'Referensi', 'Kode Material', 'Qty', 'PIC', 'Keterangan'] },
     { name: 'DB Pengaturan', cols: ['Key', 'Value'] },
     { name: 'DB Users', cols: ['Username', 'Password', 'Role', 'Nama Lengkap'] },
-    { name: 'DB Customer', cols: ['ID Customer', 'Nama Customer', 'Alamat / Keterangan', 'Tanggal Terdaftar'] }
+    { name: 'DB Customer', cols: ['ID Customer', 'Nama Customer', 'Alamat / Keterangan', 'Tanggal Terdaftar'] },
+    { name: 'DB COA', cols: ['No. Perkiraan', 'Keterangan'] }
   ];
   
   sheetsInfo.forEach(info => {
