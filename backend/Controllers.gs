@@ -2029,3 +2029,72 @@ function editBarangJadi(payload) {
   }
   return { status: 'error', message: 'Barang Jadi tidak ditemukan.' };
 }
+
+
+// ==========================================
+// COA
+// ==========================================
+
+function getCOA() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB COA');
+  if (!sheet) return { status: 'success', data: [] };
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length <= 1) return { status: 'success', data: [] };
+  const data = values.slice(1).map(row => {
+    return {
+      kode: String(row[0]).trim(),
+      keterangan: String(row[1]).trim()
+    };
+  }).filter(item => item.kode !== '');
+  
+  // Sort by kode so it's naturally ordered
+  data.sort((a, b) => {
+    return a.kode.localeCompare(b.kode, undefined, {numeric: true, sensitivity: 'base'});
+  });
+
+  return { status: 'success', data: data };
+}
+
+function saveCOA(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB COA');
+  if (!sheet) return { status: 'error', message: 'Sheet DB COA tidak ditemukan.' };
+  
+  const values = sheet.getDataRange().getDisplayValues();
+  const oldCode = payload.old_kode || '';
+  const newCode = payload.kode || '';
+  const newName = payload.keterangan || '';
+  
+  if (oldCode) {
+    for (let i = 1; i < values.length; i++) {
+      if (String(values[i][0]).trim() === String(oldCode).trim()) {
+        sheet.getRange(i + 1, 1).setValue(newCode);
+        sheet.getRange(i + 1, 2).setValue(newName);
+        return { status: 'success', message: 'COA berhasil diupdate.' };
+      }
+    }
+  }
+  
+  // Check if exist
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][0]).trim() === String(newCode).trim()) {
+      return { status: 'error', message: 'Kode Perkiraan sudah ada!' };
+    }
+  }
+  
+  sheet.appendRow([newCode, newName]);
+  return { status: 'success', message: 'COA berhasil ditambahkan.' };
+}
+
+function deleteCOA(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB COA');
+  if (!sheet) return { status: 'error', message: 'Sheet DB COA tidak ditemukan.' };
+  
+  const values = sheet.getDataRange().getDisplayValues();
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][0]).trim() === String(payload.kode).trim()) {
+      sheet.deleteRow(i + 1);
+      return { status: 'success', message: 'COA berhasil dihapus.' };
+    }
+  }
+  return { status: 'error', message: 'COA tidak ditemukan.' };
+}

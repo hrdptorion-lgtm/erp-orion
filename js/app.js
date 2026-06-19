@@ -368,7 +368,9 @@ document.addEventListener('DOMContentLoaded', () => {
         'coa': { title: 'Kategori COA & Akuntansi', sub: 'Master data pos biaya akuntansi.' },
         'approval': { title: 'Alur Approval', sub: 'Pengaturan hierarki dan rute persetujuan.' },
         'barang-jadi': { title: 'Inventori Barang Jadi', sub: 'Stok produk jadi siap kirim / jual.' },
-        'customer': { title: 'Master Customer', sub: 'Database referensi klien / customer perusahaan.' }
+        'customer': { title: 'Master Customer', sub: 'Database referensi klien / customer perusahaan.' },
+        'menu-produk': { title: 'Produk & Logistik', sub: 'Silakan pilih menu manajemen produk dan logistik.' },
+        'menu-more': { title: 'Menu Lainnya', sub: 'Pilih fitur atau pengaturan sistem lainnya.' }
     };
 
     // --- Core View Switcher (must be defined before event listeners & checkSession) ---
@@ -378,7 +380,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Persist
         if (save) {
             localStorage.setItem('erp_active_view', targetViewId);
-            history.replaceState(null, '', '#' + targetViewId);
+            if (location.hash !== '#' + targetViewId) {
+                history.pushState({ page: targetViewId }, '', '#' + targetViewId);
+            }
         }
 
         // Update active nav link
@@ -483,6 +487,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // NOW initialize session — event listeners & switchView are ready
     checkSession();
 
+    // --- History Navigation (Popstate & Hardware Back) ---
+    window.addEventListener('popstate', (e) => {
+        if (e.state && e.state.page) {
+            switchView(e.state.page, false);
+        } else {
+            const hashView = location.hash.replace('#', '').trim();
+            if (hashView) {
+                switchView(hashView, false);
+            }
+        }
+    });
+
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+        window.Capacitor.Plugins.App.addListener('backButton', () => {
+            const mainPages = ['dashboard', 'sales', 'finance', 'menu-produk', 'menu-more'];
+            const currentView = localStorage.getItem('erp_active_view') || 'dashboard';
+            if (mainPages.includes(currentView)) {
+                window.Capacitor.Plugins.App.exitApp();
+            } else {
+                window.history.back();
+            }
+        });
+    }
+
     // --- UI Interactions (Theme, Profile, Mobile Nav) ---
     const handleMyProfile = () => {
         const user = JSON.parse(localStorage.getItem('erp_session') || '{}');
@@ -552,47 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Mobile Bottom Sheets
-    const sheetOverlay = document.getElementById('sheet-overlay');
-    const sheetProduk = document.getElementById('sheet-produk');
-    const sheetMore = document.getElementById('sheet-more');
-
-    const openSheet = (sheet) => {
-        sheetOverlay.classList.add('active');
-        sheet.classList.add('active');
-        document.body.classList.add('sheet-open');
-    };
-
-    const closeSheets = () => {
-        sheetOverlay.classList.remove('active');
-        sheetProduk.classList.remove('active');
-        sheetMore.classList.remove('active');
-        document.body.classList.remove('sheet-open');
-    };
-
-    document.getElementById('btn-mobile-produk')?.addEventListener('click', (e) => {
-        document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
-        e.currentTarget.classList.add('active');
-        openSheet(sheetProduk);
-    });
-
-    document.getElementById('btn-mobile-more')?.addEventListener('click', (e) => {
-        document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
-        e.currentTarget.classList.add('active');
-        openSheet(sheetMore);
-    });
-
-    document.querySelectorAll('.btn-close-sheet').forEach(btn => {
-        btn.addEventListener('click', closeSheets);
-    });
-    sheetOverlay?.addEventListener('click', closeSheets);
-
-    document.querySelectorAll('.sheet-item[data-target]').forEach(item => {
-        item.addEventListener('click', () => {
-            switchView(item.getAttribute('data-target'));
-            closeSheets();
-        });
-    });
+    // Bottom sheets removed, grid views replace them.
 
     // Global FAB Logic
     function updateGlobalFAB(viewId) {
@@ -5768,4 +5756,257 @@ document.getElementById('invoice-form')?.addEventListener('submit', async (e) =>
     }
 });
 
+});
+
+
+
+// ==========================================
+// COA
+// ==========================================
+let coaDataList = [];
+
+async function loadCOAData() {
+    try {
+        const result = await ERPAPI.request('get_coa');
+        if (result.status === 'success') {
+            coaDataList = result.data || [];
+            renderCOATree(coaDataList);
+            populateCOADatalist(coaDataList);
+        } else {
+            console.error('Server returned error:', result.message);
+            document.getElementById('table-coa').innerHTML = '<tr><td colspan="3" style="text-align:center; color:red;">Gagal memuat data: ' + result.message + '</td></tr>';
+        }
+    } catch (e) {
+        console.error('Failed to load COA', e);
+        document.getElementById('table-coa').innerHTML = '<tr><td colspan="3">Gagal memuat data</td></tr>';
+    }
+}
+
+function getCOADepth(kode) {
+    if (!kode) return 0;
+    return kode.split('.').length - 1;
+}
+
+function isChildCOA(parentKode, childKode) {
+    if (!parentKode || !childKode) return false;
+    return childKode.startsWith(parentKode + '.') && getCOADepth(childKode) === getCOADepth(parentKode) + 1;
+}
+
+function renderCOATree(data) {
+    const tbody = document.getElementById('table-coa');
+    if (!tbody) return;
+    
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Tidak ada data COA</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    
+    // Map data by kode for quick parent/child lookup
+    const dataMap = {};
+    const roots = [];
+    
+    data.forEach(item => {
+        dataMap[item.kode] = { ...item, children: [] };
+    });
+    
+    data.forEach(item => {
+        let isRoot = true;
+        // find parent
+        for (let potentialParent of data) {
+            if (isChildCOA(potentialParent.kode, item.kode)) {
+                if (dataMap[potentialParent.kode]) {
+                    dataMap[potentialParent.kode].children.push(dataMap[item.kode]);
+                    isRoot = false;
+                    break;
+                }
+            }
+        }
+        if (isRoot) roots.push(dataMap[item.kode]);
+    });
+    
+    const renderNode = (node, depth, parentKode) => {
+        const tr = document.createElement('tr');
+        tr.className = 'coa-row';
+        tr.dataset.kode = node.kode;
+        tr.dataset.parent = parentKode || '';
+        
+        // Hide by default if depth > 0, actually let's just make it toggleable
+        // If user wants it collapsed initially:
+        if (depth > 0) tr.style.display = 'none';
+        
+        const hasChildren = node.children && node.children.length > 0;
+        
+        const paddingLeft = depth * 20 + 10;
+        const toggleHtml = hasChildren 
+            ? `<span class="coa-toggle" onclick="toggleCOAChildren('${node.kode}')"><i class="fa-solid fa-caret-right" id="coa-icon-${node.kode.replace(/[^a-zA-Z0-9]/g, '-')}"></i></span>` 
+            : `<span class="coa-toggle"></span>`;
+            
+        tr.innerHTML = `
+            <td style="padding-left: ${paddingLeft}px;">${toggleHtml} ${node.kode}</td>
+            <td>${node.keterangan || '-'}</td>
+            <td>
+                <button class="btn admin-only" style="padding: 4px 8px; font-size: 0.8rem; background: var(--secondary);" onclick='editCOA(${JSON.stringify(node).replace(/'/g, "&#39;")})'><i class="fa-solid fa-pen"></i></button>
+                <button class="btn admin-only" style="padding: 4px 8px; font-size: 0.8rem; background: var(--danger);" onclick="deleteCOA('${node.kode}')"><i class="fa-solid fa-trash"></i></button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+        
+        if (hasChildren) {
+            node.children.forEach(child => renderNode(child, depth + 1, node.kode));
+        }
+    };
+    
+    roots.forEach(root => renderNode(root, 0, null));
+}
+
+window.toggleCOAChildren = function(parentKode) {
+    const tbody = document.getElementById('table-coa');
+    const rows = tbody.querySelectorAll('.coa-row');
+    
+    const icon = document.getElementById('coa-icon-' + parentKode.replace(/[^a-zA-Z0-9]/g, '-'));
+    let isExpanding = true;
+    if (icon && icon.classList.contains('fa-caret-right')) {
+        icon.classList.remove('fa-caret-right');
+        icon.classList.add('fa-caret-down');
+        isExpanding = true;
+    } else if (icon) {
+        icon.classList.remove('fa-caret-down');
+        icon.classList.add('fa-caret-right');
+        isExpanding = false;
+    }
+    
+    // Toggle immediate children
+    rows.forEach(row => {
+        if (row.dataset.parent === parentKode) {
+            row.style.display = isExpanding ? '' : 'none';
+            // If collapsing, collapse all descendants recursively
+            if (!isExpanding) {
+                hideAllDescendants(row.dataset.kode);
+            }
+        }
+    });
+};
+
+function hideAllDescendants(parentKode) {
+    const rows = document.getElementById('table-coa').querySelectorAll('.coa-row');
+    const icon = document.getElementById('coa-icon-' + parentKode.replace(/[^a-zA-Z0-9]/g, '-'));
+    if (icon) {
+        icon.classList.remove('fa-caret-down');
+        icon.classList.add('fa-caret-right');
+    }
+    rows.forEach(row => {
+        if (row.dataset.parent === parentKode) {
+            row.style.display = 'none';
+            hideAllDescendants(row.dataset.kode);
+        }
+    });
+}
+
+function populateCOADatalist(data) {
+    const datalist = document.getElementById('coa-datalist');
+    if (!datalist) return;
+    datalist.innerHTML = '';
+    data.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = `${item.kode} - ${item.keterangan}`;
+        datalist.appendChild(opt);
+    });
+    
+    // Also populate the parent select in modal
+    const parentSelect = document.getElementById('coa_parent_kode');
+    if (parentSelect) {
+        parentSelect.innerHTML = '<option value="">-- Buat Root Baru / Ketik Manual --</option>';
+        data.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.kode;
+            opt.textContent = `${item.kode} - ${item.keterangan}`;
+            parentSelect.appendChild(opt);
+        });
+    }
+}
+
+window.editCOA = function(item) {
+    document.getElementById('coa_old_kode').value = item.kode;
+    document.getElementById('coa_kode').value = item.kode;
+    document.getElementById('coa_name').value = item.keterangan;
+    document.getElementById('coa_parent_group').style.display = 'none'; // hide auto-gen on edit
+    document.getElementById('coa-modal').classList.add('active');
+};
+
+window.deleteCOA = async function(kode) {
+    if (!confirm('Hapus COA ini? Semua sub-COA tidak akan terhapus tapi mungkin kehilangan parent!')) return;
+    try {
+        Swal.fire({ title: 'Menghapus...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        const result = await ERPAPI.request('delete_coa', { kode: kode });
+        if (result.status === 'success') {
+            Swal.fire('Berhasil', result.message, 'success');
+            loadCOAData();
+        } else {
+            Swal.fire('Gagal', result.message, 'error');
+        }
+    } catch (error) {
+        Swal.fire('Error', error.toString(), 'error');
+    }
+};
+
+document.getElementById('coa_parent_kode')?.addEventListener('change', function(e) {
+    const parentKode = e.target.value;
+    const kodeInput = document.getElementById('coa_kode');
+    if (!parentKode) {
+        kodeInput.value = '';
+        kodeInput.readOnly = false;
+        return;
+    }
+    
+    // Auto generate next code
+    let maxSuffix = 0;
+    coaDataList.forEach(item => {
+        if (isChildCOA(parentKode, item.kode)) {
+            const parts = item.kode.split('.');
+            const lastPart = parseInt(parts[parts.length - 1], 10);
+            if (!isNaN(lastPart) && lastPart > maxSuffix) {
+                maxSuffix = lastPart;
+            }
+        }
+    });
+    
+    const nextSuffix = (maxSuffix + 1).toString().padStart(2, '0');
+    kodeInput.value = `${parentKode}.${nextSuffix}`;
+    // If you want them to be able to edit the auto-generated code, keep it false
+    kodeInput.readOnly = false; 
+});
+
+document.getElementById('coa-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const oldKode = document.getElementById('coa_old_kode').value;
+    const kode = document.getElementById('coa_kode').value;
+    const name = document.getElementById('coa_name').value;
+    
+    try {
+        Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        const result = await ERPAPI.request('save_coa', { old_kode: oldKode, kode: kode, keterangan: name });
+        if (result.status === 'success') {
+            Swal.fire('Berhasil', result.message, 'success');
+            document.getElementById('coa-modal').classList.remove('active');
+            loadCOAData();
+        } else {
+            Swal.fire('Gagal', result.message, 'error');
+        }
+    } catch (error) {
+        Swal.fire('Error', error.toString(), 'error');
+    }
+});
+
+document.getElementById('btn-add-coa')?.addEventListener('click', () => {
+    document.getElementById('coa-form').reset();
+    document.getElementById('coa_old_kode').value = '';
+    document.getElementById('coa_parent_group').style.display = 'block';
+    document.getElementById('coa_kode').readOnly = false;
+    document.getElementById('coa-modal').classList.add('active');
+});
+
+document.getElementById('btn-close-coa')?.addEventListener('click', () => {
+    document.getElementById('coa-modal').classList.remove('active');
 });

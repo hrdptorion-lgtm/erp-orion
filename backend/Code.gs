@@ -194,6 +194,15 @@ function doPost(e) {
       case 'delete_invoice':
         response = deleteInvoice(payload);
         break;
+      case 'get_coa':
+        response = getCOA();
+        break;
+      case 'save_coa':
+        response = saveCOA(payload);
+        break;
+      case 'delete_coa':
+        response = deleteCOA(payload);
+        break;
       default:
         response = { status: 'error', message: 'Action tidak dikenali: ' + action };
         break;

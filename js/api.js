@@ -246,6 +246,24 @@ class ERPAPI {
             return { status: 'success', message: 'Invoice berhasil disimpan (Simulasi).' };
         } else if (action === 'delete_invoice') {
             return { status: 'success', message: 'Invoice dihapus.' };
+                } else if (action === 'get_coa') {
+            return {
+                status: 'success',
+                data: [
+                    { kode: '1', keterangan: 'A S E T' },
+                    { kode: '1.1', keterangan: 'ASET LANCAR' },
+                    { kode: '1.1.01', keterangan: 'K A S' },
+                    { kode: '1.1.01.01', keterangan: 'Kas Besar' },
+                    { kode: '1.1.01.02', keterangan: 'Kas Kecil' },
+                    { kode: '2', keterangan: 'L I A B I L I T A S' },
+                    { kode: '2.1', keterangan: 'LIABILITAS LANCAR' },
+                    { kode: '2.1.01', keterangan: 'Hutang Usaha' }
+                ]
+            };
+        } else if (action === 'save_coa') {
+            return { status: 'success', message: 'Simulasi simpan COA berhasil.' };
+        } else if (action === 'delete_coa') {
+            return { status: 'success', message: 'Simulasi hapus COA berhasil.' };
         } else {
             return { status: 'error', message: 'Action tidak dikenali.' };
         }
