@@ -654,6 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ],
             'sales': [{ id: 'btn-add-penawaran', label: 'Buat Penawaran', icon: 'fa-plus', color: 'var(--secondary)' }],
             'po-customer': [{ id: 'btn-add-po-customer', label: 'Buat PO dari Penawaran', icon: 'fa-plus', color: 'var(--secondary)' }],
+            'surat-jalan': [{ id: 'btn-add-surat-jalan', label: 'Buat Surat Jalan Manual', icon: 'fa-plus', color: 'var(--accent)' }],
             'po-internal': [{ id: 'btn-add-po-internal', label: 'Buat Pengajuan', icon: 'fa-plus', color: 'var(--primary)' }],
             'bom': [{ id: 'btn-add-bom', label: 'Buat BOM Baru', icon: 'fa-plus', color: 'var(--accent)' }],
             'produksi': [{ id: 'btn-run-spk', label: 'Selesaikan SPK', icon: 'fa-play', color: 'var(--secondary)' }],
@@ -6202,7 +6203,10 @@ const MENUS = [
     { id: 'coa', name: 'Chart of Accounts (COA)' },
     { id: 'customer', name: 'Master Customer' },
     { id: 'supplier', name: 'Master Supplier' },
-    { id: 'admin', name: 'Manajemen User' }
+    { id: 'admin', name: 'Manajemen User' },
+    { id: 'pengaturan', name: 'Menu Pengaturan', viewOnly: true },
+    { id: 'profil', name: 'Profil Perusahaan', viewOnly: true },
+    { id: 'rbac', name: 'Manajemen Akses (RBAC)', viewOnly: true }
 ];
 
 async function loadRBACData() {
@@ -6288,13 +6292,13 @@ function renderRBACTable() {
                     <input type="checkbox" class="rbac-cb" data-role="${role}" data-menu="${menu.id}" data-action="can_view" ${perm.can_view ? 'checked' : ''}>
                 </td>
                 <td style="text-align: center;">
-                    <input type="checkbox" class="rbac-cb" data-role="${role}" data-menu="${menu.id}" data-action="can_add" ${perm.can_add ? 'checked' : ''}>
+                    ${menu.viewOnly ? '<span style="color: var(--text-muted);">-</span>' : `<input type="checkbox" class="rbac-cb" data-role="${role}" data-menu="${menu.id}" data-action="can_add" ${perm.can_add ? 'checked' : ''}>`}
                 </td>
                 <td style="text-align: center;">
-                    <input type="checkbox" class="rbac-cb" data-role="${role}" data-menu="${menu.id}" data-action="can_edit" ${perm.can_edit ? 'checked' : ''}>
+                    ${menu.viewOnly ? '<span style="color: var(--text-muted);">-</span>' : `<input type="checkbox" class="rbac-cb" data-role="${role}" data-menu="${menu.id}" data-action="can_edit" ${perm.can_edit ? 'checked' : ''}>`}
                 </td>
                 <td style="text-align: center;">
-                    <input type="checkbox" class="rbac-cb" data-role="${role}" data-menu="${menu.id}" data-action="can_delete" ${perm.can_delete ? 'checked' : ''}>
+                    ${menu.viewOnly ? '<span style="color: var(--text-muted);">-</span>' : `<input type="checkbox" class="rbac-cb" data-role="${role}" data-menu="${menu.id}" data-action="can_delete" ${perm.can_delete ? 'checked' : ''}>`}
                 </td>
             `;
             tbody.appendChild(tr);

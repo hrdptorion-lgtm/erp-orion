@@ -1162,6 +1162,7 @@ tbody tr:hover {
   /* Hide specific buttons to replace with FAB */
   #btn-add-penawaran,
   #btn-add-po-customer,
+  #btn-add-surat-jalan,
   #btn-add-stock,
   #btn-import-stock,
   #btn-export-stock,
@@ -1173,7 +1174,8 @@ tbody tr:hover {
   #btn-add-user,
   #btn-add-customer,
   #btn-add-kategori,
-  #btn-add-jabatan {
+  #btn-add-jabatan,
+  .hide-on-mobile {
     display: none !important;
   }
 
