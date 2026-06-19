@@ -1664,6 +1664,9 @@ async function loadPOCustomerData() {
 
 document.getElementById('btn-add-po-customer')?.addEventListener('click', async () => {
     document.getElementById('po-customer-form').reset();
+    document.getElementById('poc_file_pdf_existing').value = '';
+    document.getElementById('poc_file_pdf_link').innerHTML = '';
+
     document.getElementById('poc_id').value = '';
     document.getElementById('poc-items-container').innerHTML = '';
     document.getElementById('poc_total_harga_display').innerText = '0';
@@ -1802,6 +1805,9 @@ window.openPOCustomerModal = function(id) {
     if (!item) return;
     
     document.getElementById('po-customer-form').reset();
+    document.getElementById('poc_file_pdf_existing').value = '';
+    document.getElementById('poc_file_pdf_link').innerHTML = '';
+
     document.getElementById('poc_id').value = item.id_po_customer;
     document.getElementById('po-customer-modal-title').innerText = 'Edit PO Customer';
     
@@ -2059,14 +2065,10 @@ async function loadPenawaranData(isBackgroundSync = false) {
                 } catch (e) {}
 
                 document.getElementById('p_attn').value = info.attn || '';
-                document.getElementById('p_enq_no').value = info.enq_no || '';
-                document.getElementById('p_rev_date').value = info.rev_date || '';
-                document.getElementById('p_maker').value = info.maker || '';
-                document.getElementById('p_delivery').value = info.delivery || '';
-                document.getElementById('p_incoterm').value = info.incoterm || '';
-                document.getElementById('p_payment').value = info.payment || '';
-                document.getElementById('p_validity').value = info.validity || '';
-
+                                document.getElementById('p_rev_date').value = info.rev_date || '';
+                                document.getElementById('p_delivery').value = info.delivery || '';
+                                document.getElementById('p_payment').value = info.payment || '';
+                
                 pItemsContainer.innerHTML = '';
                 let items = [];
                 try {
@@ -2496,14 +2498,10 @@ penawaranForm?.addEventListener('submit', async (e) => {
         status: document.getElementById('p_status').value,
         info_tambahan: {
             attn: document.getElementById('p_attn').value,
-            enq_no: document.getElementById('p_enq_no').value,
-            rev_date: document.getElementById('p_rev_date').value,
-            maker: document.getElementById('p_maker').value,
-            delivery: document.getElementById('p_delivery').value,
-            incoterm: document.getElementById('p_incoterm').value,
-            payment: document.getElementById('p_payment').value,
-            validity: document.getElementById('p_validity').value
-        }
+                        rev_date: document.getElementById('p_rev_date').value,
+                        delivery: document.getElementById('p_delivery').value,
+                        payment: document.getElementById('p_payment').value
+                    }
     };
 
     const isEdit = !!payload.no_penawaran;

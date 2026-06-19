@@ -277,6 +277,7 @@
             <button class="btn-close-sheet"><i class="fa-solid fa-times"></i></button>
         </div>
         <div class="sheet-content">
+            <div class="sheet-item" data-target="po-customer"><i class="fa-solid fa-file-signature"></i> PO Customer</div>
             <div class="sheet-item admin-only" data-target="profil"><i class="fa-solid fa-building"></i> Profil
                 Perusahaan</div>
             <div class="sheet-item admin-only" data-target="coa"><i class="fa-solid fa-file-invoice"></i> Kategori COA
@@ -796,11 +797,7 @@
                             <td id="print_po_no"
                                 style="font-weight: bold; background: #cce5ff; border: none; padding: 2px;">-</td>
                         </tr>
-                        <tr>
-                            <td style="border: none; padding: 2px;">Your Enq No</td>
-                            <td style="border: none; padding: 2px;">:</td>
-                            <td id="print_po_enq" style="border: none; padding: 2px;">-</td>
-                        </tr>
+
                         <tr>
                             <td style="border: none; padding: 2px;">Date</td>
                             <td style="border: none; padding: 2px;">:</td>
@@ -811,31 +808,19 @@
                             <td style="border: none; padding: 2px;">:</td>
                             <td style="border: none; padding: 2px;">-</td>
                         </tr>
-                        <tr>
-                            <td style="border: none; padding: 2px;">Maker of Brand</td>
-                            <td style="border: none; padding: 2px;">:</td>
-                            <td id="print_po_maker" style="border: none; padding: 2px;">-</td>
-                        </tr>
+
                         <tr>
                             <td style="border: none; padding: 2px;">Time of Delivery</td>
                             <td style="border: none; padding: 2px;">:</td>
                             <td id="print_po_delivery" style="border: none; padding: 2px;">-</td>
                         </tr>
-                        <tr>
-                            <td style="border: none; padding: 2px;">Incoterm</td>
-                            <td style="border: none; padding: 2px;">:</td>
-                            <td id="print_po_incoterm" style="border: none; padding: 2px;">-</td>
-                        </tr>
+
                         <tr>
                             <td style="border: none; padding: 2px;">Term of Payment</td>
                             <td style="border: none; padding: 2px;">:</td>
                             <td id="print_po_payment" style="border: none; padding: 2px;">-</td>
                         </tr>
-                        <tr>
-                            <td style="border: none; padding: 2px;">Time of Validity</td>
-                            <td style="border: none; padding: 2px;">:</td>
-                            <td id="print_po_validity" style="color: blue; border: none; padding: 2px;">-</td>
-                        </tr>
+
                     </table>
                 </div>
             </div>
@@ -1515,34 +1500,22 @@
                             <label>Attn</label>
                             <input type="text" id="p_attn" placeholder="Nama PIC">
                         </div>
-                        <div class="input-group">
-                            <label>Your Enq No</label>
-                            <input type="text" id="p_enq_no" placeholder="No Enquiry">
-                        </div>
+
                         <div class="input-group">
                             <label>Revised Date-1</label>
                             <input type="date" id="p_rev_date">
                         </div>
-                        <div class="input-group">
-                            <label>Maker of Brand</label>
-                            <input type="text" id="p_maker" placeholder="Brand">
-                        </div>
+
                         <div class="input-group">
                             <label>Time of Delivery</label>
                             <input type="text" id="p_delivery" placeholder="1-2 Month After PO">
                         </div>
-                        <div class="input-group">
-                            <label>Incoterm</label>
-                            <input type="text" id="p_incoterm" placeholder="Franco">
-                        </div>
+
                         <div class="input-group">
                             <label>Term of Payment</label>
                             <input type="text" id="p_payment" placeholder="Net 30 Days">
                         </div>
-                        <div class="input-group">
-                            <label>Time of Validity</label>
-                            <input type="text" id="p_validity" placeholder="Until Further Revision">
-                        </div>
+
                     </div>
                     <div class="input-group"
                         style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-top: 15px;">
@@ -1583,6 +1556,8 @@
                     </div>
 
                     <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
+                        <button type="button" class="btn" id="btn-create-po-from-penawaran"
+                            style="flex: 1; background: var(--secondary); justify-content: center; display: none;"><i class="fa-solid fa-file-signature"></i> Buat PO</button>
                         <button type="button" class="btn" id="btn-revisi-penawaran"
                             style="flex: 1; background: var(--warning); justify-content: center; display: none;"><i class="fa-solid fa-code-branch"></i> Buat Revisi</button>
                         <button type="button" class="btn" id="btn-close-penawaran"
@@ -1634,6 +1609,18 @@
                             <option value="Proses" style="color: #000;">Proses</option>
                             <option value="Selesai" style="color: #000;">Selesai</option>
                         </select>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <div class="input-group" style="flex: 1;">
+                            <label>File PDF (Evidence)</label>
+                            <input type="file" id="poc_file_pdf" accept="application/pdf">
+                            <input type="hidden" id="poc_file_pdf_existing">
+                            <small id="poc_file_pdf_link" style="display: block; margin-top: 5px; word-break: break-all;"></small>
+                        </div>
+                        <div class="input-group" style="flex: 1;">
+                            <label>Tanggal Selesai</label>
+                            <input type="date" id="poc_tanggal_selesai">
+                        </div>
                     </div>
                     <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
                         <button type="button" class="btn" id="btn-close-po-customer"

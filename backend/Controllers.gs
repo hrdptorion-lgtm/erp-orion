@@ -1063,9 +1063,27 @@ function savePOCustomer(payload) {
   if (!sheet) return { status: 'error', message: 'Sheet DB PO Customer tidak ditemukan.' };
   const values = sheet.getDataRange().getDisplayValues();
   
-  let idPO = payload.id_po_customer || ('POC-' + Date.now());
+  let idPO = payload.id_po_customer;
+  if (!idPO) {
+    let poCount = 0;
+    for (let i = 1; i < values.length; i++) {
+      if (String(values[i][1]).trim() === String(payload.no_penawaran).trim()) {
+        poCount++;
+      }
+    }
+    idPO = payload.no_penawaran + '-PO-' + String(poCount + 1).padStart(3, '0');
+  }
   const itemStr = typeof payload.item_po === 'string' ? payload.item_po : JSON.stringify(payload.item_po || []);
   
+  let fileUrl = payload.file_pdf_existing || '';
+  if (payload.file_pdf_base64) {
+    try {
+      fileUrl = uploadToDrive(payload.file_pdf_base64, payload.file_pdf_mime || 'application/pdf', 'POC_' + idPO + '_' + Date.now());
+    } catch(e) {
+      return { status: 'error', message: 'Gagal upload file: ' + e.message };
+    }
+  }
+
   for (let i = 1; i < values.length; i++) {
     if (String(values[i][0]).trim() === String(payload.id_po_customer).trim()) {
       sheet.getRange(i + 1, 2).setValue(payload.no_penawaran || '');
@@ -1074,6 +1092,8 @@ function savePOCustomer(payload) {
       sheet.getRange(i + 1, 5).setValue(itemStr);
       sheet.getRange(i + 1, 6).setValue(payload.total_harga || 0);
       sheet.getRange(i + 1, 7).setValue(payload.status || 'Pending');
+      sheet.getRange(i + 1, 8).setValue(fileUrl);
+      sheet.getRange(i + 1, 9).setValue(payload.tanggal_selesai || '');
       return { status: 'success', message: 'PO Customer berhasil diupdate.' };
     }
   }
@@ -1085,7 +1105,9 @@ function savePOCustomer(payload) {
     payload.tanggal_po || new Date().toLocaleDateString('id-ID'),
     itemStr,
     payload.total_harga || 0,
-    payload.status || 'Pending'
+    payload.status || 'Pending',
+    fileUrl,
+    payload.tanggal_selesai || ''
   ]);
   return { status: 'success', message: 'PO Customer berhasil disimpan.' };
 }
