@@ -143,6 +143,12 @@ function doPost(e) {
       case 'create_po_internal':
         response = createPOInternal(payload);
         break;
+      case 'get_penerimaan_barang':
+        response = getPenerimaanBarang();
+        break;
+      case 'save_penerimaan_barang':
+        response = savePenerimaanBarang(payload);
+        break;
       case 'update_po_status':
         response = updatePOInternalStatus(payload);
         break;
@@ -202,6 +208,15 @@ function doPost(e) {
         break;
       case 'delete_coa':
         response = deleteCOA(payload);
+        break;
+      case 'get_role_permissions':
+        response = getRolePermissions(payload);
+        break;
+      case 'get_all_permissions':
+        response = getAllPermissions(payload);
+        break;
+      case 'save_permissions':
+        response = savePermissions(payload);
         break;
       default:
         response = { status: 'error', message: 'Action tidak dikenali: ' + action };

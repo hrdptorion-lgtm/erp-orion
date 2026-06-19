@@ -1731,6 +1731,47 @@ function saveBOM(payload) {
     sheet.appendRow(rowData);
   }
 
+  // Auto-insert/update to Barang Jadi
+  try {
+    const bjSheet = ss.getSheetByName('DB Master Barang Jadi');
+    if (bjSheet) {
+      const bjValues = bjSheet.getDataRange().getDisplayValues();
+      const bjHeaders = bjValues[0];
+      const bjKodeIdx = bjHeaders.findIndex(h => /kode/i.test(h));
+      const bjNamaIdx = bjHeaders.findIndex(h => /nama/i.test(h));
+      const bjStokIdx = bjHeaders.findIndex(h => /stok|stock/i.test(h));
+      const bjHargaIdx = bjHeaders.findIndex(h => /harga/i.test(h));
+      
+      let bjRowIndex = -1;
+      if (bjKodeIdx !== -1) {
+        for (let i = 1; i < bjValues.length; i++) {
+          if (String(bjValues[i][bjKodeIdx]).trim() === String(payload.kode_barang).trim()) {
+            bjRowIndex = i + 1;
+            break;
+          }
+        }
+      }
+      
+      if (bjRowIndex === -1 && bjKodeIdx !== -1) {
+        const newBjRow = bjHeaders.map((h, i) => {
+          if (i === bjKodeIdx) return payload.kode_barang;
+          if (i === bjNamaIdx) return payload.nama_barang;
+          if (i === bjStokIdx) return 0;
+          if (i === bjHargaIdx) return payload.total_biaya || 0;
+          return '';
+        });
+        bjSheet.appendRow(newBjRow);
+      } else if (bjRowIndex !== -1 && bjNamaIdx !== -1) {
+        bjSheet.getRange(bjRowIndex, bjNamaIdx + 1).setValue(payload.nama_barang);
+        if (bjHargaIdx !== -1) {
+          bjSheet.getRange(bjRowIndex, bjHargaIdx + 1).setValue(payload.total_biaya || 0);
+        }
+      }
+    }
+  } catch (e) {
+    Logger.log('[Auto-Insert Barang Jadi] Error: ' + e.toString());
+  }
+
   return { status: 'success', message: 'Data BOM berhasil disimpan.' };
 }
 
@@ -2097,4 +2138,280 @@ function deleteCOA(payload) {
     }
   }
   return { status: 'error', message: 'COA tidak ditemukan.' };
+}
+
+// ==========================================
+// HAK AKSES (RBAC) CONTROLLERS
+// ==========================================
+
+function getRolePermissions(payload) {
+  const role = String(payload.role || '').toLowerCase().trim();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('DB Hak Akses');
+  
+  if (!sheet) {
+    return { status: 'success', data: {} };
+  }
+  
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length <= 1) return { status: 'success', data: {} };
+  
+  const headers = values[0];
+  const rIdx = headers.findIndex(h => h.toLowerCase() === 'role');
+  const mIdx = headers.findIndex(h => h.toLowerCase() === 'menu_id');
+  const viewIdx = headers.findIndex(h => h.toLowerCase() === 'can_view');
+  const addIdx = headers.findIndex(h => h.toLowerCase() === 'can_add');
+  const editIdx = headers.findIndex(h => h.toLowerCase() === 'can_edit');
+  const delIdx = headers.findIndex(h => h.toLowerCase() === 'can_delete');
+  
+  const permissions = {};
+  for (let i = 1; i < values.length; i++) {
+    const rowRole = String(values[i][rIdx]).toLowerCase().trim();
+    if (rowRole === role) {
+      const menu = String(values[i][mIdx]).toLowerCase().trim();
+      permissions[menu] = {
+        can_view: String(values[i][viewIdx]).toUpperCase() === 'TRUE',
+        can_add: String(values[i][addIdx]).toUpperCase() === 'TRUE',
+        can_edit: String(values[i][editIdx]).toUpperCase() === 'TRUE',
+        can_delete: String(values[i][delIdx]).toUpperCase() === 'TRUE'
+      };
+    }
+  }
+  
+  return { status: 'success', data: permissions };
+}
+
+function getAllPermissions() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('DB Hak Akses');
+  
+  if (!sheet) {
+    sheet = ss.insertSheet('DB Hak Akses');
+    sheet.appendRow(['Role', 'Menu_ID', 'Can_View', 'Can_Add', 'Can_Edit', 'Can_Delete']);
+    sheet.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#d9edf7");
+    return { status: 'success', data: [] };
+  }
+  
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length <= 1) return { status: 'success', data: [] };
+  
+  const headers = values[0];
+  const rIdx = headers.findIndex(h => h.toLowerCase() === 'role');
+  const mIdx = headers.findIndex(h => h.toLowerCase() === 'menu_id');
+  const viewIdx = headers.findIndex(h => h.toLowerCase() === 'can_view');
+  const addIdx = headers.findIndex(h => h.toLowerCase() === 'can_add');
+  const editIdx = headers.findIndex(h => h.toLowerCase() === 'can_edit');
+  const delIdx = headers.findIndex(h => h.toLowerCase() === 'can_delete');
+  
+  const data = [];
+  for (let i = 1; i < values.length; i++) {
+    data.push({
+      role: values[i][rIdx],
+      menu_id: values[i][mIdx],
+      can_view: String(values[i][viewIdx]).toUpperCase() === 'TRUE',
+      can_add: String(values[i][addIdx]).toUpperCase() === 'TRUE',
+      can_edit: String(values[i][editIdx]).toUpperCase() === 'TRUE',
+      can_delete: String(values[i][delIdx]).toUpperCase() === 'TRUE'
+    });
+  }
+  
+  return { status: 'success', data: data };
+}
+
+function savePermissions(payload) {
+  if (!payload || !payload.permissions) return { status: 'error', message: 'Payload tidak valid.' };
+  
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('DB Hak Akses');
+  if (!sheet) {
+    sheet = ss.insertSheet('DB Hak Akses');
+    sheet.appendRow(['Role', 'Menu_ID', 'Can_View', 'Can_Add', 'Can_Edit', 'Can_Delete']);
+    sheet.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#d9edf7");
+  }
+  
+  // Untuk menyederhanakan, kita clear seluruh isi dan tulis ulang
+  // Karena data izin biasanya tidak jutaan baris, cara ini aman dan bersih
+  sheet.clearContents();
+  const headers = ['Role', 'Menu_ID', 'Can_View', 'Can_Add', 'Can_Edit', 'Can_Delete'];
+  sheet.appendRow(headers);
+  
+  const rows = [];
+  payload.permissions.forEach(p => {
+    rows.push([
+      p.role,
+      p.menu_id,
+      p.can_view ? 'TRUE' : 'FALSE',
+      p.can_add ? 'TRUE' : 'FALSE',
+      p.can_edit ? 'TRUE' : 'FALSE',
+      p.can_delete ? 'TRUE' : 'FALSE'
+    ]);
+  });
+  
+  if (rows.length > 0) {
+    sheet.getRange(2, 1, rows.length, 6).setValues(rows);
+  }
+  
+  return { status: 'success', message: 'Hak akses berhasil disimpan.' };
+}
+
+// =====================================
+// PENERIMAAN BARANG (GRN)
+// =====================================
+
+function getPenerimaanBarang() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('DB Penerimaan Barang');
+  
+  if (!sheet) {
+    sheet = ss.insertSheet('DB Penerimaan Barang');
+    sheet.appendRow(['ID Penerimaan', 'Tanggal', 'No PO', 'Daftar Item (JSON)', 'Penerima', 'Catatan']);
+    sheet.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#d9edf7");
+  }
+  
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length <= 1) return { status: 'success', data: [] };
+  
+  const headers = values[0];
+  const data = values.slice(1).map(row => {
+    let obj = {};
+    headers.forEach((h, i) => { obj[String(h).toLowerCase().replace(/ /g, '_').replace(/_\(json\)/g, '')] = row[i]; });
+    try {
+      obj.daftar_item_parsed = JSON.parse(obj.daftar_item);
+    } catch(e) {
+      obj.daftar_item_parsed = [];
+    }
+    return obj;
+  });
+  return { status: 'success', data: data };
+}
+
+function savePenerimaanBarang(payload) {
+  if (!payload || !payload.no_po || !payload.items || !payload.penerima) {
+    return { status: 'error', message: 'Data tidak lengkap.' };
+  }
+  
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheetGRN = ss.getSheetByName('DB Penerimaan Barang');
+  if (!sheetGRN) {
+    sheetGRN = ss.insertSheet('DB Penerimaan Barang');
+    sheetGRN.appendRow(['ID Penerimaan', 'Tanggal', 'No PO', 'Daftar Item (JSON)', 'Penerima', 'Catatan']);
+    sheetGRN.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#d9edf7");
+  }
+  
+  let sheetPO = ss.getSheetByName('DB PO Internal');
+  let poData = sheetPO.getDataRange().getValues();
+  let poRowIndex = -1;
+  let poRow = null;
+  
+  for (let i = 1; i < poData.length; i++) {
+    if (String(poData[i][0]) === String(payload.no_po)) {
+      poRowIndex = i + 1;
+      poRow = poData[i];
+      break;
+    }
+  }
+  
+  if (poRowIndex === -1) {
+    return { status: 'error', message: 'No PO tidak ditemukan.' };
+  }
+  
+  // Parse PO Items
+  let poItems = [];
+  try { poItems = JSON.parse(poRow[3]); } catch(e) {}
+  
+  // Ambil riwayat penerimaan sebelumnya untuk validasi status
+  const grnData = getPenerimaanBarang().data;
+  const historyGRN = grnData.filter(g => String(g.no_po) === String(payload.no_po));
+  
+  let mapPO = {};
+  poItems.forEach(item => {
+    mapPO[item.kode] = { qty_diminta: Number(item.qty), qty_diterima: 0 };
+  });
+  
+  // Tambahkan yg sudah diterima sebelumnya
+  historyGRN.forEach(g => {
+    g.daftar_item_parsed.forEach(item => {
+      if (mapPO[item.kode]) mapPO[item.kode].qty_diterima += Number(item.qty_diterima);
+    });
+  });
+  
+  // Validasi payload
+  let totalDiterimaSekarang = 0;
+  for (let item of payload.items) {
+    const kode = item.kode;
+    const qtyDiterima = Number(item.qty_diterima);
+    if (qtyDiterima > 0) {
+      if (!mapPO[kode]) return { status: 'error', message: `Barang ${kode} tidak ada di PO.` };
+      if (mapPO[kode].qty_diterima + qtyDiterima > mapPO[kode].qty_diminta) {
+        return { status: 'error', message: `Qty barang ${kode} melebihi permintaan.` };
+      }
+      mapPO[kode].qty_diterima += qtyDiterima;
+      totalDiterimaSekarang += qtyDiterima;
+    }
+  }
+  
+  if (totalDiterimaSekarang === 0) {
+    return { status: 'error', message: 'Tidak ada Qty barang yang diterima.' };
+  }
+  
+  // Simpan ke GRN
+  const timestamp = new Date();
+  const idGRN = 'GRN-' + timestamp.getTime();
+  sheetGRN.appendRow([
+    idGRN,
+    Utilities.formatDate(timestamp, Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss"),
+    payload.no_po,
+    JSON.stringify(payload.items),
+    payload.penerima,
+    payload.catatan || ''
+  ]);
+  
+  // Cek Status PO
+  let isComplete = true;
+  for (let key in mapPO) {
+    if (mapPO[key].qty_diterima < mapPO[key].qty_diminta) {
+      isComplete = false;
+      break;
+    }
+  }
+  
+  const newStatus = isComplete ? 'Selesai' : 'Parsial';
+  sheetPO.getRange(poRowIndex, 6).setValue(newStatus); // Update kolom status PO
+  
+  // Update Stok & Catat Transaksi
+  let sheetBahan = ss.getSheetByName('DB Master Bahan Baku');
+  let bahanData = sheetBahan.getDataRange().getValues();
+  let sheetTrx = ss.getSheetByName('DB Transaksi Gudang');
+  if (!sheetTrx) {
+    sheetTrx = ss.insertSheet('DB Transaksi Gudang');
+    sheetTrx.appendRow(['ID Transaksi', 'Tanggal', 'Jenis (IN/OUT)', 'Referensi', 'Kode Material', 'Qty', 'PIC', 'Keterangan']);
+    sheetTrx.getRange(1, 1, 1, 8).setFontWeight("bold").setBackground("#d9edf7");
+  }
+  
+  for (let item of payload.items) {
+    if (Number(item.qty_diterima) > 0) {
+      // Catat di Transaksi Gudang
+      sheetTrx.appendRow([
+        'TRX-' + new Date().getTime() + Math.floor(Math.random()*100),
+        Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss"),
+        'IN',
+        payload.no_po,
+        item.kode,
+        Number(item.qty_diterima),
+        payload.penerima,
+        'Penerimaan Barang (' + idGRN + ')'
+      ]);
+      
+      // Update Stok (cari di Bahan Baku)
+      for (let j = 1; j < bahanData.length; j++) {
+        if (String(bahanData[j][0]) === String(item.kode)) {
+          let currentStok = Number(bahanData[j][3]) || 0;
+          sheetBahan.getRange(j + 1, 4).setValue(currentStok + Number(item.qty_diterima));
+          break;
+        }
+      }
+    }
+  }
+  
+  return { status: 'success', message: 'Penerimaan barang berhasil dicatat.' };
 }

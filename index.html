@@ -160,6 +160,10 @@
                         <i class="fa-solid fa-clipboard-list"></i>
                         <span>Permintaan Belanja</span>
                     </li>
+                    <li class="nav-item" data-target="grn">
+                        <i class="fa-solid fa-boxes-packing"></i>
+                        <span>Penerimaan Barang</span>
+                    </li>
                     <li class="nav-item" data-target="bom">
                         <i class="fa-solid fa-flask"></i>
                         <span>PMO & BOM Sampel</span>
@@ -210,8 +214,11 @@
                         <span>Alur Approval</span>
                     </li>
                     <li class="nav-item admin-only" data-target="admin">
-                        <i class="fa-solid fa-users-gear"></i>
-                        <span>Manajemen Akses</span>
+                        <i class="fa-solid fa-users-gear" style="width: 20px; text-align: center;"></i> Manajemen
+                        User
+                    </li>
+                    <li class="nav-item super-admin-only" data-target="rbac">
+                        <i class="fa-solid fa-shield-halved" style="width: 20px; text-align: center;"></i> Hak Akses (RBAC)
                     </li>
                 </ul>
             </ul>
@@ -261,9 +268,9 @@
             <i class="fa-solid fa-file-invoice-dollar"></i>
             <span>Finance</span>
         </div>
-        <div class="bottom-nav-item" data-target="menu-produk">
-            <i class="fa-solid fa-box-open"></i>
-            <span>Produk</span>
+        <div class="bottom-nav-item" onclick="window.handleMyProfile()">
+            <i class="fa-solid fa-user"></i>
+            <span>Profil</span>
         </div>
         <div class="bottom-nav-item" data-target="menu-more">
             <i class="fa-solid fa-ellipsis"></i>
@@ -274,8 +281,9 @@
     <!-- Main Content -->
     <main class="main-content">
         <!-- Header -->
-        <header class="header-wrapper">
-            <div class="page-title">
+        <header class="header-wrapper" style="display: flex; align-items: center;">
+
+            <div class="page-title" style="flex: 1;">
                 <h1 id="page-title-text">Dashboard Overview</h1>
                 <p id="page-subtitle-text">Selamat datang kembali, Tim Operasional.</p>
             </div>
@@ -496,7 +504,6 @@
 
             <div class="data-section">
                 <div class="section-header">
-                    <h3>Permintaan Barang (Internal)</h3>
                     <button class="btn" id="btn-add-po-internal" style="background: var(--accent);"><i
                             class="fa-solid fa-plus"></i> Buat Pengajuan Belanja</button>
                 </div>
@@ -516,6 +523,33 @@
                         <tbody id="table-po-internal">
                             <tr>
                                 <td colspan="7" style="text-align: center;">Memuat data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Penerimaan Barang (GRN) -->
+        <div id="view-grn" class="view">
+            <div class="data-section">
+                <div class="section-header">
+                    <h3>Daftar PO Siap Terima</h3>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No PO</th>
+                                <th>Tanggal</th>
+                                <th>Pemohon</th>
+                                <th>Status</th>
+                                <th style="text-align: center;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-grn">
+                            <tr>
+                                <td colspan="5" style="text-align: center;">Memuat data...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -721,6 +755,34 @@
                         <tbody id="table-users">
                             <tr>
                                 <td colspan="4" style="text-align: center;">Memuat pengguna...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Hak Akses (RBAC) -->
+        <div id="view-rbac" class="view">
+            <div class="data-section">
+                <div class="section-header" style="justify-content: space-between;">
+                    <h2>Pengaturan Hak Akses per Role</h2>
+                    <button class="btn" id="btn-save-rbac"><i class="fa-solid fa-save"></i> Simpan Hak Akses</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Menu</th>
+                                <th>Lihat (View)</th>
+                                <th>Tambah (Add)</th>
+                                <th>Ubah (Edit)</th>
+                                <th>Hapus (Delete)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-rbac">
+                            <tr>
+                                <td colspan="5" style="text-align: center;">Memuat hak akses...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1821,85 +1883,152 @@
                 </div>
             </div>
         </div>
-        <!-- View: Menu Produk -->
-        <div id="view-menu-produk" class="view">
+        <!-- View: Menu More -->
+        <div id="view-menu-more" class="view">
             <div style="display: flex; flex-wrap: wrap; gap: 1rem; padding: 1rem; justify-content: center;">
                 <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
-                    <div class="stat-card hover-lift" style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;" onclick="switchView('purchasing')">
-                        <i class="fa-solid fa-cart-shopping" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Bahan Baku</div>
+                    <div class="stat-card hover-lift"
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
+                        onclick="switchView('menu-produk')">
+                        <i class="fa-solid fa-box-open"
+                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Produk & Logistik
+                        </div>
                     </div>
                 </div>
                 <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
-                    <div class="stat-card hover-lift" style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;" onclick="switchView('po-internal')">
-                        <i class="fa-solid fa-clipboard-list" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Permintaan Belanja</div>
+                    <div class="stat-card hover-lift"
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
+                        onclick="switchView('menu-pengaturan')">
+                        <i class="fa-solid fa-gear"
+                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Pengaturan</div>
                     </div>
                 </div>
                 <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
-                    <div class="stat-card hover-lift" style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;" onclick="switchView('bom')">
-                        <i class="fa-solid fa-flask" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">PMO & BOM Sampel</div>
+                    <div class="stat-card hover-lift"
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
+                        onclick="switchView('po-customer')">
+                        <i class="fa-solid fa-file-signature"
+                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">PO Customer</div>
                     </div>
                 </div>
                 <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
-                    <div class="stat-card hover-lift" style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;" onclick="switchView('barang-jadi')">
-                        <i class="fa-solid fa-boxes-stacked" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Inventori Barang Jadi</div>
+                    <div class="stat-card hover-lift"
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
+                        onclick="window.handleMyProfile()">
+                        <i class="fa-solid fa-user"
+                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Profil Saya</div>
                     </div>
                 </div>
                 <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
-                    <div class="stat-card hover-lift" style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;" onclick="switchView('produksi')">
-                        <i class="fa-solid fa-industry" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Produksi & Gudang</div>
+                    <div class="stat-card hover-lift"
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
+                        onclick="window.handleLogoutClick()">
+                        <i class="fa-solid fa-sign-out-alt"
+                            style="font-size: 2.5rem; color: var(--danger); margin-bottom: 15px; display: block;"></i>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--danger);">Keluar</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- View: Menu More -->
-        <div id="view-menu-more" class="view">
+        <!-- View: Menu Produk -->
+        <div id="view-menu-produk" class="view">
             <div style="display: flex; flex-wrap: wrap; gap: 1rem; padding: 1rem; justify-content: center;">
                 <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
-                    <div class="stat-card hover-lift" style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;" onclick="switchView('po-customer')">
-                        <i class="fa-solid fa-file-signature" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">PO Customer</div>
+                    <div class="stat-card hover-lift"
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
+                        onclick="switchView('purchasing')">
+                        <i class="fa-solid fa-cart-shopping"
+                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Bahan Baku</div>
+                    </div>
+                </div>
+                <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                    <div class="stat-card hover-lift"
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
+                        onclick="switchView('po-internal')">
+                        <i class="fa-solid fa-clipboard-list"
+                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Permintaan Belanja
+                        </div>
+                    </div>
+                </div>
+                <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                    <div class="stat-card hover-lift"
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
+                        onclick="switchView('bom')">
+                        <i class="fa-solid fa-flask"
+                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">PMO & BOM Sampel
+                        </div>
+                    </div>
+                </div>
+                <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                    <div class="stat-card hover-lift"
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
+                        onclick="switchView('barang-jadi')">
+                        <i class="fa-solid fa-boxes-stacked"
+                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Inventori Barang
+                            Jadi</div>
+                    </div>
+                </div>
+                <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                    <div class="stat-card hover-lift"
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
+                        onclick="switchView('produksi')">
+                        <i class="fa-solid fa-industry"
+                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Produksi & Gudang
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Menu Pengaturan -->
+        <div id="view-menu-pengaturan" class="view">
+            <div style="display: flex; flex-wrap: wrap; gap: 1rem; padding: 1rem; justify-content: center;">
+                <div class="admin-only" style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                    <div class="stat-card hover-lift"
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
+                        onclick="switchView('profil')">
+                        <i class="fa-solid fa-building"
+                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Profil Perusahaan
+                        </div>
                     </div>
                 </div>
                 <div class="admin-only" style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
-                    <div class="stat-card hover-lift" style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;" onclick="switchView('profil')">
-                        <i class="fa-solid fa-building" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Profil Perusahaan</div>
-                    </div>
-                </div>
-                <div class="admin-only" style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
-                    <div class="stat-card hover-lift" style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;" onclick="switchView('coa')">
-                        <i class="fa-solid fa-file-invoice" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
+                    <div class="stat-card hover-lift"
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
+                        onclick="switchView('coa')">
+                        <i class="fa-solid fa-file-invoice"
+                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Kategori COA</div>
                     </div>
                 </div>
                 <div class="super-admin-only" style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
-                    <div class="stat-card hover-lift" style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;" onclick="switchView('approval')">
-                        <i class="fa-solid fa-diagram-project" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
+                    <div class="stat-card hover-lift"
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
+                        onclick="switchView('approval')">
+                        <i class="fa-solid fa-diagram-project"
+                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Alur Approval</div>
                     </div>
                 </div>
                 <div class="admin-only" style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
-                    <div class="stat-card hover-lift" style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;" onclick="switchView('admin')">
-                        <i class="fa-solid fa-users-gear" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Manajemen Akses</div>
-                    </div>
-                </div>
-                <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
-                    <div class="stat-card hover-lift" style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;" onclick="document.getElementById('btn-my-profile-mobile')?.click()">
-                        <i class="fa-solid fa-user" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Profil Saya</div>
-                    </div>
-                </div>
-                <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
-                    <div class="stat-card hover-lift" style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;" onclick="document.getElementById('btn-logout-mobile')?.click()">
-                        <i class="fa-solid fa-sign-out-alt" style="font-size: 2.5rem; color: var(--danger); margin-bottom: 15px; display: block;"></i>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--danger);">Keluar</div>
+                    <div class="stat-card hover-lift"
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
+                        onclick="switchView('admin')">
+                        <i class="fa-solid fa-users-gear"
+                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Manajemen Akses
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2834,6 +2963,57 @@
             Catatan: Pembayaran dapat ditransfer ke Rekening BCA: 1234567890 a/n PT. Orion Karya Sejahtera.
         </div>
     </div>
+    </div>
+
+    <!-- MODAL PENERIMAAN BARANG -->
+    <div class="modal-overlay" id="grn-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-box-open"></i> Terima Barang</h3>
+                <button class="btn" id="btn-close-grn"
+                    style="background: transparent; color: var(--text-dark); box-shadow: none;"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fa-solid fa-info-circle"></i> Catat kuantitas aktual yang diterima. Stok gudang akan otomatis bertambah!
+                </div>
+                <form id="grn-form">
+                    <input type="hidden" id="grn_no_po">
+                    <div class="form-group">
+                        <label>Penerima (PIC)</label>
+                        <input type="text" id="grn_penerima" required placeholder="Nama penerima barang">
+                    </div>
+                    <div class="form-group">
+                        <label>Catatan</label>
+                        <input type="text" id="grn_catatan" placeholder="Kondisi barang, no surat jalan supplier, dll">
+                    </div>
+                    
+                    <h4 style="margin: 20px 0 10px; color: var(--text-dark);">Daftar Barang Diterima</h4>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Kode</th>
+                                    <th>Nama</th>
+                                    <th style="text-align: center;">Diminta</th>
+                                    <th style="text-align: center;">Diterima Sblmnya</th>
+                                    <th style="text-align: center; width: 120px;">Terima Skrg</th>
+                                </tr>
+                            </thead>
+                            <tbody id="grn-items-table">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div style="margin-top: 20px; text-align: right;">
+                        <button type="button" class="btn" id="btn-cancel-grn"
+                            style="background: var(--bg-glass); color: var(--text-dark);">Batal</button>
+                        <button type="submit" class="btn"><i class="fa-solid fa-save"></i> Simpan Penerimaan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
