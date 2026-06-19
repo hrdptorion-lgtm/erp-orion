@@ -177,14 +177,25 @@
                         <span>Produksi & Gudang</span>
                     </li>
                 </ul>
-                <li class="nav-item" data-target="finance">
+                <li class="nav-item has-submenu" id="menu-finance-toggle">
                     <i class="fa-solid fa-file-invoice-dollar"></i>
-                    <span>Finance & Kasir</span>
+                    <span style="flex: 1;">Finance</span>
+                    <i class="fa-solid fa-chevron-down submenu-icon"></i>
                 </li>
-                <li class="nav-item" data-target="invoice">
-                    <i class="fa-solid fa-receipt"></i>
-                    <span>Invoice Penagihan</span>
-                </li>
+                <ul class="submenu" id="submenu-finance">
+                    <li class="nav-item" data-target="finance">
+                        <i class="fa-solid fa-cash-register"></i>
+                        <span>Kasir & Petty Cash</span>
+                    </li>
+                    <li class="nav-item" data-target="invoice">
+                        <i class="fa-solid fa-receipt"></i>
+                        <span>Invoice Penagihan</span>
+                    </li>
+                    <li class="nav-item" data-target="laporan-kas">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span>Laporan Kas</span>
+                    </li>
+                </ul>
                 <!-- Submenu Pengaturan -->
                 <li class="nav-item has-submenu admin-only" id="menu-pengaturan-toggle"
                     style="display: none; border-top: 1px solid var(--glass-border); margin-top: 10px; padding-top: 15px;">
@@ -218,7 +229,8 @@
                         User
                     </li>
                     <li class="nav-item super-admin-only" data-target="rbac">
-                        <i class="fa-solid fa-shield-halved" style="width: 20px; text-align: center;"></i> Hak Akses (RBAC)
+                        <i class="fa-solid fa-shield-halved" style="width: 20px; text-align: center;"></i> Hak Akses
+                        (RBAC)
                     </li>
                 </ul>
             </ul>
@@ -671,6 +683,79 @@
                 <div class="table-container">
                     <p style="color: var(--text-muted); text-align: center; padding: 2rem;">Belum ada mutasi kas hari
                         ini.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Laporan Kas -->
+        <div id="view-laporan-kas" class="view">
+            <div class="data-section">
+                <div class="section-header" style="display: flex; flex-direction: column; gap: 1rem; align-items: stretch;">
+                    <h3>Laporan Arus Kas (Berdasarkan COA)</h3>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <div class="input-group" style="flex: 1; min-width: 150px; margin-bottom: 0;">
+                            <label>Dari Tanggal</label>
+                            <input type="date" id="filter-kas-start" style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border);">
+                        </div>
+                        <div class="input-group" style="flex: 1; min-width: 150px; margin-bottom: 0;">
+                            <label>Sampai Tanggal</label>
+                            <input type="date" id="filter-kas-end" style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border);">
+                        </div>
+                        <div class="input-group" style="flex: 2; min-width: 250px; margin-bottom: 0; position: relative;">
+                            <label>Filter Kategori COA</label>
+                            <input type="hidden" id="filter-kas-coa">
+                            <div id="filter-kas-coa-display" class="custom-tree-select" style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                                <span id="filter-kas-coa-display-text" style="color: #999;">-- Semua Kategori COA --</span>
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </div>
+                            <div id="filter-kas-coa-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-main); border: 1px solid var(--glass-border); border-radius: 10px; z-index: 100; max-height: 250px; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.5); margin-top: 5px;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                                    <tbody id="filter-kas-coa-tree-body">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: flex-end;">
+                            <button class="btn" id="btn-filter-kas" style="padding: 0.8rem 1.5rem; height: 46px;"><i class="fa-solid fa-search"></i> Cari</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-grid" style="margin-bottom: 1.5rem;">
+                    <div class="stat-card" style="background: rgba(0, 255, 136, 0.1); border-color: rgba(0, 255, 136, 0.2);">
+                        <div class="stat-header">
+                            <span>Total Masuk (Filtered)</span>
+                            <div class="stat-icon icon-green"><i class="fa-solid fa-arrow-down"></i></div>
+                        </div>
+                        <div class="stat-value" id="summary-kas-masuk">Rp 0</div>
+                    </div>
+                    <div class="stat-card" style="background: rgba(255, 68, 68, 0.1); border-color: rgba(255, 68, 68, 0.2);">
+                        <div class="stat-header">
+                            <span>Total Keluar (Filtered)</span>
+                            <div class="stat-icon icon-orange"><i class="fa-solid fa-arrow-up"></i></div>
+                        </div>
+                        <div class="stat-value" id="summary-kas-keluar">Rp 0</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Waktu</th>
+                                <th>PIC</th>
+                                <th>Jenis</th>
+                                <th>Kategori COA</th>
+                                <th>Keterangan</th>
+                                <th>Nominal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-laporan-kas">
+                            <tr>
+                                <td colspan="6" style="text-align: center;">Pilih filter dan klik Cari untuk menampilkan data</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -2533,7 +2618,7 @@
     <!-- Modal Petty Cash -->
     <div id="petty-cash-modal" class="login-overlay">
         <div class="login-box" style="max-width: 400px;">
-            <h2 style="margin-bottom: 1.5rem;">Mutasi Kas (Petty Cash)</h2>
+            <h2 style="margin-bottom: 1.5rem;">Mutasi Kas</h2>
             <form id="petty-cash-form">
                 <div class="input-group">
                     <label>Jenis Transaksi</label>
@@ -2551,13 +2636,21 @@
                     <label>Keterangan</label>
                     <input type="text" id="pc_keterangan" required placeholder="Contoh: Beli token listrik">
                 </div>
-                <div class="input-group">
+                <div class="input-group" style="position: relative;">
                     <label>Kategori COA / Pos Akuntansi</label>
-                    <input type="text" id="pc_coa" list="coa-datalist" required placeholder="Contoh: Biaya Listrik"
-                        style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border);">
-                    <datalist id="coa-datalist">
-                        <!-- Diisi via JS -->
-                    </datalist>
+                    <input type="hidden" id="pc_coa" required>
+                    <div id="pc_coa_display" class="custom-tree-select"
+                        style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                        <span id="pc_coa_display_text" style="color: #999;">-- Pilih Pos Akuntansi --</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div id="pc_coa_dropdown"
+                        style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-main); border: 1px solid var(--glass-border); border-radius: 10px; z-index: 100; max-height: 250px; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.5); margin-top: 5px;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                            <tbody id="pc_coa_tree_body">
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
                     <button type="button" class="btn" id="btn-close-petty-cash"
@@ -2976,7 +3069,8 @@
             </div>
             <div class="modal-body">
                 <div class="alert alert-info">
-                    <i class="fa-solid fa-info-circle"></i> Catat kuantitas aktual yang diterima. Stok gudang akan otomatis bertambah!
+                    <i class="fa-solid fa-info-circle"></i> Catat kuantitas aktual yang diterima. Stok gudang akan
+                    otomatis bertambah!
                 </div>
                 <form id="grn-form">
                     <input type="hidden" id="grn_no_po">
@@ -2988,7 +3082,7 @@
                         <label>Catatan</label>
                         <input type="text" id="grn_catatan" placeholder="Kondisi barang, no surat jalan supplier, dll">
                     </div>
-                    
+
                     <h4 style="margin: 20px 0 10px; color: var(--text-dark);">Daftar Barang Diterima</h4>
                     <div class="table-container">
                         <table>

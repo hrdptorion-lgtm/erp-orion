@@ -393,7 +393,8 @@ document.addEventListener('DOMContentLoaded', () => {
         'purchasing': { title: 'Bahan Baku', sub: 'Manajemen pengadaan bahan baku.' },
         'bom': { title: 'PMO & BOM Sampel', sub: 'Manajemen Komposisi Material dan Tahapan Produksi.' },
         'produksi': { title: 'Produksi & Gudang', sub: 'Surat Perintah Kerja dan pemotongan stok.' },
-        'finance': { title: 'Finance & Kasir', sub: 'Penagihan, Invoice, dan Petty Cash.' },
+        'finance': { title: 'Finance & Kasir', sub: 'Mutasi Kasir dan Petty Cash.' },
+        'laporan-kas': { title: 'Laporan Kas', sub: 'Monitoring aliran dana masuk dan keluar.' },
         'admin': { title: 'Manajemen Pengguna', sub: 'Pengaturan Role Akses Aplikasi.' },
         'profil': { title: 'Profil Perusahaan', sub: 'Informasi dasar identitas perusahaan.' },
         'coa': { title: 'Kategori COA & Akuntansi', sub: 'Master data pos biaya akuntansi.' },
@@ -424,8 +425,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Update active nav link
-        navItems.forEach(nav => {
-            if (nav.id === 'menu-produk-toggle' || nav.id === 'menu-pengaturan-toggle') return;
+        document.querySelectorAll('.nav-item').forEach(nav => {
+            if (nav.id === 'menu-produk-toggle' || nav.id === 'menu-pengaturan-toggle' || nav.id === 'menu-finance-toggle') return;
             const isActive = nav.getAttribute('data-target') === targetViewId;
             nav.classList.toggle('active', isActive);
 
@@ -437,6 +438,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('menu-produk-toggle').classList.add('open');
                 } else if (parentSubmenu.id === 'submenu-pengaturan') {
                     document.getElementById('menu-pengaturan-toggle').classList.add('open');
+                } else if (parentSubmenu.id === 'submenu-finance') {
+                    document.getElementById('menu-finance-toggle').classList.add('open');
                 }
             }
         });
@@ -474,6 +477,8 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (targetViewId === 'dashboard') loadDashboardData();
         else if (targetViewId === 'rbac') loadRBACData();
         else if (targetViewId === 'grn') loadGRNData();
+        else if (targetViewId === 'finance') loadCOAData();
+        else if (targetViewId === 'laporan-kas') loadLaporanKasData();
 
         if (typeof updateGlobalFAB === 'function') updateGlobalFAB(targetViewId);
     }
@@ -523,6 +528,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (item.id === 'menu-pengaturan-toggle') {
                 item.classList.toggle('open');
                 document.getElementById('submenu-pengaturan').classList.toggle('open');
+                return; // Do not switch view for parent menu
+            }
+            if (item.id === 'menu-finance-toggle') {
+                item.classList.toggle('open');
+                document.getElementById('submenu-finance').classList.toggle('open');
                 return; // Do not switch view for parent menu
             }
             switchView(item.getAttribute('data-target'));
@@ -3794,7 +3804,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-add-cash')?.addEventListener('click', () => {
         document.getElementById('pc_nominal').value = '';
         document.getElementById('pc_keterangan').value = '';
-        document.getElementById('pc_coa').value = '';
+        
+        const pcCoa = document.getElementById('pc_coa');
+        if (pcCoa) pcCoa.value = '';
+        
+        const displayText = document.getElementById('pc_coa_display_text');
+        if (displayText) {
+            displayText.textContent = '-- Pilih Pos Akuntansi --';
+            displayText.style.color = '#999';
+        }
+        
         pettyCashModal.classList.add('active');
     });
 
@@ -5923,16 +5942,10 @@ function hideAllDescendants(parentKode) {
 }
 
 function populateCOADatalist(data) {
-    const datalist = document.getElementById('coa-datalist');
-    if (!datalist) return;
-    datalist.innerHTML = '';
-    data.forEach(item => {
-        const opt = document.createElement('option');
-        opt.value = `${item.kode} - ${item.keterangan}`;
-        datalist.appendChild(opt);
-    });
+    // Populate Custom Tree Dropdown for Petty Cash
+    renderPettyCashCOATree(data);
 
-    // Also populate the parent select in modal
+    // Populate the parent select in COA modal
     const parentSelect = document.getElementById('coa_parent_kode');
     if (parentSelect) {
         parentSelect.innerHTML = '<option value="">-- Buat Root Baru / Ketik Manual --</option>';
@@ -5944,6 +5957,128 @@ function populateCOADatalist(data) {
         });
     }
 }
+
+function renderPettyCashCOATree(data) {
+    const tbody = document.getElementById('pc_coa_tree_body');
+    if (!tbody) return;
+
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td style="text-align: center; padding: 10px;">Tidak ada data COA</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = '';
+    const dataMap = {};
+    const roots = [];
+
+    data.forEach(item => {
+        dataMap[item.kode] = { ...item, children: [] };
+    });
+
+    data.forEach(item => {
+        let isRoot = true;
+        for (let potentialParent of data) {
+            if (isChildCOA(potentialParent.kode, item.kode)) {
+                if (dataMap[potentialParent.kode]) {
+                    dataMap[potentialParent.kode].children.push(dataMap[item.kode]);
+                    isRoot = false;
+                    break;
+                }
+            }
+        }
+        if (isRoot) roots.push(dataMap[item.kode]);
+    });
+
+    const renderNode = (node, depth, parentKode) => {
+        const tr = document.createElement('tr');
+        tr.className = 'pc-coa-row';
+        tr.dataset.kode = node.kode;
+        tr.dataset.parent = parentKode || '';
+        
+        if (depth > 0) tr.style.display = 'none';
+
+        const hasChildren = node.children && node.children.length > 0;
+        const paddingLeft = depth * 20 + 10;
+        
+        const toggleHtml = hasChildren
+            ? `<span class="pc-coa-toggle" onclick="togglePCCoaChildren(event, '${node.kode}')" style="cursor:pointer; display:inline-block; width:20px; text-align:center;"><i class="fa-solid fa-caret-right" id="pc-coa-icon-${node.kode.replace(/[^a-zA-Z0-9]/g, '-')}"></i></span>`
+            : `<span class="pc-coa-toggle" style="display:inline-block; width:20px;"></span>`;
+
+        tr.innerHTML = `
+            <td style="padding: 8px; padding-left: ${paddingLeft}px; border-bottom: 1px solid var(--glass-border); cursor: pointer;" onclick="selectPCCoa('${node.kode}', '${node.keterangan.replace(/'/g, "\\'")}')">
+                ${toggleHtml} <span style="font-weight: ${hasChildren ? 'bold' : 'normal'}; color: var(--text-main);">${node.kode} - ${node.keterangan}</span>
+            </td>
+        `;
+        tbody.appendChild(tr);
+
+        if (hasChildren) {
+            node.children.forEach(child => renderNode(child, depth + 1, node.kode));
+        }
+    };
+
+    roots.forEach(root => renderNode(root, 0, null));
+}
+
+window.togglePCCoaChildren = function(e, parentKode) {
+    e.stopPropagation(); // prevent selecting the row
+    const rows = document.querySelectorAll('.pc-coa-row');
+    const icon = document.getElementById('pc-coa-icon-' + parentKode.replace(/[^a-zA-Z0-9]/g, '-'));
+    
+    let isExpanding = true;
+    if (icon && icon.classList.contains('fa-caret-right')) {
+        icon.classList.replace('fa-caret-right', 'fa-caret-down');
+        isExpanding = true;
+    } else if (icon) {
+        icon.classList.replace('fa-caret-down', 'fa-caret-right');
+        isExpanding = false;
+    }
+
+    rows.forEach(row => {
+        if (row.dataset.parent === parentKode) {
+            row.style.display = isExpanding ? '' : 'none';
+            if (!isExpanding) {
+                hideAllPCCoaDescendants(row.dataset.kode);
+            }
+        }
+    });
+};
+
+function hideAllPCCoaDescendants(parentKode) {
+    const rows = document.querySelectorAll('.pc-coa-row');
+    const icon = document.getElementById('pc-coa-icon-' + parentKode.replace(/[^a-zA-Z0-9]/g, '-'));
+    if (icon) icon.classList.replace('fa-caret-down', 'fa-caret-right');
+    
+    rows.forEach(row => {
+        if (row.dataset.parent === parentKode) {
+            row.style.display = 'none';
+            hideAllPCCoaDescendants(row.dataset.kode);
+        }
+    });
+}
+
+window.selectPCCoa = function(kode, keterangan) {
+    document.getElementById('pc_coa').value = `${kode} - ${keterangan}`;
+    const display = document.getElementById('pc_coa_display_text');
+    if (display) {
+        display.textContent = `${kode} - ${keterangan}`;
+        display.style.color = 'var(--text-main)';
+    }
+    document.getElementById('pc_coa_dropdown').style.display = 'none';
+};
+
+// Dropdown interactions
+document.getElementById('pc_coa_display')?.addEventListener('click', function(e) {
+    const dd = document.getElementById('pc_coa_dropdown');
+    dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+});
+
+document.addEventListener('click', function(e) {
+    const display = document.getElementById('pc_coa_display');
+    const dd = document.getElementById('pc_coa_dropdown');
+    if (display && dd && !display.contains(e.target) && !dd.contains(e.target)) {
+        dd.style.display = 'none';
+    }
+});
 
 window.editCOA = function (item) {
     document.getElementById('coa_old_kode').value = item.kode;
@@ -6056,6 +6191,7 @@ const MENUS = [
     { id: 'barang-jadi', name: 'Master Barang Jadi' },
     { id: 'produksi', name: 'SPK Produksi' },
     { id: 'finance', name: 'Finance / Petty Cash' },
+    { id: 'laporan-kas', name: 'Laporan Kas' },
     { id: 'invoice', name: 'Invoice' }
 ];
 
@@ -6440,3 +6576,237 @@ document.getElementById('grn-form')?.addEventListener('submit', async (e) => {
         btnSubmit.disabled = false;
     }
 });
+
+let globalPettyCashData = [];
+
+async function loadLaporanKasData() {
+    const tbody = document.getElementById('table-laporan-kas');
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat Laporan...</td></tr>`;
+
+    try {
+        // Load COA for filter dropdown
+        const resCOA = await window.ERPAPI.request('get_coa');
+        if (resCOA.status === 'success') {
+            renderFilterKasCOATree(resCOA.data);
+        }
+
+        // Fetch Petty Cash data
+        const res = await window.ERPAPI.request('get_petty_cash');
+        if (res.status === 'success') {
+            globalPettyCashData = res.data;
+            applyLaporanKasFilter(); // Render table with initial empty filter
+        } else {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Gagal memuat data.</td></tr>`;
+        }
+    } catch (error) {
+        console.error('Error fetching laporan kas:', error);
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red;">Error memuat data kas.</td></tr>`;
+    }
+}
+
+function renderFilterKasCOATree(data) {
+    const tbody = document.getElementById('filter-kas-coa-tree-body');
+    if (!tbody) return;
+
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td style="text-align: center; padding: 10px;">Tidak ada data COA</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = `
+        <tr class="filter-kas-coa-row">
+            <td style="padding: 8px; border-bottom: 1px solid var(--glass-border); cursor: pointer;" onclick="selectFilterKasCOA('', '-- Semua Kategori COA --')">
+                <span style="font-weight: bold; color: var(--text-main);">-- Semua Kategori COA --</span>
+            </td>
+        </tr>
+    `;
+    const dataMap = {};
+    const roots = [];
+
+    data.forEach(item => {
+        dataMap[item.kode] = { ...item, children: [] };
+    });
+
+    data.forEach(item => {
+        let isRoot = true;
+        for (let potentialParent of data) {
+            if (isChildCOA(potentialParent.kode, item.kode)) {
+                if (dataMap[potentialParent.kode]) {
+                    dataMap[potentialParent.kode].children.push(dataMap[item.kode]);
+                    isRoot = false;
+                    break;
+                }
+            }
+        }
+        if (isRoot) roots.push(dataMap[item.kode]);
+    });
+
+    const renderNode = (node, depth, parentKode) => {
+        const tr = document.createElement('tr');
+        tr.className = 'filter-kas-coa-row';
+        tr.dataset.kode = node.kode;
+        tr.dataset.parent = parentKode || '';
+        
+        if (depth > 0) tr.style.display = 'none';
+
+        const hasChildren = node.children && node.children.length > 0;
+        const paddingLeft = depth * 20 + 10;
+        
+        const toggleHtml = hasChildren
+            ? `<span class="filter-kas-coa-toggle" onclick="toggleFilterKasCOAChildren(event, '${node.kode}')" style="cursor:pointer; display:inline-block; width:20px; text-align:center;"><i class="fa-solid fa-caret-right" id="filter-kas-coa-icon-${node.kode.replace(/[^a-zA-Z0-9]/g, '-')}"></i></span>`
+            : `<span class="filter-kas-coa-toggle" style="display:inline-block; width:20px;"></span>`;
+
+        tr.innerHTML = `
+            <td style="padding: 8px; padding-left: ${paddingLeft}px; border-bottom: 1px solid var(--glass-border); cursor: pointer;" onclick="selectFilterKasCOA('${node.kode}', '${node.keterangan.replace(/'/g, "\\'")}')">
+                ${toggleHtml} <span style="font-weight: ${hasChildren ? 'bold' : 'normal'}; color: var(--text-main);">${node.kode} - ${node.keterangan}</span>
+            </td>
+        `;
+        tbody.appendChild(tr);
+
+        if (hasChildren) {
+            node.children.forEach(child => renderNode(child, depth + 1, node.kode));
+        }
+    };
+
+    roots.forEach(root => renderNode(root, 0, null));
+}
+
+window.toggleFilterKasCOAChildren = function(e, parentKode) {
+    e.stopPropagation();
+    const rows = document.querySelectorAll('.filter-kas-coa-row');
+    const icon = document.getElementById('filter-kas-coa-icon-' + parentKode.replace(/[^a-zA-Z0-9]/g, '-'));
+    
+    let isExpanding = true;
+    if (icon && icon.classList.contains('fa-caret-right')) {
+        icon.classList.replace('fa-caret-right', 'fa-caret-down');
+        isExpanding = true;
+    } else if (icon) {
+        icon.classList.replace('fa-caret-down', 'fa-caret-right');
+        isExpanding = false;
+    }
+
+    rows.forEach(row => {
+        if (row.dataset.parent === parentKode) {
+            row.style.display = isExpanding ? '' : 'none';
+            if (!isExpanding) {
+                hideAllFilterKasCOADescendants(row.dataset.kode);
+            }
+        }
+    });
+};
+
+function hideAllFilterKasCOADescendants(parentKode) {
+    const rows = document.querySelectorAll('.filter-kas-coa-row');
+    const icon = document.getElementById('filter-kas-coa-icon-' + parentKode.replace(/[^a-zA-Z0-9]/g, '-'));
+    if (icon) icon.classList.replace('fa-caret-down', 'fa-caret-right');
+    
+    rows.forEach(row => {
+        if (row.dataset.parent === parentKode) {
+            row.style.display = 'none';
+            hideAllFilterKasCOADescendants(row.dataset.kode);
+        }
+    });
+}
+
+window.selectFilterKasCOA = function(kode, keterangan) {
+    document.getElementById('filter-kas-coa').value = kode ? `${kode} - ${keterangan}` : '';
+    const display = document.getElementById('filter-kas-coa-display-text');
+    if (display) {
+        display.textContent = kode ? `${kode} - ${keterangan}` : '-- Semua Kategori COA --';
+        display.style.color = 'var(--text-main)';
+    }
+    document.getElementById('filter-kas-coa-dropdown').style.display = 'none';
+};
+
+// Filter Dropdown interactions
+document.getElementById('filter-kas-coa-display')?.addEventListener('click', function(e) {
+    const dd = document.getElementById('filter-kas-coa-dropdown');
+    dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+});
+
+document.addEventListener('click', function(e) {
+    const display = document.getElementById('filter-kas-coa-display');
+    const dd = document.getElementById('filter-kas-coa-dropdown');
+    if (display && dd && !display.contains(e.target) && !dd.contains(e.target)) {
+        dd.style.display = 'none';
+    }
+});
+
+function applyLaporanKasFilter() {
+    const startDate = document.getElementById('filter-kas-start').value;
+    const endDate = document.getElementById('filter-kas-end').value;
+    const coaFilter = document.getElementById('filter-kas-coa').value;
+    
+    let filteredData = globalPettyCashData;
+
+    if (startDate) {
+        filteredData = filteredData.filter(item => {
+            const itemDate = new Date(item.waktu.split(' ')[0]);
+            const sDate = new Date(startDate);
+            return itemDate >= sDate;
+        });
+    }
+
+    if (endDate) {
+        filteredData = filteredData.filter(item => {
+            const itemDate = new Date(item.waktu.split(' ')[0]);
+            const eDate = new Date(endDate);
+            return itemDate <= eDate;
+        });
+    }
+
+    if (coaFilter) {
+        // Match exact or prefix if using tree hierarchy logic?
+        // Let's match by prefix, so choosing parent also shows children
+        const prefix = coaFilter.split(' - ')[0];
+        filteredData = filteredData.filter(item => item.coa && item.coa.startsWith(prefix));
+    }
+
+    renderLaporanKasTable(filteredData);
+}
+
+document.getElementById('btn-filter-kas')?.addEventListener('click', applyLaporanKasFilter);
+
+function renderLaporanKasTable(data) {
+    const tbody = document.getElementById('table-laporan-kas');
+    if (!tbody) return;
+
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Tidak ada data kas pada periode/filter tersebut.</td></tr>';
+        document.getElementById('summary-kas-masuk').textContent = 'Rp 0';
+        document.getElementById('summary-kas-keluar').textContent = 'Rp 0';
+        return;
+    }
+
+    tbody.innerHTML = '';
+    let totalMasuk = 0;
+    let totalKeluar = 0;
+
+    // Sort descending by date
+    data.sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
+
+    data.forEach(item => {
+        const nominal = parseFloat(item.jumlah) || 0;
+        if (item.jenis === 'Masuk') totalMasuk += nominal;
+        else totalKeluar += nominal;
+
+        const badgeColor = item.jenis === 'Masuk' ? 'background: rgba(0,255,136,0.1); color: var(--success);' : 'background: rgba(255,68,68,0.1); color: var(--danger);';
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${item.waktu}</td>
+            <td>${item.user}</td>
+            <td><span class="status-badge" style="${badgeColor}">${item.jenis}</span></td>
+            <td>${item.coa || '-'}</td>
+            <td>${item.keterangan || '-'}</td>
+            <td style="font-weight: bold; color: ${item.jenis === 'Masuk' ? 'var(--success)' : 'var(--danger)'};">
+                ${item.jenis === 'Masuk' ? '+' : '-'} Rp ${nominal.toLocaleString('id-ID')}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById('summary-kas-masuk').textContent = `Rp ${totalMasuk.toLocaleString('id-ID')}`;
+    document.getElementById('summary-kas-keluar').textContent = `Rp ${totalKeluar.toLocaleString('id-ID')}`;
+}
