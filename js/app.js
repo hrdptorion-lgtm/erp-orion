@@ -415,6 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (targetViewId === 'purchasing') loadPurchasingData();
         else if (targetViewId === 'admin') loadAdminData();
         else if (targetViewId === 'sales') loadPenawaranData();
+        else if (targetViewId === 'po-customer') loadPOCustomerData();
         else if (targetViewId === 'bom') loadBOMData();
         else if (targetViewId === 'produksi') loadProduksiData();
         else if (targetViewId === 'po-internal') loadPOInternalData();
@@ -1616,6 +1617,230 @@ async function loadBarangJadiData(isBackgroundSync = false) {
         });
     }
 }
+
+
+// ==========================================
+// PO CUSTOMER LOGIC
+// ==========================================
+window.poCustomerData = [];
+
+async function loadPOCustomerData() {
+    const tbody = document.getElementById('table-po-customer');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+    
+    // Make sure penawaran is loaded for references
+    await window.ERPAPI.request('get_penawaran');
+    
+    const response = await window.ERPAPI.request('get_po_customer');
+    if (response.status === 'success' && response.data) {
+        window.poCustomerData = response.data.reverse();
+        tbody.innerHTML = '';
+        if (window.poCustomerData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Tidak ada data PO Customer.</td></tr>';
+            return;
+        }
+        window.poCustomerData.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-weight: 500;">${item.id_po_customer || '-'}</td>
+                <td><span class="badge badge-info">${item.no_penawaran || '-'}</span></td>
+                <td>${item.nama_customer || '-'}</td>
+                <td>${item.tanggal_po || '-'}</td>
+                <td>Rp ${window.formatRupiah(item.total_harga || 0)}</td>
+                <td><span class="badge badge-${item.status === 'Selesai' ? 'success' : (item.status === 'Proses' ? 'warning' : 'info')}">${item.status || 'Pending'}</span></td>
+                <td>
+                    <button class="btn-icon btn-edit" title="Edit" onclick="openPOCustomerModal('${item.id_po_customer}')"><i class="fa-solid fa-edit"></i></button>
+                    <button class="btn-icon btn-delete" title="Hapus" onclick="deletePOCustomer('${item.id_po_customer}')"><i class="fa-solid fa-trash"></i></button>
+                    <button class="btn-icon btn-print" title="Cetak PO" onclick="printPOCustomer('${item.id_po_customer}')"><i class="fa-solid fa-print"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } else {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--danger);">Gagal memuat data.</td></tr>';
+    }
+}
+
+document.getElementById('btn-add-po-customer')?.addEventListener('click', async () => {
+    document.getElementById('po-customer-form').reset();
+    document.getElementById('poc_id').value = '';
+    document.getElementById('poc-items-container').innerHTML = '';
+    document.getElementById('poc_total_harga_display').innerText = '0';
+    document.getElementById('poc_total_harga').value = '0';
+    document.getElementById('po-customer-modal-title').innerText = 'Buat PO dari Penawaran';
+    
+    // Load Approved Penawaran
+    const sel = document.getElementById('poc_no_penawaran');
+    if (sel.tomselect) sel.tomselect.destroy();
+    sel.innerHTML = '<option value="">Pilih Penawaran yang sudah di Approve...</option>';
+    
+    const penawaranRes = await window.ERPAPI.request('get_penawaran');
+    if (penawaranRes.status === 'success' && penawaranRes.data) {
+        const approved = penawaranRes.data.filter(p => p.status === 'Approve');
+        approved.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.no_penawaran;
+            opt.text = p.no_penawaran + ' - ' + p.customer;
+            opt.dataset.customer = p.customer;
+            opt.dataset.items = JSON.stringify(p.rincian_item || []);
+            sel.appendChild(opt);
+        });
+    }
+    
+    new TomSelect('#poc_no_penawaran', { create: false });
+    document.getElementById('po-customer-modal').classList.add('active');
+});
+
+document.getElementById('poc_no_penawaran')?.addEventListener('change', (e) => {
+    const sel = e.target;
+    const val = sel.value;
+    if (!val) return;
+    
+    // Find the selected option to get datasets
+    let opt = null;
+    if (sel.tomselect) {
+        const optionEl = sel.tomselect.getOption(val);
+        // It's tricky to get dataset from TomSelect directly sometimes, better find original element
+        const originalSelect = document.getElementById('poc_no_penawaran');
+        for (let i = 0; i < originalSelect.options.length; i++) {
+            if (originalSelect.options[i].value === val) opt = originalSelect.options[i];
+        }
+    } else {
+        opt = sel.options[sel.selectedIndex];
+    }
+    
+    if (opt) {
+        document.getElementById('poc_customer').value = opt.dataset.customer || '';
+        const items = JSON.parse(opt.dataset.items || '[]');
+        renderPOCustomerItems(items);
+    }
+});
+
+function renderPOCustomerItems(items) {
+    const container = document.getElementById('poc-items-container');
+    container.innerHTML = '';
+    items.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'poc-item-row';
+        div.style.display = 'grid';
+        div.style.gridTemplateColumns = '2fr 1fr 1fr 1fr';
+        div.style.gap = '10px';
+        div.style.marginBottom = '10px';
+        div.style.alignItems = 'center';
+        
+        div.innerHTML = `
+            <input type="text" class="poc-item-nama" value="${item.nama}" readonly style="background:rgba(255,255,255,0.05);">
+            <input type="text" class="poc-item-harga number-format" value="${window.formatRupiah(item.harga)}" readonly style="background:rgba(255,255,255,0.05);">
+            <input type="number" class="poc-item-qty" value="${item.qty}" min="1" onchange="calculatePOCTotal()">
+            <input type="text" class="poc-item-subtotal" value="${window.formatRupiah((item.harga || 0) * (item.qty || 0))}" readonly style="background:rgba(255,255,255,0.05); font-weight:bold;">
+        `;
+        container.appendChild(div);
+    });
+    calculatePOCTotal();
+}
+
+window.calculatePOCTotal = function() {
+    let total = 0;
+    const rows = document.querySelectorAll('.poc-item-row');
+    rows.forEach(row => {
+        const harga = window.parseRupiah(row.querySelector('.poc-item-harga').value);
+        const qty = parseFloat(row.querySelector('.poc-item-qty').value) || 0;
+        const subtotal = harga * qty;
+        row.querySelector('.poc-item-subtotal').value = window.formatRupiah(subtotal);
+        total += subtotal;
+    });
+    document.getElementById('poc_total_harga').value = total;
+    document.getElementById('poc_total_harga_display').innerText = window.formatRupiah(total);
+};
+
+document.getElementById('btn-close-po-customer')?.addEventListener('click', () => {
+    document.getElementById('po-customer-modal').classList.remove('active');
+});
+
+document.getElementById('po-customer-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.innerText;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+    btn.disabled = true;
+    
+    const items = [];
+    document.querySelectorAll('.poc-item-row').forEach(row => {
+        items.push({
+            nama: row.querySelector('.poc-item-nama').value,
+            harga: window.parseRupiah(row.querySelector('.poc-item-harga').value),
+            qty: parseFloat(row.querySelector('.poc-item-qty').value)
+        });
+    });
+    
+    const payload = {
+        id_po_customer: document.getElementById('poc_id').value,
+        no_penawaran: document.getElementById('poc_no_penawaran').value,
+        nama_customer: document.getElementById('poc_customer').value,
+        tanggal_po: document.getElementById('poc_tanggal').value,
+        item_po: items,
+        total_harga: document.getElementById('poc_total_harga').value,
+        status: document.getElementById('poc_status').value
+    };
+    
+    const res = await window.ERPAPI.request('save_po_customer', payload);
+    btn.innerText = originalText;
+    btn.disabled = false;
+    
+    if (res.status === 'success') {
+        window.showToast(res.message, 'success');
+        document.getElementById('po-customer-modal').classList.remove('active');
+        loadPOCustomerData();
+    } else {
+        window.showToast(res.message, 'error');
+    }
+});
+
+window.openPOCustomerModal = function(id) {
+    const item = window.poCustomerData.find(i => i.id_po_customer === id);
+    if (!item) return;
+    
+    document.getElementById('po-customer-form').reset();
+    document.getElementById('poc_id').value = item.id_po_customer;
+    document.getElementById('po-customer-modal-title').innerText = 'Edit PO Customer';
+    
+    const sel = document.getElementById('poc_no_penawaran');
+    if (sel.tomselect) sel.tomselect.destroy();
+    sel.innerHTML = `<option value="${item.no_penawaran}">${item.no_penawaran}</option>`;
+    new TomSelect('#poc_no_penawaran', { create: false });
+    
+    document.getElementById('poc_customer').value = item.nama_customer || '';
+    
+    let tgl = '';
+    if (item.tanggal_po) {
+        const parts = item.tanggal_po.split('/');
+        if (parts.length === 3) tgl = `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    document.getElementById('poc_tanggal').value = tgl;
+    document.getElementById('poc_status').value = item.status;
+    
+    renderPOCustomerItems(item.item_po || []);
+    
+    document.getElementById('po-customer-modal').classList.add('active');
+};
+
+window.deletePOCustomer = async function(id) {
+    if (!confirm('Hapus PO Customer ini?')) return;
+    const res = await window.ERPAPI.request('delete_po_customer', { id: id });
+    if (res.status === 'success') {
+        window.showToast(res.message, 'success');
+        loadPOCustomerData();
+    } else {
+        window.showToast(res.message, 'error');
+    }
+};
+
+window.printPOCustomer = function(id) {
+    window.showToast('Fitur cetak sedang dikembangkan.', 'info');
+};
+
+// ==========================================
 
 // Flow 1: Penawaran
 async function loadPenawaranData(isBackgroundSync = false) {
@@ -4835,7 +5060,7 @@ async function openDetailPenawaran(item) {
                     const offset = today.getTimezoneOffset() * 60000;
                     const localDate = new Date(today.getTime() - offset).toISOString().split('T')[0];
                     document.getElementById('sj_tanggal').value = localDate;
-                    document.getElementById('sj_no_penawaran').value = item.no_penawaran || '';
+                    document.getElementById('sj_id_po_customer').value = item.no_penawaran || '';
                     document.getElementById('sj_customer').value = item.customer || '';
                     
                     const tbody = document.getElementById('sj-items-tbody');
@@ -4883,7 +5108,7 @@ async function openDetailPenawaran(item) {
                     const offset = today.getTimezoneOffset() * 60000;
                     document.getElementById('inv_tanggal').value = new Date(today.getTime() - offset).toISOString().split('T')[0];
                     document.getElementById('inv_jatuh_tempo').value = new Date(today.getTime() - offset + 30*24*60*60*1000).toISOString().split('T')[0];
-                    document.getElementById('inv_no_penawaran').value = item.no_penawaran || '';
+                    document.getElementById('inv_id_po_customer').value = item.no_penawaran || '';
                     document.getElementById('inv_customer').value = item.customer || '';
                     document.getElementById('inv_total').value = 0;
                     
@@ -5104,7 +5329,7 @@ function renderSuratJalanTable() {
             document.getElementById('surat-jalan-form').reset();
             document.getElementById('sj_no').value = item.no_sj || '';
             document.getElementById('sj_tanggal').value = item.tanggal ? item.tanggal.split('/').reverse().join('-') : '';
-            document.getElementById('sj_no_penawaran').value = item.no_penawaran || '';
+            document.getElementById('sj_id_po_customer').value = item.no_penawaran || '';
             document.getElementById('sj_customer').value = item.customer || '';
             document.getElementById('sj_supir').value = item.supir || '';
             document.getElementById('sj_plat').value = item.plat_nomor || '';
@@ -5260,7 +5485,7 @@ document.getElementById('surat-jalan-form')?.addEventListener('submit', async (e
     const payload = {
         no_sj: document.getElementById('sj_no').value,
         tanggal: document.getElementById('sj_tanggal').value,
-        no_penawaran: document.getElementById('sj_no_penawaran').value,
+        no_penawaran: document.getElementById('sj_id_po_customer').value,
         customer: document.getElementById('sj_customer').value,
         supir: document.getElementById('sj_supir').value,
         plat_nomor: document.getElementById('sj_plat').value,
@@ -5341,7 +5566,7 @@ function renderInvoiceTable() {
             document.getElementById('inv_no').value = item.no_invoice || '';
             document.getElementById('inv_tanggal').value = item.tanggal ? item.tanggal.split('/').reverse().join('-') : '';
             document.getElementById('inv_jatuh_tempo').value = item.jatuh_tempo ? item.jatuh_tempo.split('/').reverse().join('-') : '';
-            document.getElementById('inv_no_penawaran').value = item.no_penawaran || '';
+            document.getElementById('inv_id_po_customer').value = item.no_penawaran || '';
             document.getElementById('inv_customer').value = item.customer || '';
             document.getElementById('inv_total').value = item.total_tagihan || 0;
             document.getElementById('inv_terbayar').value = item.terbayar || 0;
@@ -5530,7 +5755,7 @@ document.getElementById('invoice-form')?.addEventListener('submit', async (e) =>
         no_invoice: document.getElementById('inv_no').value,
         tanggal: document.getElementById('inv_tanggal').value,
         jatuh_tempo: document.getElementById('inv_jatuh_tempo').value,
-        no_penawaran: document.getElementById('inv_no_penawaran').value,
+        no_penawaran: document.getElementById('inv_id_po_customer').value,
         customer: document.getElementById('inv_customer').value,
         total_tagihan: document.getElementById('inv_total').value,
         terbayar: document.getElementById('inv_terbayar').value,

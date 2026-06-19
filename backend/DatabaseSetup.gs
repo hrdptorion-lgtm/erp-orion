@@ -15,7 +15,8 @@ function setupDatabase() {
     { name: 'DB Pengaturan', cols: ['Key', 'Value'] },
     { name: 'DB Users', cols: ['Username', 'Password', 'Role', 'Nama Lengkap'] },
     { name: 'DB Customer', cols: ['ID Customer', 'Nama Customer', 'Alamat / Keterangan', 'Tanggal Terdaftar'] },
-    { name: 'DB COA', cols: ['No. Perkiraan', 'Keterangan'] }
+    { name: 'DB COA', cols: ['No. Perkiraan', 'Keterangan'] },
+    { name: 'DB PO Customer', cols: ['ID PO Customer', 'No Penawaran', 'Nama Customer', 'Tanggal PO', 'Item PO', 'Total Harga', 'Status'] }
   ];
   
   sheetsInfo.forEach(info => {

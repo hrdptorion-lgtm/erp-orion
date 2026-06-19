@@ -74,6 +74,18 @@ function doPost(e) {
       case 'delete_penawaran':
         response = deletePenawaran(payload);
         break;
+      case 'revisi_penawaran':
+        response = revisiPenawaran(payload);
+        break;
+      case 'get_po_customer':
+        response = getPOCustomer();
+        break;
+      case 'save_po_customer':
+        response = savePOCustomer(payload);
+        break;
+      case 'delete_po_customer':
+        response = deletePOCustomer(payload);
+        break;
       case 'get_customers':
         response = getCustomers();
         break;

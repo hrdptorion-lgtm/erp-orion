@@ -900,28 +900,30 @@ function savePenawaran(payload) {
   
   const values = sheet.getDataRange().getDisplayValues();
 
-  // Generate OKS-MM-YYYY-XXX No Penawaran
+  // Generate OKS-[NAMA_PERUSAHAAN]-[DDMMYYYY]-REV[XX] No Penawaran
   let noDoc = payload.no_penawaran;
   if (!noDoc) {
     const today = new Date();
+    const dd = String(today.getDate()).padStart(2, '0');
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const yyyy = today.getFullYear();
-    const prefix = `OKS-${mm}-${yyyy}-`;
+    const company = String(payload.customer || 'UNKNOWN').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const prefix = `OKS-${company}-${dd}${mm}${yyyy}-REV`;
     
-    let maxCounter = 0;
+    let maxCounter = -1;
     for (let i = 1; i < values.length; i++) {
       const existingNo = String(values[i][0]).trim();
       if (existingNo.startsWith(prefix)) {
-        const parts = existingNo.split('-');
-        if (parts.length === 4) {
-          const counter = parseInt(parts[3], 10);
+        const parts = existingNo.split('-REV');
+        if (parts.length === 2) {
+          const counter = parseInt(parts[1], 10);
           if (!isNaN(counter) && counter > maxCounter) {
             maxCounter = counter;
           }
         }
       }
     }
-    const newCounter = String(maxCounter + 1).padStart(3, '0');
+    const newCounter = String(maxCounter >= 0 ? maxCounter + 1 : 0).padStart(2, '0');
     noDoc = `${prefix}${newCounter}`;
   }
 
@@ -998,6 +1000,107 @@ function deletePenawaran(payload) {
     }
   }
   return { status: 'error', message: 'Penawaran tidak ditemukan.' };
+}
+
+function revisiPenawaran(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Penawaran');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Penawaran tidak ditemukan.' };
+  const values = sheet.getDataRange().getDisplayValues();
+  
+  const oldId = String(payload.id).trim();
+  let oldRow = null;
+  let oldRowIdx = -1;
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][0]).trim() === oldId) {
+      oldRow = values[i];
+      oldRowIdx = i + 1;
+      break;
+    }
+  }
+  if (!oldRow) return { status: 'error', message: 'Data penawaran asal tidak ditemukan.' };
+  
+  // Set old Penawaran to Reject
+  sheet.getRange(oldRowIdx, 7).setValue('Reject');
+
+  // Create new ID (Increment REV)
+  const parts = oldId.split('-REV');
+  let newId = oldId + '-REV01'; // Fallback
+  if (parts.length === 2) {
+    const revNum = parseInt(parts[1], 10);
+    newId = parts[0] + '-REV' + String(revNum + 1).padStart(2, '0');
+  }
+
+  // Insert new row based on old row
+  const newRowData = [...oldRow];
+  newRowData[0] = newId;
+  newRowData[1] = new Date().toLocaleDateString('id-ID'); // Update date
+  newRowData[6] = 'Diajukan'; // Default status for new revision
+  sheet.appendRow(newRowData);
+  
+  return { status: 'success', message: 'Revisi penawaran berhasil dibuat.', no_doc: newId };
+}
+
+// ==========================================
+// PO CUSTOMER
+// ==========================================
+function getPOCustomer() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB PO Customer');
+  if (!sheet) return { status: 'success', data: [] };
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length <= 1) return { status: 'success', data: [] };
+  const headers = values[0];
+  const data = values.slice(1).map(row => {
+    let obj = {};
+    headers.forEach((h, i) => obj[String(h).toLowerCase().replace(/ /g, '_')] = row[i]);
+    try { obj.item_po = JSON.parse(obj.item_po); } catch(e) { obj.item_po = []; }
+    return obj;
+  });
+  return { status: 'success', data: data };
+}
+
+function savePOCustomer(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB PO Customer');
+  if (!sheet) return { status: 'error', message: 'Sheet DB PO Customer tidak ditemukan.' };
+  const values = sheet.getDataRange().getDisplayValues();
+  
+  let idPO = payload.id_po_customer || ('POC-' + Date.now());
+  const itemStr = typeof payload.item_po === 'string' ? payload.item_po : JSON.stringify(payload.item_po || []);
+  
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][0]).trim() === String(payload.id_po_customer).trim()) {
+      sheet.getRange(i + 1, 2).setValue(payload.no_penawaran || '');
+      sheet.getRange(i + 1, 3).setValue(payload.nama_customer || '');
+      sheet.getRange(i + 1, 4).setValue(payload.tanggal_po || new Date().toLocaleDateString('id-ID'));
+      sheet.getRange(i + 1, 5).setValue(itemStr);
+      sheet.getRange(i + 1, 6).setValue(payload.total_harga || 0);
+      sheet.getRange(i + 1, 7).setValue(payload.status || 'Pending');
+      return { status: 'success', message: 'PO Customer berhasil diupdate.' };
+    }
+  }
+  
+  sheet.appendRow([
+    idPO,
+    payload.no_penawaran || '',
+    payload.nama_customer || '',
+    payload.tanggal_po || new Date().toLocaleDateString('id-ID'),
+    itemStr,
+    payload.total_harga || 0,
+    payload.status || 'Pending'
+  ]);
+  return { status: 'success', message: 'PO Customer berhasil disimpan.' };
+}
+
+function deletePOCustomer(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB PO Customer');
+  if (!sheet) return { status: 'error', message: 'Sheet DB PO Customer tidak ditemukan.' };
+  const values = sheet.getDataRange().getDisplayValues();
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][0]).trim() === String(payload.id).trim()) {
+      sheet.deleteRow(i + 1);
+      return { status: 'success', message: 'PO Customer berhasil dihapus.' };
+    }
+  }
+  return { status: 'error', message: 'PO Customer tidak ditemukan.' };
 }
 
 // ==========================================
@@ -1772,7 +1875,7 @@ function deleteSuratJalan(payload) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Surat Jalan');
   if (!sheet) return { status: 'error', message: 'Sheet DB Surat Jalan tidak ditemukan.' };
   const values = sheet.getDataRange().getDisplayValues();
-  const sjIdx = values[0].findIndex(h => /no.*sj/i.test(h));
+  const sjIdx = values[0].findIndex(h => /no.*surat.*jalan/i.test(h) || /no.*sj/i.test(h));
   if(sjIdx === -1) return {status: 'error', message: 'Struktur tidak valid.'};
   for (let i = 1; i < values.length; i++) {
     if (String(values[i][sjIdx]).trim() === String(payload.no_sj).trim()) {
