@@ -445,10 +445,10 @@
                     <table>
                         <thead>
                             <tr>
+                                <th>Progress</th>
                                 <th>ID PO</th>
                                 <th>No Penawaran Ref</th>
                                 <th>Nama Customer</th>
-                                <th>Tanggal PO</th>
                                 <th>Total Harga</th>
                                 <th>Status</th>
                                 <th>Aksi</th>
@@ -983,18 +983,6 @@
                             <td style="border: none; padding: 2px;">-</td>
                         </tr>
 
-                        <tr>
-                            <td style="border: none; padding: 2px;">Time of Delivery</td>
-                            <td style="border: none; padding: 2px;">:</td>
-                            <td id="print_po_delivery" style="border: none; padding: 2px;">-</td>
-                        </tr>
-
-                        <tr>
-                            <td style="border: none; padding: 2px;">Term of Payment</td>
-                            <td style="border: none; padding: 2px;">:</td>
-                            <td id="print_po_payment" style="border: none; padding: 2px;">-</td>
-                        </tr>
-
                     </table>
                 </div>
             </div>
@@ -1094,28 +1082,14 @@
                             <input type="text" id="po_attn" placeholder="Nama Kontak">
                         </div>
                         <div class="input-group" style="margin-bottom:0;">
-                            <label>Your Enq No</label>
-                            <input type="text" id="po_enq_no" placeholder="Nomor Enquiry">
+                            <label>Alamat Supplier</label>
+                            <textarea id="po_alamat" rows="2" placeholder="Alamat supplier..." style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;"></textarea>
                         </div>
                         <div class="input-group" style="margin-bottom:0;">
-                            <label>Maker of Brand</label>
-                            <input type="text" id="po_maker" placeholder="Maker of Brand">
-                        </div>
-                        <div class="input-group" style="margin-bottom:0;">
-                            <label>Time of Delivery</label>
-                            <input type="text" id="po_delivery" placeholder="Misal: 1-2 Month">
-                        </div>
-                        <div class="input-group" style="margin-bottom:0;">
-                            <label>Incoterm</label>
-                            <input type="text" id="po_incoterm" placeholder="Misal: Franco">
-                        </div>
-                        <div class="input-group" style="margin-bottom:0;">
-                            <label>Term of Payment</label>
-                            <input type="text" id="po_payment_term" placeholder="Misal: 30 Days">
-                        </div>
-                        <div class="input-group" style="margin-bottom:0;">
-                            <label>Time of Validity</label>
-                            <input type="text" id="po_validity" placeholder="Misal: Until Further Revision">
+                            <label>Ref. PO Customer (Opsional)</label>
+                            <select id="po_customer_ref" style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+                                <option value="">-- Pilih PO Customer --</option>
+                            </select>
                         </div>
                     </div>
 
@@ -1137,13 +1111,13 @@
                                             style="padding:0.5rem; text-align:left; border-bottom:1px solid var(--glass-border);">
                                             Nama Barang</th>
                                         <th
-                                            style="padding:0.5rem; text-align:left; border-bottom:1px solid var(--glass-border); width:100px;">
-                                            Kode</th>
-                                        <th
                                             style="padding:0.5rem; text-align:left; border-bottom:1px solid var(--glass-border); width:120px;">
                                             Harga Satuan</th>
                                         <th
-                                            style="padding:0.5rem; text-align:left; border-bottom:1px solid var(--glass-border); width:80px;">
+                                            style="padding:0.5rem; text-align:left; border-bottom:1px solid var(--glass-border); width:120px;">
+                                            Harga Aktual</th>
+                                        <th
+                                            style="padding:0.5rem; text-align:left; border-bottom:1px solid var(--glass-border); width:160px;">
                                             Qty</th>
                                         <th
                                             style="padding:0.5rem; text-align:left; border-bottom:1px solid var(--glass-border); width:90px;">
@@ -1800,6 +1774,104 @@
                         <button type="submit" class="btn" style="flex: 1; justify-content: center;">Simpan PO</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- PO Customer Detail Modal Overlay -->
+        <div id="detail-poc-modal" class="login-overlay">
+            <div class="login-box" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px; margin-bottom: 20px;">
+                    <h2 style="margin: 0;">Detail PO Customer</h2>
+                    <button type="button" class="btn" id="btn-close-detail-poc" style="background: transparent; color: var(--text-main); font-size: 1.5rem; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-times"></i></button>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div id="detail-poc-actions" style="display: flex; gap: 15px; margin-bottom: 20px; overflow-x: auto; padding-top: 5px; padding-bottom: 5px;">
+                    <button type="button" class="btn" id="btn-detail-act-spk" style="flex: 1; flex-direction: column; align-items: center; justify-content: center; min-width: 130px; height: 90px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; color: #60a5fa; cursor: pointer; transition: all 0.2s;">
+                        <i class="fa-solid fa-industry" style="font-size: 1.5rem; margin-bottom: 8px;"></i>
+                        <span style="font-size: 0.75rem; text-align: center; font-weight: bold;">Buat SPK Produksi</span>
+                    </button>
+                    <button type="button" class="btn" id="btn-detail-act-po" style="flex: 1; flex-direction: column; align-items: center; justify-content: center; min-width: 130px; height: 90px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; color: #34d399; cursor: pointer; transition: all 0.2s;">
+                        <i class="fa-solid fa-cart-shopping" style="font-size: 1.5rem; margin-bottom: 8px;"></i>
+                        <span style="font-size: 0.75rem; text-align: center; font-weight: bold;">Pengajuan Belanja</span>
+                    </button>
+                    <button type="button" class="btn" id="btn-detail-act-sj" style="flex: 1; flex-direction: column; align-items: center; justify-content: center; min-width: 130px; height: 90px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; color: #fbbf24; cursor: pointer; transition: all 0.2s;">
+                        <i class="fa-solid fa-truck" style="font-size: 1.5rem; margin-bottom: 8px;"></i>
+                        <span style="font-size: 0.75rem; text-align: center; font-weight: bold;">Buat Surat Jalan</span>
+                    </button>
+                    <button type="button" class="btn" id="btn-detail-act-inv" style="flex: 1; flex-direction: column; align-items: center; justify-content: center; min-width: 130px; height: 90px; background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 10px; color: #a78bfa; cursor: pointer; transition: all 0.2s;">
+                        <i class="fa-solid fa-file-invoice-dollar" style="font-size: 1.5rem; margin-bottom: 8px;"></i>
+                        <span style="font-size: 0.75rem; text-align: center; font-weight: bold;">Buat Invoice</span>
+                    </button>
+                </div>
+                
+                <div id="detail-poc-info" style="margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
+                    <!-- Info diinjeksi via JS -->
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 10px; font-size: 1.1rem; color: var(--accent);">Daftar Pesanan (Barang Jadi)</h3>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nama Barang / Deskripsi</th>
+                                    <th>Qty</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detail-poc-items-tbody">
+                                <!-- Pesanan diinjeksi via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 style="margin-bottom: 10px; font-size: 1.1rem; color: var(--warning);">Analisis Kebutuhan Bahan Baku</h3>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nama Material</th>
+                                    <th style="text-align: right;">Kebutuhan Qty</th>
+                                    <th style="text-align: right;">Stok Gudang</th>
+                                    <th style="text-align: center;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detail-poc-shortage-tbody">
+                                <tr><td colspan="4" style="text-align: center;">Menghitung kebutuhan bahan baku...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+
+                <!-- Lacak Progress End-to-End -->
+                <div style="margin-top: 20px; border-top: 1px solid var(--glass-border); padding-top: 20px;">
+                    <h3 style="margin-bottom: 15px; font-size: 1.1rem; color: var(--success);"><i class="fa-solid fa-route"></i> Lacak Progress Pesanan (End-to-End)</h3>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
+                            <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px;">Tahap 1: Produksi (SPK)</div>
+                            <div id="track-spk-status" style="font-size: 1.1rem; font-weight: bold;">
+                                <span class="badge badge-secondary" style="background: rgba(255,255,255,0.1); color: var(--text-muted);">Memuat...</span>
+                            </div>
+                            <div id="track-spk-desc" style="font-size: 0.8rem; margin-top: 5px; color: var(--text-muted);">-</div>
+                        </div>
+                        <div style="flex: 1; min-width: 200px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
+                            <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px;">Tahap 2: Pengiriman (DO)</div>
+                            <div id="track-sj-status" style="font-size: 1.1rem; font-weight: bold;">
+                                <span class="badge badge-secondary" style="background: rgba(255,255,255,0.1); color: var(--text-muted);">Memuat...</span>
+                            </div>
+                            <div id="track-sj-desc" style="font-size: 0.8rem; margin-top: 5px; color: var(--text-muted);">-</div>
+                        </div>
+                        <div style="flex: 1; min-width: 200px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
+                            <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px;">Tahap 3: Penagihan (Invoice)</div>
+                            <div id="track-inv-status" style="font-size: 1.1rem; font-weight: bold;">
+                                <span class="badge badge-secondary" style="background: rgba(255,255,255,0.1); color: var(--text-muted);">Memuat...</span>
+                            </div>
+                            <div id="track-inv-desc" style="font-size: 0.8rem; margin-top: 5px; color: var(--text-muted);">-</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

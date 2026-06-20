@@ -296,8 +296,18 @@ function saveStock(payload) {
   // Check if updating existing
   for (let i = 1; i < values.length; i++) {
     if (String(values[i][kodeIdx]).trim() === String(payload.kode).trim()) {
+      const oldHargaStr = values[i][headers.findIndex(h => /harga/i.test(h))];
+      const oldHarga = parseInt(String(oldHargaStr).replace(/\\D/g, '')) || 0;
+      const newHarga = parseInt(String(payload.harga).replace(/\\D/g, '')) || 0;
+      const materialName = String(values[i][headers.findIndex(h => /nama/i.test(h))]).trim();
+
       const rowData = headers.map(h => mapPayload(h, payload, values[i][headers.indexOf(h)]));
       sheet.getRange(i + 1, 1, 1, rowData.length).setValues([rowData]);
+
+      if (oldHarga !== newHarga) {
+        try { syncBOMPrices(materialName, newHarga); } catch(e) { Logger.log("Error sync BOM: " + e.message); }
+      }
+
       return { status: 'success', message: 'Data bahan baku berhasil diperbarui.' };
     }
   }
@@ -537,7 +547,7 @@ function createPOInternal(payload) {
           if (i === sKodeIdx) return newKode;
           if (i === sNamaIdx) return item.nama;
           if (i === sStokIdx) return 0;
-          if (i === sHargaIdx) return item.harga || 0;
+          if (i === sHargaIdx) return item.harga_aktual > 0 ? item.harga_aktual : (item.harga || 0);
           if (i === sSatuanIdx) return item.satuan || 'pcs';
           return '';
         });
@@ -555,6 +565,8 @@ function createPOInternal(payload) {
   const infoTambahan = {
     po_to: payload.po_to || '',
     po_attn: payload.po_attn || '',
+    po_alamat: payload.po_alamat || '',
+    po_customer_ref: payload.po_customer_ref || '',
     po_enq_no: payload.po_enq_no || '',
     po_maker: payload.po_maker || '',
     po_delivery: payload.po_delivery || '',
@@ -717,6 +729,17 @@ function updatePOInternalStatus(payload) {
         // Update existing stock
         const currentStok = parseFloat(String(stockSheet.getRange(foundRow, sStokIdx + 1).getValue()).replace(/[^0-9.]/g, '')) || 0;
         stockSheet.getRange(foundRow, sStokIdx + 1).setValue(currentStok + qtyTambah);
+        
+        // Update harga & sync BOM if changed
+        if (sHargaIdx !== -1) {
+          const oldHarga = parseFloat(String(stockSheet.getRange(foundRow, sHargaIdx + 1).getValue()).replace(/[^0-9.]/g, '')) || 0;
+          const newHarga = parseFloat(String(item.harga_aktual > 0 ? item.harga_aktual : (item.harga || '0')).replace(/[^0-9.]/g, '')) || 0;
+          if (newHarga > 0 && newHarga !== oldHarga) {
+            stockSheet.getRange(foundRow, sHargaIdx + 1).setValue(newHarga);
+            try { syncBOMPrices(namaItem, newHarga); } catch(e) { Logger.log("Error sync BOM: " + e.message); }
+          }
+        }
+        
         updated++;
       } else {
         // New material — auto create
@@ -2200,6 +2223,50 @@ function deleteCOA(payload) {
     }
   }
   return { status: 'error', message: 'COA tidak ditemukan.' };
+}
+
+// ==========================================
+// SYNC BOM PRICES
+// ==========================================
+function syncBOMPrices(materialName, newHargaSatuan) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB BOM');
+  if (!sheet) return;
+  const values = sheet.getDataRange().getValues();
+  if (values.length <= 1) return;
+  
+  const headers = values[0];
+  const materialIdx = headers.findIndex(h => String(h).trim().toLowerCase() === 'rincian material');
+  const totalBiayaIdx = headers.findIndex(h => String(h).trim().toLowerCase() === 'total biaya material');
+  
+  if (materialIdx === -1 || totalBiayaIdx === -1) return;
+  
+  for (let i = 1; i < values.length; i++) {
+    let rincianRaw = String(values[i][materialIdx]);
+    if (!rincianRaw || rincianRaw.trim() === '') continue;
+    
+    try {
+      let rincian = JSON.parse(rincianRaw);
+      let isChanged = false;
+      let newTotalBiaya = 0;
+      
+      for (let j = 0; j < rincian.length; j++) {
+        let m = rincian[j];
+        if (String(m.nama).trim().toLowerCase() === String(materialName).trim().toLowerCase()) {
+          const qty = parseInt(String(m.qty).replace(/\\D/g, '')) || 0;
+          m.harga = qty * newHargaSatuan;
+          isChanged = true;
+        }
+        newTotalBiaya += parseInt(String(m.harga).replace(/\\D/g, '')) || 0;
+      }
+      
+      if (isChanged) {
+        sheet.getRange(i + 1, materialIdx + 1).setValue(JSON.stringify(rincian));
+        sheet.getRange(i + 1, totalBiayaIdx + 1).setValue(newTotalBiaya);
+      }
+    } catch (e) {
+      // Ignore parse errors for a row
+    }
+  }
 }
 
 // ==========================================
