@@ -1439,12 +1439,9 @@ document.addEventListener('DOMContentLoaded', () => {
             </td>
             <td style="padding:0.4rem;">
                 <input type="number" class="po-qty" value="${qty}" min="1" placeholder="1"
-                    style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.06); color:white; font-size:0.83rem; text-align:right;">
+                    style="width:100%; min-width:80px; padding:0.5rem; border-radius:6px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.06); color:white; font-size:0.83rem; text-align:right;">
             </td>
-            <td style="padding:0.4rem;">
-                <input type="text" class="po-satuan" placeholder="pcs" value="${satuan}"
-                    style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.06); color:white; font-size:0.83rem;">
-            </td>
+                <input type="hidden" class="po-satuan" value="${satuan}">
             <td style="padding:0.4rem; text-align:right;">
                 <span class="po-subtotal" style="font-weight:600; color:var(--primary); font-size:0.83rem;">Rp 0</span>
             </td>
