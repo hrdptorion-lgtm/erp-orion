@@ -3467,42 +3467,65 @@ document.addEventListener('DOMContentLoaded', () => {
         totalBiayaDisplay.textContent = total.toLocaleString('id-ID');
     }
 
-    function addMaterialRow(kode = '', nama = '', qty = '1', harga = '') {
+    function addMaterialRow(kode = '', nama = '', qty = '1', hargaTotalLama = '') {
         const div = document.createElement('div');
         div.style.display = 'flex';
         div.style.gap = '10px';
         div.style.marginBottom = '10px';
         div.innerHTML = `
-            <input type="text" class="mat-kode" placeholder="Kode Mat" value="${kode}" style="flex: 1; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            <input type="text" class="mat-kode" placeholder="Kode Mat" value="${kode}" style="flex: 1; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;" readonly>
             <input type="text" list="bom-bahan-baku-list" class="mat-nama" placeholder="Nama Material" value="${nama}" required style="flex: 2; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
-            <input type="text" class="mat-qty number-format" placeholder="Qty" value="${qty ? window.formatRibuan(qty) : ''}" required style="flex: 1; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
-            <input type="text" class="mat-harga number-format" placeholder="Total Biaya Mat." value="${harga ? window.formatRibuan(harga) : ''}" required style="flex: 1.5; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            <input type="text" class="mat-qty number-format" placeholder="Qty" value="${qty ? window.formatRibuan(qty) : '1'}" required style="flex: 0.8; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            <input type="text" class="mat-harga-satuan number-format" placeholder="Harga Satuan" value="" style="flex: 1.2; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;" readonly>
+            <input type="text" class="mat-harga number-format" placeholder="Total" value="${hargaTotalLama ? window.formatRibuan(hargaTotalLama) : ''}" required style="flex: 1.2; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--accent); font-weight: bold;" readonly>
             <button type="button" class="btn btn-remove-row" style="background: var(--danger); padding: 0.6rem;"><i class="fa-solid fa-trash"></i></button>
         `;
+        
+        const qtyInput = div.querySelector('.mat-qty');
+        const hargaSatuanInput = div.querySelector('.mat-harga-satuan');
+        const totalHargaInput = div.querySelector('.mat-harga');
+        const namaInput = div.querySelector('.mat-nama');
+        const kodeInput = div.querySelector('.mat-kode');
+
+        const updateRowTotal = () => {
+            const q = window.parseRupiah(qtyInput.value) || 0;
+            const hs = window.parseRupiah(hargaSatuanInput.value) || 0;
+            const tot = q * hs;
+            totalHargaInput.value = window.formatRibuan(tot);
+            calculateTotalBiaya();
+        };
+
+        const updateFromBahanBaku = () => {
+            const val = String(namaInput.value).trim().toLowerCase();
+            const list = document.getElementById('bom-bahan-baku-list');
+            if (list && val) {
+                const options = Array.from(list.options);
+                const match = options.find(opt => String(opt.value).trim().toLowerCase() === val);
+                if (match) {
+                    const hrg = match.getAttribute('data-harga');
+                    const kod = match.getAttribute('data-kode');
+                    if (hrg) hargaSatuanInput.value = window.formatRibuan(hrg);
+                    if (kod) kodeInput.value = kod;
+                }
+            }
+            updateRowTotal();
+        };
+
         div.querySelector('.btn-remove-row').addEventListener('click', () => {
             div.remove();
             calculateTotalBiaya();
         });
-        div.querySelector('.mat-harga').addEventListener('input', calculateTotalBiaya);
 
-        // Auto-fill kode and harga from datalist
-        div.querySelector('.mat-nama').addEventListener('input', (e) => {
-            const val = e.target.value;
-            const list = document.getElementById('bom-bahan-baku-list');
-            if (list) {
-                const options = Array.from(list.options);
-                const match = options.find(opt => opt.value === val);
-                if (match) {
-                    const hrg = match.getAttribute('data-harga');
-                    const kod = match.getAttribute('data-kode');
-                    if (hrg) div.querySelector('.mat-harga').value = window.formatRibuan(hrg);
-                    if (kod) div.querySelector('.mat-kode').value = kod;
-                    calculateTotalBiaya();
-                }
-            }
-        });
+        qtyInput.addEventListener('input', updateRowTotal);
+        namaInput.addEventListener('input', updateFromBahanBaku);
+        hargaSatuanInput.addEventListener('input', updateRowTotal);
 
         materialsContainer.appendChild(div);
+
+        // Initial sync if editing an existing item
+        if (nama) {
+            updateFromBahanBaku();
+        }
     }
 
     // Kompres gambar dengan resolusi tinggi (untuk diunggah ke Google Drive)
