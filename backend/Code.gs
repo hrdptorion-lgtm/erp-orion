@@ -110,6 +110,9 @@ function doPost(e) {
       case 'save_spk':
         response = saveSPK(payload);
         break;
+      case 'edit_spk':
+        response = editSPK(payload);
+        break;
       case 'get_spk_progress':
         response = getSPKProgress(payload);
         break;

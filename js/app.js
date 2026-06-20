@@ -1826,6 +1826,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Load Customers and Penawaran
         const custSel = document.getElementById('poc_customer_select');
         const sel = document.getElementById('poc_no_penawaran');
+        if (custSel) {
+            custSel.closest('.input-group').style.display = '';
+            custSel.required = true;
+        }
         if (custSel && custSel.tomselect) custSel.tomselect.destroy();
         if (sel && sel.tomselect) sel.tomselect.destroy();
         if (custSel) custSel.innerHTML = '<option value="">Memuat data...</option>';
@@ -1835,6 +1839,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let allApprovedPenawaran = [];
         if (penawaranRes.status === 'success' && penawaranRes.data) {
             allApprovedPenawaran = penawaranRes.data.filter(p => p.status === 'Approve' || p.status === 'Approved');
+            if (custSel) custSel.innerHTML = '<option value="">Pilih Customer...</option>';
+            if (sel) sel.innerHTML = '<option value="">Pilih Penawaran...</option>';
             const uniqueCustomers = [...new Set(allApprovedPenawaran.map(p => p.customer).filter(Boolean))];
             uniqueCustomers.forEach(c => {
                 const opt = document.createElement('option');
@@ -1859,13 +1865,38 @@ document.addEventListener('DOMContentLoaded', () => {
                         opt.dataset.items = JSON.stringify(p.rincian_item || []);
                         sel.appendChild(opt);
                     });
-                    new TomSelect('#poc_no_penawaran', { create: false });
-
-                    document.getElementById('poc-items-container').innerHTML = '';
-                    if (typeof window.calculatePOCTotal === 'function') window.calculatePOCTotal();
-                    document.getElementById('poc_customer').value = value;
+                    new TomSelect('#poc_no_penawaran', {
+                        create: false,
+                        onChange: function (val) {
+                            const option = this.getOption(val);
+                            if (option && option.dataset.items) {
+                                document.getElementById('poc_customer').value = option.dataset.customer || '';
+                                const items = JSON.parse(option.dataset.items);
+                                document.getElementById('poc-items-container').innerHTML = '';
+                                items.forEach(it => {
+                                    addPOCustomerItemRow(it.nama_barang, it.qty, it.harga, it.satuan);
+                                });
+                                calculatePOCTotal();
+                            }
+                        }
+                    });
+                    
+                    if (window._pendingAutoFillPO && window._pendingAutoFillPO.no_penawaran) {
+                        setTimeout(() => {
+                            if (sel.tomselect) {
+                                sel.tomselect.setValue(window._pendingAutoFillPO.no_penawaran);
+                                window._pendingAutoFillPO = null;
+                            }
+                        }, 100);
+                    }
                 }
             });
+
+            if (window._pendingAutoFillPO && window._pendingAutoFillPO.customer) {
+                setTimeout(() => {
+                    custSel.tomselect.setValue(window._pendingAutoFillPO.customer);
+                }, 100);
+            }
             // Ensure container is displayed
             custSel.closest('.input-group').style.display = 'block';
         }
@@ -2056,8 +2087,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             const reqQty = parseFloat(mat.qty || 0) * parseFloat(poItem.qty || 1);
                             
                             if (!totalShortageData[matName]) {
-                                const stockItem = stocks.find(s => (s.nama_material || '').trim().toLowerCase() === matName.toLowerCase());
-                                const currentStock = stockItem ? (parseFloat(String(stockItem.stok).replace(/[^0-9.-]+/g, "")) || 0) : 0;
+                                const stockItem = stocks.find(s => (s.nama || s.nama_material || '').trim().toLowerCase() === matName.toLowerCase());
+                                const currentStock = stockItem ? (parseFloat(String(stockItem.stok).replace(/[^\d.,]/g, '').replace(/\./g, '').replace(',', '.')) || 0) : 0;
                                 totalShortageData[matName] = {
                                     required: 0,
                                     stock: currentStock,
@@ -2081,14 +2112,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         const data = totalShortageData[matName];
                         const tr = document.createElement('tr');
                         const isShortage = data.required > data.stock;
+                        const formatQty = (qty) => Number(qty).toLocaleString('id-ID');
                         const statusBadge = isShortage 
-                            ? `<span class="badge badge-danger">Kurang ${window.formatRupiah(data.required - data.stock)} ${data.satuan}</span>` 
+                            ? `<span class="badge badge-danger">Kurang ${formatQty(data.required - data.stock)} ${data.satuan}</span>` 
                             : `<span class="badge badge-success">Aman</span>`;
 
                         tr.innerHTML = `
                             <td>${matName}</td>
-                            <td style="text-align: right;">${window.formatRupiah(data.required)} ${data.satuan}</td>
-                            <td style="text-align: right;">${window.formatRupiah(data.stock)} ${data.satuan}</td>
+                            <td style="text-align: right;">${formatQty(data.required)} ${data.satuan}</td>
+                            <td style="text-align: right;">${formatQty(data.stock)} ${data.satuan}</td>
                             <td style="text-align: center;">${statusBadge}</td>
                         `;
                         shortageTbody.appendChild(tr);
@@ -2190,14 +2222,63 @@ document.addEventListener('DOMContentLoaded', () => {
         // Navigasi ke menu Produksi lalu buka form Tambah SPK
         document.querySelector('[data-target="produksi"]')?.click();
         setTimeout(() => {
-            document.getElementById('spk_no_penawaran').value = window.currentDetailPOC.no_penawaran || window.currentDetailPOC.id_po_customer || '';
-            document.getElementById('produksi-modal-title').textContent = 'SPK Produksi (Referensi PO: ' + (window.currentDetailPOC.id_po_customer || window.currentDetailPOC.no_penawaran) + ')';
-            document.getElementById('produksi-modal').classList.add('active');
+            const btn = document.getElementById('btn-run-spk');
+            if (btn) btn.click();
+            
+            setTimeout(() => {
+                document.getElementById('spk_no_penawaran').value = window.currentDetailPOC.id_po_customer || window.currentDetailPOC.no_penawaran || '';
+                document.getElementById('produksi-modal-title').textContent = 'SPK Produksi (Referensi PO: ' + (window.currentDetailPOC.id_po_customer || window.currentDetailPOC.no_penawaran) + ')';
+                
+                try {
+                    const items = typeof window.currentDetailPOC.item_po === 'string' ? JSON.parse(window.currentDetailPOC.item_po) : (window.currentDetailPOC.item_po || []);
+                    if (items.length > 0) {
+                        const iname = String(items[0].nama || items[0].part_name || '').trim();
+                        const qty = parseInt(items[0].qty || items[0].moq_pcs || 0);
+                        
+                        const checkInterval = setInterval(() => {
+                            const select = document.getElementById('spk_kode_jadi');
+                            if (select && select.options.length > 1) {
+                                clearInterval(checkInterval);
+                                const opts = Array.from(select.options);
+                                const match = opts.find(o => o.text.toLowerCase().includes(iname.toLowerCase()));
+                                if (match) {
+                                    if (select.tomselect) {
+                                        select.tomselect.setValue(match.value);
+                                    } else {
+                                        select.value = match.value;
+                                        select.dispatchEvent(new Event('change'));
+                                    }
+                                    document.getElementById('spk_qty_jadi').value = qty;
+                                    document.getElementById('spk_qty_jadi').dispatchEvent(new Event('input'));
+                                }
+                            }
+                        }, 200);
+                        setTimeout(() => clearInterval(checkInterval), 5000);
+                    }
+                } catch(e) {}
+            }, 300);
         }, 500);
     });
 
-    document.getElementById('btn-detail-act-po')?.addEventListener('click', () => {
+    document.getElementById('btn-detail-act-po')?.addEventListener('click', async () => {
         if (!window.currentDetailPOC) return;
+        
+        if (window.currentShortageData) {
+            const keys = Object.keys(window.currentShortageData);
+            const shortages = keys.filter(k => window.currentShortageData[k].required > window.currentShortageData[k].stock);
+            if (shortages.length === 0) {
+                const proceed = await window.showConfirm({
+                    title: 'Stok Aman',
+                    message: 'Stok semua bahan baku sudah aman. Tetap ingin membuat pengajuan belanja manual?',
+                    confirmText: 'Lanjutkan',
+                    cancelText: 'Batal',
+                    type: 'info',
+                    icon: '✅'
+                });
+                if (!proceed) return;
+            }
+        }
+
         document.getElementById('detail-poc-modal').classList.remove('active');
         // Navigasi ke Purchasing -> Pengajuan Belanja
         document.querySelector('[data-target="po-internal"]')?.click();
@@ -2253,15 +2334,69 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 500);
     });
 
-    document.getElementById('btn-detail-act-sj')?.addEventListener('click', () => {
+    document.getElementById('btn-detail-act-sj')?.addEventListener('click', async () => {
         if (!window.currentDetailPOC) return;
+
+        let isKosong = false;
+        try {
+            const items = typeof window.currentDetailPOC.item_po === 'string' ? JSON.parse(window.currentDetailPOC.item_po) : (window.currentDetailPOC.item_po || []);
+            items.forEach(it => {
+                const name = (it.nama || it.part_name || '').trim().toLowerCase();
+                const fg = (window.barangJadiData || []).find(b => (b.nama_barang || b.nama || '').trim().toLowerCase() === name);
+                const req = parseInt(it.qty || it.moq_pcs || 0);
+                const st = fg ? parseInt(String(fg.stok).replace(/\D/g, '')) : 0;
+                if (st < req) isKosong = true;
+            });
+        } catch(e) {}
+
+        if (isKosong) {
+            const proceed = await window.showConfirm({
+                title: 'Stok Barang Jadi Kurang',
+                message: 'Stok Barang Jadi masih kosong atau belum mencukupi untuk pesanan ini. Tetap ingin membuat Surat Jalan?',
+                confirmText: 'Lanjutkan',
+                cancelText: 'Batal',
+                type: 'warning',
+                icon: '⚠️'
+            });
+            if (!proceed) return;
+        }
+
         document.getElementById('detail-poc-modal').classList.remove('active');
         // Navigasi ke Surat Jalan
         document.querySelector('[data-target="surat-jalan"]')?.click();
         setTimeout(() => {
             document.getElementById('surat-jalan-form').reset();
-            document.getElementById('sj_no_penawaran').value = window.currentDetailPOC.no_penawaran || window.currentDetailPOC.id_po_customer || '';
+            document.getElementById('sj_no_penawaran').value = window.currentDetailPOC.id_po_customer || window.currentDetailPOC.no_penawaran || '';
             document.getElementById('sj_customer').value = window.currentDetailPOC.nama_customer || window.currentDetailPOC.customer || '';
+            
+            const tbody = document.getElementById('sj-items-tbody');
+            if (tbody) {
+                tbody.innerHTML = '';
+                try {
+                    const items = typeof window.currentDetailPOC.item_po === 'string' ? JSON.parse(window.currentDetailPOC.item_po) : (window.currentDetailPOC.item_po || []);
+                    if (items.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Tidak ada item</td></tr>';
+                    } else {
+                        items.forEach(it => {
+                            const iname = String(it.nama || it.part_name || '').trim();
+                            const qty = parseInt(it.qty || it.moq_pcs || 0);
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>${iname}<input type="hidden" class="sj-item-name" value="${iname}"></td>
+                                <td style="text-align: right;">${qty.toLocaleString('id-ID')}</td>
+                                <td style="text-align: right; color: var(--success);">-</td>
+                                <td>
+                                    <input type="number" class="sj-item-qty" min="0" value="${qty}" style="width: 100%; padding: 0.4rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 4px;">
+                                </td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    }
+                } catch(e) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Gagal memuat rincian item</td></tr>';
+                }
+            }
+
             document.getElementById('surat-jalan-modal').classList.add('active');
         }, 500);
     });
@@ -2297,6 +2432,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Hide customer select during Edit
         if (custSel) {
             custSel.closest('.input-group').style.display = 'none';
+            custSel.required = false;
         }
 
         if (sel && sel.tomselect) sel.tomselect.destroy();
@@ -2686,7 +2822,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Belum ada data penawaran.</td></tr>';
                 return;
             }
-            response.data.forEach(item => {
+            [...response.data].reverse().forEach(item => {
                 let badgeClass = 'badge-warning';
                 if (item.status === 'Approved' || item.status === 'Finish') badgeClass = 'badge-success';
                 else if (item.status === 'Rejected') badgeClass = 'badge-danger';
@@ -3174,12 +3310,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     switchView('pocustomer');
 
                     // Trigger "Buat PO"
-                    const btnAddPo = document.getElementById('btn-add-po');
+                    const btnAddPo = document.getElementById('btn-add-po-customer');
                     if (btnAddPo) btnAddPo.click();
 
                     // Pre-fill Penawaran
                     setTimeout(() => {
-                        const noPenawaranSelect = document.getElementById('po_no_penawaran');
+                        const noPenawaranSelect = document.getElementById('poc_no_penawaran');
                         if (noPenawaranSelect) {
                             if (noPenawaranSelect.tomselect) {
                                 noPenawaranSelect.tomselect.addOption({ value: item.no_penawaran, text: item.no_penawaran });
@@ -4214,6 +4350,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (item.status === 'Menunggu Pengambilan') {
                         statusBadge = `<span class="badge badge-warning">${item.status}</span>`;
                         actionBtns += `<button class="btn btn-ambil-bahan" data-no="${item.no_spk}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--warning); margin-right: 5px;">Ambil Bahan</button>`;
+                        
+                        if (isAdmin) {
+                            actionBtns += `<button class="btn btn-edit-spk" data-no="${item.no_spk}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--info); margin-right: 5px;" title="Edit SPK"><i class="fa-solid fa-pen"></i></button>`;
+                        }
                     } else if (item.status === 'Dalam Proses') {
                         statusBadge = `<span class="badge badge-info" style="background: var(--info);">${item.status}</span>`;
                         actionBtns += `<button class="btn btn-selesaikan-spk" data-no="${item.no_spk}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--primary); margin-right: 5px;">Selesaikan</button>`;
@@ -4237,6 +4377,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     tr.querySelectorAll('button').forEach(btn => {
                         btn.addEventListener('click', e => e.stopPropagation());
                     });
+                    
+                    const editBtn = tr.querySelector('.btn-edit-spk');
+                    if (editBtn) {
+                        editBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            openEditSPKModal(item);
+                        });
+                    }
                     tr.addEventListener('click', () => {
                         openSPKDetail(item);
                     });
@@ -4350,12 +4498,12 @@ document.addEventListener('DOMContentLoaded', () => {
             select.innerHTML = '<option value="" disabled selected>Memuat data user...</option>';
             try {
                 const res = await window.ERPAPI.request('get_users');
-                select.innerHTML = '<option value="" disabled selected>Pilih Kru Gudang (Penyetuju)</option>';
+                select.innerHTML = '<option value="" disabled selected>Pilih Tim Produksi Terlibat</option>';
                 if (res.status === 'success' && res.data) {
                     res.data.forEach(user => {
                         const opt = document.createElement('option');
-                        opt.value = user.nama;
-                        opt.textContent = `${user.nama} (${user.role})`;
+                        opt.value = user.nama_lengkap;
+                        opt.textContent = `${user.nama_lengkap} (${user.role})`;
                         select.appendChild(opt);
                     });
                     if (select.tomselect) {
@@ -4374,57 +4522,188 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    let cachedPOData = [];
+    let cachedProduksiData = [];
+
     document.getElementById('btn-run-spk')?.addEventListener('click', async () => {
         populateKruGudangDropdown();
         document.getElementById('produksi-form').reset();
         document.getElementById('spk-bahan-container').innerHTML = 'Pilih barang dan isi Qty untuk melihat estimasi...';
         document.getElementById('spk_total_biaya').textContent = '0';
+        document.getElementById('spk_qty_info').style.display = 'none';
+        
+        document.getElementById('spk_edit_mode_no').value = '';
+        document.getElementById('produksi-modal-title').textContent = 'Form SPK Produksi';
+        const batchGroup = document.getElementById('spk_batch_count')?.closest('.input-group');
+        if (batchGroup) batchGroup.style.display = 'block';
 
         const select = document.getElementById('spk_kode_jadi');
+        const poSelect = document.getElementById('spk_po_customer');
         select.innerHTML = '<option value="" disabled selected>Memuat data BOM & Inventory...</option>';
+        poSelect.innerHTML = '<option value="" disabled selected>Memuat data PO Customer...</option>';
         produksiModal.classList.add('active');
 
-        const [resBom, resInv] = await Promise.all([
+        const [resBom, resInv, resPO, resProduksi] = await Promise.all([
             window.ERPAPI.request('get_bom'),
-            window.ERPAPI.request('get_inventory')
+            window.ERPAPI.request('get_inventory'),
+            window.ERPAPI.request('get_po_customer'),
+            window.ERPAPI.request('get_produksi')
         ]);
 
         cachedBOMData = [];
         cachedInventoryData = [];
+        cachedPOData = [];
+        cachedProduksiData = [];
 
         if (resInv.status === 'success' && resInv.data) {
             cachedInventoryData = resInv.data;
         }
+        
+        if (resProduksi.status === 'success' && resProduksi.data) {
+            cachedProduksiData = resProduksi.data;
+        }
+
+        // Populate PO Customer dropdown
+        if (poSelect.tomselect) poSelect.tomselect.destroy();
+        poSelect.innerHTML = '<option value="" selected>-- Buat SPK Internal / Tanpa PO --</option>';
+        
+        if (resPO.status === 'success' && resPO.data) {
+            cachedPOData = resPO.data;
+            resPO.data.filter(po => po.status !== 'Selesai' && po.status !== 'Batal').forEach(po => {
+                const opt = document.createElement('option');
+                opt.value = po.id_po_customer || po.no_penawaran;
+                opt.textContent = `${po.id_po_customer || po.no_penawaran} - ${po.nama_customer}`;
+                poSelect.appendChild(opt);
+            });
+        }
+        
+        new TomSelect('#spk_po_customer', {
+            create: false,
+            sortField: { field: 'text', direction: 'asc' },
+            maxOptions: 50
+        });
 
         if (resBom.status === 'success' && resBom.data) {
             cachedBOMData = resBom.data;
-
-            if (select.tomselect) {
-                select.tomselect.destroy();
-            }
-
-            select.innerHTML = '<option value="">-- Pilih Barang Jadi --</option>';
-            resBom.data.forEach(bom => {
-                const opt = document.createElement('option');
-                opt.value = bom.kode_barang;
-                opt.textContent = `${bom.kode_barang} - ${bom.nama_barang}`;
-                select.appendChild(opt);
-            });
-
-            new TomSelect('#spk_kode_jadi', {
-                create: true,
-                sortField: {
-                    field: 'text',
-                    direction: 'asc'
-                },
-                maxOptions: 50
-            });
+            populateSPKBarangJadi(null); // Load all BOM initially
         } else {
-            if (select.tomselect) {
-                select.tomselect.destroy();
-            }
+            if (select.tomselect) select.tomselect.destroy();
             select.innerHTML = '<option value="" disabled selected>Gagal memuat BOM</option>';
         }
+    });
+
+    function populateSPKBarangJadi(poId) {
+        const select = document.getElementById('spk_kode_jadi');
+        if (select.tomselect) select.tomselect.destroy();
+        select.innerHTML = '<option value="">-- Pilih Barang Jadi --</option>';
+        
+        let filteredBOM = cachedBOMData;
+        
+        if (poId) {
+            const po = cachedPOData.find(p => (p.id_po_customer === poId || p.no_penawaran === poId));
+            if (po && po.item_po) {
+                try {
+                    const items = typeof po.item_po === 'string' ? JSON.parse(po.item_po) : po.item_po;
+                    const poItemNames = items.map(i => String(i.nama || i.part_name || '').trim().toLowerCase());
+                    
+                    filteredBOM = cachedBOMData.filter(bom => {
+                        const bomName = String(bom.nama_barang || '').toLowerCase();
+                        return poItemNames.some(pi => pi === bomName || bomName.includes(pi) || pi.includes(bomName));
+                    });
+                    
+                    if (filteredBOM.length === 0) {
+                        filteredBOM = cachedBOMData; // Fallback to all if no match
+                    }
+                } catch(e) {}
+            }
+        }
+        
+        filteredBOM.forEach(bom => {
+            const opt = document.createElement('option');
+            opt.value = bom.kode_barang;
+            opt.textContent = `${bom.kode_barang} - ${bom.nama_barang}`;
+            select.appendChild(opt);
+        });
+
+        new TomSelect('#spk_kode_jadi', {
+            create: true,
+            sortField: { field: 'text', direction: 'asc' },
+            maxOptions: 50
+        });
+    }
+
+    function updateSPKMaxQty() {
+        const poId = document.getElementById('spk_po_customer').value;
+        const kode = document.getElementById('spk_kode_jadi').value;
+        const qtyInfo = document.getElementById('spk_qty_info');
+        const qtyInput = document.getElementById('spk_qty_jadi');
+        
+        if (!poId || !kode) {
+            qtyInfo.style.display = 'none';
+            qtyInput.removeAttribute('max');
+            return;
+        }
+
+        const po = cachedPOData.find(p => p.id_po_customer === poId || p.no_penawaran === poId);
+        if (!po) return;
+
+        let orderedQty = 0;
+        try {
+            const items = typeof po.item_po === 'string' ? JSON.parse(po.item_po) : po.item_po;
+            const bom = cachedBOMData.find(b => b.kode_barang === kode);
+            const bomName = bom ? String(bom.nama_barang || '').toLowerCase() : '';
+            
+            const matchItem = items.find(i => {
+                const iName = String(i.nama || i.part_name || '').trim().toLowerCase();
+                return iName === bomName || bomName.includes(iName) || iName.includes(bomName);
+            });
+            
+            if (matchItem) {
+                orderedQty = parseInt(matchItem.qty || matchItem.moq_pcs || 0);
+            }
+        } catch(e) {}
+        
+        if (orderedQty > 0) {
+            let producedQty = 0;
+            cachedProduksiData.forEach(spk => {
+                const spkRef = spk['referensi_penawaran'] || spk['referensi_po'] || spk['referensi_penawaran_/_po'] || Object.values(spk)[8] || '';
+                const spkKode = spk['kode_barang_jadi'] || spk['barang_jadi'] || '';
+                if (String(spkRef).trim() === poId && spkKode === kode) {
+                    if (spk.status !== 'Batal') {
+                        producedQty += parseInt(spk.qty_produksi || 0);
+                    }
+                }
+            });
+            
+            let sisaQty = orderedQty - producedQty;
+            if (sisaQty < 0) sisaQty = 0;
+            
+            qtyInfo.textContent = `Sisa Qty Belum SPK: ${sisaQty} (Pesanan: ${orderedQty}, Sudah SPK: ${producedQty})`;
+            qtyInfo.style.display = 'block';
+            qtyInput.setAttribute('max', sisaQty);
+            
+            if (sisaQty === 0) {
+                qtyInfo.style.color = 'var(--danger)';
+                qtyInput.value = 0;
+            } else {
+                qtyInfo.style.color = 'var(--warning)';
+                if (parseInt(qtyInput.value || 0) > sisaQty) {
+                    qtyInput.value = sisaQty;
+                }
+            }
+        } else {
+            qtyInfo.style.display = 'none';
+            qtyInput.removeAttribute('max');
+        }
+    }
+
+    document.getElementById('spk_po_customer')?.addEventListener('change', (e) => {
+        document.getElementById('spk_no_penawaran').value = e.target.value;
+        populateSPKBarangJadi(e.target.value);
+        document.getElementById('spk_qty_jadi').value = '';
+        document.getElementById('spk_qty_info').style.display = 'none';
+        updateSPKMaxQty();
+        calculateSPKEstimasi();
     });
 
     function calculateSPKEstimasi() {
@@ -4503,7 +4782,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    document.getElementById('spk_kode_jadi').addEventListener('change', calculateSPKEstimasi);
+    document.getElementById('spk_kode_jadi').addEventListener('change', () => {
+        updateSPKMaxQty();
+        calculateSPKEstimasi();
+    });
     document.getElementById('spk_qty_jadi').addEventListener('input', calculateSPKEstimasi);
 
     document.getElementById('btn-close-produksi')?.addEventListener('click', () => {
@@ -5887,37 +6169,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (btnCreatePO) {
                 btnCreatePO.onclick = (e) => {
                     e.stopPropagation();
+                    window._pendingAutoFillPO = { customer: item.customer, no_penawaran: item.no_penawaran };
                     document.getElementById('detail-penawaran-modal').classList.remove('active');
                     document.querySelector('[data-target="po-customer"]')?.click();
-
                     setTimeout(() => {
                         const btnAddPO = document.getElementById('btn-add-po-customer');
                         if (btnAddPO) btnAddPO.click();
-
-                        setTimeout(() => {
-                            const custSel = document.getElementById('poc_customer_select');
-                            if (custSel && custSel.tomselect && item.customer) {
-                                custSel.tomselect.setValue(item.customer);
-                                setTimeout(() => {
-                                    const sel = document.getElementById('poc_no_penawaran');
-                                    if (sel && sel.tomselect) {
-                                        sel.tomselect.setValue(item.no_penawaran);
-                                    } else if (sel) {
-                                        sel.value = item.no_penawaran;
-                                        sel.dispatchEvent(new Event('change'));
-                                    }
-                                }, 100);
-                            } else {
-                                const sel = document.getElementById('poc_no_penawaran');
-                                if (sel && sel.tomselect) {
-                                    sel.tomselect.setValue(item.no_penawaran);
-                                } else if (sel) {
-                                    sel.value = item.no_penawaran;
-                                    sel.dispatchEvent(new Event('change'));
-                                }
-                            }
-                        }, 500);
-                    }, 300);
+                    }, 50);
                 };
             }
         } else {

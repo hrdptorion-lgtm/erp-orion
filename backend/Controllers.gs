@@ -257,9 +257,9 @@ function getStock() {
   const headers = values[0];
   const kodeIdx = headers.findIndex(h => /kode/i.test(h));
   const namaIdx = headers.findIndex(h => /nama/i.test(h));
-  const stokIdx = headers.findIndex(h => /^stok$|^stock$/i.test(String(h).trim()));
+  const stokIdx = headers.findIndex(h => /stok|stock/i.test(String(h).trim()));
   const hargaIdx = headers.findIndex(h => /harga/i.test(h));
-  const satuanIdx = headers.findIndex(h => /^satuan$/i.test(String(h).trim()));
+  const satuanIdx = headers.findIndex(h => /satuan/i.test(String(h).trim()) && !/harga/i.test(String(h).trim()));
   const lokasiIdx = headers.findIndex(h => /lokasi/i.test(h));
   const spesifikasiIdx = headers.findIndex(h => /spesifikasi/i.test(h));
   
@@ -268,7 +268,7 @@ function getStock() {
     nama: namaIdx !== -1 ? row[namaIdx] : '',
     stok: stokIdx !== -1 ? row[stokIdx] : '0',
     harga: hargaIdx !== -1 ? row[hargaIdx] : '0',
-    satuan: satuanIdx !== -1 ? row[satuanIdx] : 'pcs',
+    satuan: satuanIdx !== -1 ? row[satuanIdx] : (stokIdx !== -1 && String(row[stokIdx]).match(/[a-zA-Z]+/)) ? String(row[stokIdx]).replace(/[^a-zA-Z]+/g, '').trim().toLowerCase() : 'pcs',
     lokasi: lokasiIdx !== -1 ? row[lokasiIdx] : '-',
     spesifikasi: spesifikasiIdx !== -1 ? row[spesifikasiIdx] : ''
   }));
@@ -1290,6 +1290,55 @@ function saveSPK(payload) {
 
   let msg = batchCount > 1 ? `SPK berhasil diterbitkan dalam ${batchCount} Batch.` : 'SPK berhasil diterbitkan (Menunggu Pengambilan).';
   return { status: 'success', message: msg };
+}
+
+function editSPK(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('DB SPK Produksi');
+  if (!sheet) return { status: 'error', message: 'Sheet DB SPK Produksi tidak ditemukan.' };
+  
+  const spkNo = payload.spk_edit_mode_no;
+  if (!spkNo) return { status: 'error', message: 'Nomor SPK tidak diberikan.' };
+
+  const values = sheet.getDataRange().getDisplayValues();
+  let rowIndex = -1;
+  let currentStatus = '';
+
+  for (let i = 1; i < values.length; i++) {
+    if (values[i][0] === spkNo) {
+      rowIndex = i + 1;
+      currentStatus = values[i][6];
+      break;
+    }
+  }
+
+  if (rowIndex === -1) {
+    return { status: 'error', message: 'SPK tidak ditemukan.' };
+  }
+
+  if (currentStatus !== 'Menunggu Pengambilan') {
+    return { status: 'error', message: 'SPK tidak bisa diedit karena statusnya sudah ' + currentStatus };
+  }
+
+  const totalQty = parseInt(payload.qty) || 0;
+  
+  let currentBahanBaku = [];
+  if (payload.bahan_baku && payload.bahan_baku.length > 0) {
+    currentBahanBaku = payload.bahan_baku.map(b => ({
+      kode: b.kode,
+      nama: b.nama,
+      qty: b.qty
+    }));
+  }
+
+  sheet.getRange(rowIndex, 3).setValue(payload.kode_barang || '');
+  sheet.getRange(rowIndex, 4).setValue(totalQty);
+  sheet.getRange(rowIndex, 5).setValue(payload.peminta || '');
+  sheet.getRange(rowIndex, 6).setValue(payload.pemberi || '');
+  sheet.getRange(rowIndex, 8).setValue(JSON.stringify(currentBahanBaku));
+  sheet.getRange(rowIndex, 9).setValue(payload.no_penawaran || '');
+  
+  return { status: 'success', message: 'SPK berhasil diperbarui.' };
 }
 
 function getSPKProgress(payload) {
