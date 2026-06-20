@@ -1438,7 +1438,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.06); color:white; font-size:0.83rem; text-align:right;">
             </td>
             <td style="padding:0.4rem;">
-                <input type="number" class="po-qty" value="${qty}" min="1" placeholder="1"
+                <input type="text" inputmode="numeric" class="po-qty" value="${qty}" placeholder="1"
                     style="width:100%; min-width:80px; padding:0.5rem; border-radius:6px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.06); color:white; font-size:0.83rem; text-align:right;">
             </td>
                 <input type="hidden" class="po-satuan" value="${satuan}">
