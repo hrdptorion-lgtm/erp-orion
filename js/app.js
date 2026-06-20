@@ -2961,7 +2961,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         custSelect.value = item.customer;
                     }
                     document.getElementById('p_total_harga_display').textContent = (parseInt(String(item.total_harga || '0').replace(/[^0-9]/g, '')) || 0).toLocaleString('id-ID');
-                    document.getElementById('p_dp').value = window.formatRibuan(parseInt(String(item.down_payment || item.dp || '0').replace(/[^0-9]/g, '')) || 0);
+                    // document.getElementById('p_dp').value = window.formatRibuan(parseInt(String(item.down_payment || item.dp || '0').replace(/[^0-9]/g, '')) || 0);
                     document.getElementById('p_narasi').value = item.narasi || '';
                     document.getElementById('p_status').value = item.status || 'Penawaran';
 
@@ -3024,7 +3024,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         custSelect.value = item.customer;
                     }
                     document.getElementById('p_total_harga_display').textContent = (parseInt(String(item.total_harga || '0').replace(/[^0-9]/g, '')) || 0).toLocaleString('id-ID');
-                    document.getElementById('p_dp').value = window.formatRibuan(parseInt(String(item.down_payment || item.dp || '0').replace(/[^0-9]/g, '')) || 0);
+                    // document.getElementById('p_dp').value = window.formatRibuan(parseInt(String(item.down_payment || item.dp || '0').replace(/[^0-9]/g, '')) || 0);
                     document.getElementById('p_narasi').value = item.narasi || '';
                     document.getElementById('p_status').value = 'Penawaran';
 
@@ -3554,7 +3554,7 @@ document.addEventListener('DOMContentLoaded', () => {
             total_harga: parseInt(String(document.getElementById('p_total_harga').value).replace(/\D/g, '')) || 0,
             rincian_item: items,
             narasi: document.getElementById('p_narasi').value,
-            dp: parseInt(String(document.getElementById('p_dp').value).replace(/\D/g, '')) || 0,
+            dp: 0, // parseInt(String(document.getElementById('p_dp').value).replace(/\D/g, '')) || 0,
             status: document.getElementById('p_status').value,
             info_tambahan: {
                 attn: document.getElementById('p_attn').value,
@@ -6197,7 +6197,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('detail_narasi').textContent = item.narasi || '-';
 
         document.getElementById('detail_total_harga').textContent = 'Rp ' + (parseInt(String(item.total_harga || '0').replace(/\D/g, '')) || 0).toLocaleString('id-ID');
-        document.getElementById('detail_dp').textContent = 'Rp ' + (parseInt(String(item.down_payment || item.dp || '0').replace(/\D/g, '')) || 0).toLocaleString('id-ID');
+        // document.getElementById('detail_dp').textContent = 'Rp ' + (parseInt(String(item.down_payment || item.dp || '0').replace(/\D/g, '')) || 0).toLocaleString('id-ID');
 
         // Reset UI
         const poCustomerContainer = document.getElementById('detail_po_customer_container');

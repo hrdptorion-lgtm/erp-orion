@@ -1597,11 +1597,8 @@
 
                 <div style="display: flex; justify-content: flex-end;">
                     <div style="width: 300px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                            <span style="color: #ccc;">Down Payment (DP)</span>
-                            <strong id="detail_dp">Rp 0</strong>
-                        </div>
                         <div
+
                             style="display: flex; justify-content: space-between; font-size: 1.2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
                             <span style="color: var(--primary);">Grand Total</span>
                             <strong id="detail_total_harga" style="color: var(--primary);">Rp 0</strong>
@@ -1666,8 +1663,10 @@
                                 style="padding: 0.4rem 0.8rem; font-size: 0.8rem;"><i class="fa-solid fa-plus"></i>
                                 Tambah Item</button>
                         </div>
-                        <div id="p-items-container">
-                            <!-- Items will be injected here -->
+                        <div style="width: 100%; overflow-x: auto; padding-bottom: 5px;">
+                            <div id="p-items-container" style="min-width: 650px;">
+                                <!-- Items will be injected here -->
+                            </div>
                         </div>
                         <div
                             style="text-align: right; margin-top: 10px; font-weight: bold; color: var(--text-main); font-size: 1.1rem;">
@@ -1680,10 +1679,6 @@
                         <label>Narasi / Deskripsi / Catatan Tambahan</label>
                         <textarea id="p_narasi" rows="4" placeholder="Misal: Harga sudah termasuk ongkos kirim..."
                             style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border);"></textarea>
-                    </div>
-                    <div class="input-group">
-                        <label>Down Payment (DP)</label>
-                        <input type="text" id="p_dp" class="number-format" required placeholder="0">
                     </div>
                     <div class="input-group">
                         <label>Status Penawaran</label>
