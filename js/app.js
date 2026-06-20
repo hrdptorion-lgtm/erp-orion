@@ -4592,6 +4592,99 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    async function openEditSPKModal(item) {
+        populateKruGudangDropdown();
+        document.getElementById('produksi-form').reset();
+        document.getElementById('spk-bahan-container').innerHTML = 'Memuat data...';
+        document.getElementById('spk_total_biaya').textContent = '0';
+        document.getElementById('spk_qty_info').style.display = 'none';
+
+        document.getElementById('spk_edit_mode_no').value = item.no_spk;
+        document.getElementById('produksi-modal-title').textContent = 'Edit SPK: ' + item.no_spk;
+        
+        const batchGroup = document.getElementById('spk_batch_count')?.closest('.input-group');
+        if (batchGroup) batchGroup.style.display = 'none';
+
+        const select = document.getElementById('spk_kode_jadi');
+        const poSelect = document.getElementById('spk_po_customer');
+        select.innerHTML = '<option value="" disabled selected>Memuat data BOM & Inventory...</option>';
+        poSelect.innerHTML = '<option value="" disabled selected>Memuat data PO Customer...</option>';
+        produksiModal.classList.add('active');
+
+        const promises = [];
+        let pBom = null, pInv = null, pPO = null, pProd = null;
+        if (!cachedBOMData || cachedBOMData.length === 0) pBom = window.ERPAPI.request('get_bom');
+        if (!cachedInventoryData || cachedInventoryData.length === 0) pInv = window.ERPAPI.request('get_inventory');
+        if (!cachedPOData || cachedPOData.length === 0) pPO = window.ERPAPI.request('get_po_customer');
+        if (!cachedProduksiData || cachedProduksiData.length === 0) pProd = window.ERPAPI.request('get_produksi');
+
+        const results = await Promise.all([pBom, pInv, pPO, pProd]);
+        
+        if (results[0] && results[0].status === 'success') cachedBOMData = results[0].data || [];
+        if (results[1] && results[1].status === 'success') cachedInventoryData = results[1].data || [];
+        if (results[2] && results[2].status === 'success') cachedPOData = results[2].data || [];
+        if (results[3] && results[3].status === 'success') cachedProduksiData = results[3].data || [];
+
+        if (poSelect.tomselect) poSelect.tomselect.destroy();
+        poSelect.innerHTML = '<option value="">-- Buat SPK Internal / Tanpa PO --</option>';
+        
+        cachedPOData.filter(po => po.status !== 'Selesai' && po.status !== 'Batal').forEach(po => {
+            const opt = document.createElement('option');
+            const poVal = po.id_po_customer || po.no_penawaran;
+            opt.value = poVal;
+            opt.textContent = `${poVal} - ${po.nama_customer}`;
+            poSelect.appendChild(opt);
+        });
+        
+        new TomSelect('#spk_po_customer', {
+            create: false,
+            sortField: { field: 'text', direction: 'asc' },
+            maxOptions: 50
+        });
+
+        // Determine reference
+        let refPo = item.referensi_penawaran_x002f_po || item['referensi_penawaran_/_po'] || item.referensi_po || item.no_penawaran || item.referensi_penawaran || '';
+        
+        // Match with existing data to ensure correct selection
+        if (refPo) {
+            if (poSelect.tomselect) {
+                poSelect.tomselect.setValue(refPo);
+            } else {
+                poSelect.value = refPo;
+            }
+            document.getElementById('spk_no_penawaran').value = refPo;
+        }
+
+        populateSPKBarangJadi(refPo);
+        
+        const kodeVal = item.kode_barang_jadi || item.barang_jadi || item.kode_barang;
+        if (kodeVal) {
+            if (select.tomselect) {
+                select.tomselect.setValue(kodeVal);
+            } else {
+                select.value = kodeVal;
+            }
+        }
+
+        document.getElementById('spk_qty_jadi').value = parseInt(item.qty_produksi || item.qty || 0);
+        
+        setTimeout(() => {
+            const pemberiSelect = document.getElementById('spk_pemberi');
+            if (item.pemberi) {
+                const pemberiArr = item.pemberi.split(',').map(s => s.trim());
+                if (pemberiSelect && pemberiSelect.tomselect) {
+                    pemberiSelect.tomselect.setValue(pemberiArr);
+                } else if (pemberiSelect) {
+                    Array.from(pemberiSelect.options).forEach(opt => {
+                        if (pemberiArr.includes(opt.value)) opt.selected = true;
+                    });
+                }
+            }
+            updateSPKMaxQty();
+            calculateSPKEstimasi();
+        }, 300);
+    }
+
     function populateSPKBarangJadi(poId) {
         const select = document.getElementById('spk_kode_jadi');
         if (select.tomselect) select.tomselect.destroy();
@@ -4810,6 +4903,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }));
         }
 
+        const editModeNo = document.getElementById('spk_edit_mode_no').value;
+
         const payload = {
             kode_barang: kode,
             qty: qty,
@@ -4820,6 +4915,10 @@ document.addEventListener('DOMContentLoaded', () => {
             pemberi: Array.from(document.getElementById('spk_pemberi').selectedOptions).map(o => o.value).join(', ')
         };
 
+        if (editModeNo) {
+            payload.spk_edit_mode_no = editModeNo;
+        }
+
         const btnSubmit = produksiForm.querySelector('button[type="submit"]');
         if (btnSubmit) {
             btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
@@ -4829,30 +4928,40 @@ document.addEventListener('DOMContentLoaded', () => {
         produksiModal.classList.remove('active');
         if (typeof showToast !== 'undefined') showToast('Sinkronisasi SPK ke server...', 'info', 3000);
 
-        // Optimistic Add
+        // Optimistic Add/Edit
         const tbody = document.getElementById('table-produksi');
         if (tbody) {
             const tr = document.createElement('tr');
             tr.style.opacity = '0.6';
             let badgeText = batch_count > 1 ? `Memproses ${batch_count} Batch...` : `Menyimpan...`;
+            if (editModeNo) badgeText = `Memperbarui...`;
+            
             tr.innerHTML = `
-            <td><i class="fa-solid fa-spinner fa-spin"></i></td>
+            <td>${editModeNo ? editModeNo : '<i class="fa-solid fa-spinner fa-spin"></i>'}</td>
             <td>Hari ini</td>
             <td style="font-weight: 500;">${kode}</td>
             <td>${qty} (Total)</td>
             <td><span class="badge badge-warning">${badgeText}</span></td>
+            <td>-</td>
         `;
-            tbody.insertBefore(tr, tbody.firstChild);
+            if (editModeNo) {
+                // Wait for reload, we just append or prepend for now
+                tbody.insertBefore(tr, tbody.firstChild);
+            } else {
+                tbody.insertBefore(tr, tbody.firstChild);
+            }
         }
 
-        window.ERPAPI.request('save_spk', payload).then(res => {
+        const endpoint = editModeNo ? 'edit_spk' : 'save_spk';
+
+        window.ERPAPI.request(endpoint, payload).then(res => {
             if (btnSubmit) {
                 btnSubmit.innerHTML = 'Terbitkan SPK';
                 btnSubmit.disabled = false;
             }
 
             if (res.status === 'success') {
-                showToast?.(`✅ SPK Berhasil Terbit`, 'success', 3000);
+                showToast?.(`✅ SPK Berhasil Disimpan`, 'success', 3000);
                 loadProduksiData(true); // Reload table background
             } else {
                 alert('Gagal: ' + res.message);
