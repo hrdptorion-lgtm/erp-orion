@@ -807,7 +807,7 @@ function saveCustomer(payload) {
     for (let i = 1; i < values.length; i++) {
       if (String(values[i][0]).trim() === String(payload.id).trim()) {
         sheet.getRange(i + 1, 2).setValue(payload.nama || '');
-        sheet.getRange(i + 1, 3).setValue(payload.kontak || '');
+        sheet.getRange(i + 1, 3).setValue(payload.kontak ? "'" + payload.kontak : '');
         sheet.getRange(i + 1, 4).setValue(payload.alamat || '');
         return { status: 'success', message: 'Customer berhasil diupdate.' };
       }
@@ -816,7 +816,7 @@ function saveCustomer(payload) {
 
   // Tambah baru
   const newCustId = 'CUST-' + Date.now();
-  sheet.appendRow([newCustId, payload.nama || '', payload.kontak || '', payload.alamat || '', new Date().toLocaleDateString('id-ID')]);
+  sheet.appendRow([newCustId, payload.nama || '', payload.kontak ? "'" + payload.kontak : '', payload.alamat || '', new Date().toLocaleDateString('id-ID')]);
   return { status: 'success', message: 'Customer baru berhasil ditambahkan.' };
 }
 
@@ -868,7 +868,7 @@ function saveSupplier(payload) {
     for (let i = 1; i < values.length; i++) {
       if (String(values[i][0]).trim() === String(payload.id).trim()) {
         sheet.getRange(i + 1, 2).setValue(payload.nama || '');
-        sheet.getRange(i + 1, 3).setValue(payload.kontak || '');
+        sheet.getRange(i + 1, 3).setValue(payload.kontak ? "'" + payload.kontak : '');
         sheet.getRange(i + 1, 4).setValue(payload.alamat || '');
         return { status: 'success', message: 'Supplier berhasil diupdate.' };
       }
@@ -877,7 +877,7 @@ function saveSupplier(payload) {
 
   // Tambah baru
   const newSuppId = 'SUPP-' + Date.now();
-  sheet.appendRow([newSuppId, payload.nama || '', payload.kontak || '', payload.alamat || '', new Date().toLocaleDateString('id-ID')]);
+  sheet.appendRow([newSuppId, payload.nama || '', payload.kontak ? "'" + payload.kontak : '', payload.alamat || '', new Date().toLocaleDateString('id-ID')]);
   return { status: 'success', message: 'Supplier baru berhasil ditambahkan.' };
 }
 
@@ -969,7 +969,7 @@ function savePenawaran(payload) {
       sheet.getRange(i + 1, 4).setValue(rincianStr);
       sheet.getRange(i + 1, 5).setValue(payload.total_harga || 0);
       sheet.getRange(i + 1, 6).setValue(payload.dp || 0);
-      sheet.getRange(i + 1, 7).setValue(payload.status || 'Penawaran');
+      sheet.getRange(i + 1, 7).setValue(payload.status || 'Draft');
       sheet.getRange(i + 1, 8).setValue(payload.narasi || '');
       sheet.getRange(i + 1, 9).setValue(infoStr);
       handleAutoBOM(payload, noDoc);
@@ -984,7 +984,7 @@ function savePenawaran(payload) {
     rincianStr, 
     payload.total_harga || 0, 
     payload.dp || 0, 
-    payload.status || 'Penawaran', 
+    payload.status || 'Draft', 
     payload.narasi || '',
     infoStr
   ]);

@@ -781,6 +781,15 @@ tbody tr:hover {
   transition: all 0.3s ease;
 }
 
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+
+body.light-mode input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none;
+}
+
 .input-group input:focus {
   background: rgba(255, 255, 255, 0.1);
   border-color: var(--primary);
@@ -1278,6 +1287,11 @@ tbody tr:hover {
 }
 
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
   .print-table {
     width: 100%;
     border-collapse: collapse;

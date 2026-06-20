@@ -1560,40 +1560,18 @@
                     <label style="margin: 0; font-weight: bold; width: 120px;">Ubah Status:</label>
                     <select id="detail_status"
                         style="flex: 1; padding: 0.5rem; border-radius: 6px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border);">
-                        <option value="Draft" style="color:#000">Draft</option>
                         <option value="Penawaran" style="color:#000">Penawaran</option>
-                        <option value="Proses" style="color:#000">Proses</option>
                         <option value="Approved" style="color:#000">Approved</option>
                         <option value="Rejected" style="color:#000">Rejected</option>
                     </select>
-                    <button id="btn-save-status" class="btn" style="background: var(--primary);">Simpan</button>
+                    <button id="btn-update-detail-status" class="btn" style="background: var(--primary);">Simpan</button>
                 </div>
 
-                <div id="detail-action-produksi"
-                    style="display: none; justify-content: space-between; background: var(--gradient-1); padding: 15px; border-radius: 8px; margin-bottom: 1.5rem; align-items: center; border: 1px solid var(--primary-glow);">
-                    <div>
-                        <p style="margin: 0 0 5px 0; font-weight: bold; color: var(--text-main);"><i
-                                class="fa-solid fa-industry"></i> Tindakan Lanjutan</p>
-                        <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">Penawaran ini disetujui. Apa
-                            langkah selanjutnya?</p>
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button id="btn-detail-po" class="btn" style="background: var(--warning); display: none;"><i
-                                class="fa-solid fa-file-invoice"></i> PR Barang</button>
-                        <button id="btn-detail-spk" class="btn" style="background: var(--secondary);"><i
-                                class="fa-solid fa-clipboard-list"></i> Buat SPK / Produksi</button>
-                    </div>
-                </div>
-
-                <!-- NEW: Action buttons for Pengiriman & Invoice -->
-                <div id="detail-action-sj"
-                    style="display: flex; justify-content: space-between; gap: 10px; padding: 15px; border-radius: 8px; margin-bottom: 1.5rem; border: 1px dashed var(--glass-border);">
-                    <button id="btn-detail-sj" class="btn"
-                        style="background: var(--info); flex: 1; justify-content: center;"><i
-                            class="fa-solid fa-truck-fast"></i> Buat SJ</button>
-                    <button id="btn-detail-invoice" class="btn"
-                        style="background: var(--warning); flex: 1; justify-content: center;"><i
-                            class="fa-solid fa-receipt"></i> Buat Invoice</button>
+                <div id="detail-action-po"
+                    style="display: flex; justify-content: center; padding: 15px; border-radius: 8px; margin-bottom: 1.5rem; border: 1px dashed var(--glass-border);">
+                    <button id="btn-detail-create-po-customer" class="btn"
+                        style="background: var(--secondary); width: 100%;"><i
+                            class="fa-solid fa-file-invoice"></i> Buat PO Customer dari Penawaran Ini</button>
                 </div>
 
                 <div
@@ -1634,21 +1612,11 @@
                     </table>
                 </div>
 
-                <div id="detail_bom_check_wrapper"
-                    style="display: none; margin-bottom: 1.5rem; padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.2); border-left: 4px solid var(--info);">
-                    <h4 style="margin: 0 0 10px 0; color: var(--info);"><i class="fa-solid fa-boxes-stacked"></i> Status
-                        Kesiapan Produksi (BOM Check)</h4>
-                    <div id="detail_bom_check_container" style="font-size: 0.9rem;">
-                        <p style="margin:0; color:#aaa;">Memeriksa ketersediaan stok material...</p>
-                    </div>
-                </div>
-
-                <div id="detail_spk_progress_container"
-                    style="display: none; margin-bottom: 1.5rem; padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.2); border-left: 4px solid var(--primary);">
-                    <h4 style="margin: 0 0 10px 0; color: var(--primary);"><i class="fa-solid fa-industry"></i> Status
-                        Produksi (SPK)</h4>
-                    <div id="detail_spk_stats" style="font-size: 0.9rem; color: var(--text-main);">
-                        <p style="margin:0; color:#aaa;">Memuat status SPK...</p>
+                <div id="detail_po_customer_container"
+                    style="display: none; margin-bottom: 1.5rem; padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.2); border-left: 4px solid var(--secondary);">
+                    <h4 style="margin: 0 0 10px 0; color: var(--secondary);"><i class="fa-solid fa-file-invoice"></i> PO Customer Terhubung</h4>
+                    <div id="detail_po_customer_stats" style="font-size: 0.9rem; color: var(--text-main);">
+                        <p style="margin:0; color:#aaa;">Memuat data PO Customer...</p>
                     </div>
                 </div>
 
@@ -1673,13 +1641,22 @@
             <div class="login-box" style="max-width: 800px;">
                 <h2 id="penawaran-modal-title" style="margin-bottom: 1.5rem;">Form Penawaran</h2>
                 <form id="penawaran-form">
-                    <input type="hidden" id="p_no_penawaran">
-                    <div class="input-group">
-                        <label>Customer <span style="color:var(--danger)">*</span></label>
-                        <select id="p_customer" required
-                            style="width: 100%; border:1px solid var(--glass-border); padding:0.8rem; background:var(--bg-glass); color:var(--text-main); border-radius:10px;">
-                            <option value="">Pilih atau ketik nama Customer...</option>
-                        </select>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <div class="input-group">
+                            <label>No Penawaran <span style="color:var(--danger)">*</span></label>
+                            <input type="text" id="p_no_penawaran" required placeholder="Format: OKS-MM-YYYY-XXX" style="font-weight: bold; background: rgba(0,0,0,0.2);">
+                        </div>
+                        <div class="input-group">
+                            <label>Customer <span style="color:var(--danger)">*</span></label>
+                            <select id="p_customer" required
+                                style="width: 100%; border:1px solid var(--glass-border); padding:0.8rem; background:var(--bg-glass); color:var(--text-main); border-radius:10px;">
+                                <option value="">Pilih atau ketik nama Customer...</option>
+                            </select>
+                        </div>
+                        <div class="input-group" style="grid-column: 1 / -1;">
+                            <label>Alamat Customer</label>
+                            <textarea id="p_customer_address" placeholder="Alamat lengkap customer..." style="width: 100%; border:1px solid var(--glass-border); padding:0.8rem; background:var(--bg-glass); color:var(--text-main); border-radius:10px; resize:vertical; min-height: 60px;"></textarea>
+                        </div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
                         <div class="input-group">
@@ -1735,9 +1712,10 @@
                         <label>Status Penawaran</label>
                         <select id="p_status"
                             style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border);">
-                            <option value="Diajukan" style="color: #000;">Diajukan</option>
-                            <option value="Approve" style="color: #000;">Approve</option>
-                            <option value="Reject" style="color: #000;">Reject</option>
+                            <option value="Draft" style="color: #000;">Draft</option>
+                            <option value="Penawaran" style="color: #000;">Penawaran</option>
+                            <option value="Approved" style="color: #000;">Approved</option>
+                            <option value="Rejected" style="color: #000;">Rejected</option>
                         </select>
                     </div>
 
@@ -1764,16 +1742,19 @@
                 <form id="po-customer-form">
                     <input type="hidden" id="poc_id">
                     <div class="input-group">
-                        <label>Pilih Penawaran (Approved) <span style="color:var(--danger)">*</span></label>
-                        <select id="poc_no_penawaran" required
+                        <label>Pilih Customer <span style="color:var(--danger)">*</span></label>
+                        <select id="poc_customer_select" required
                             style="width: 100%; border:1px solid var(--glass-border); padding:0.8rem; background:var(--bg-glass); color:var(--text-main); border-radius:10px;">
-                            <option value="">Pilih Penawaran yang sudah di Approve...</option>
+                            <option value="">Pilih Customer...</option>
                         </select>
                     </div>
                     <div class="input-group">
-                        <label>Nama Customer</label>
-                        <input type="text" id="poc_customer" readonly
-                            style="background: rgba(255,255,255,0.05); color: var(--text-muted);">
+                        <label>Pilih Penawaran (Approved) <span style="color:var(--danger)">*</span></label>
+                        <select id="poc_no_penawaran" required
+                            style="width: 100%; border:1px solid var(--glass-border); padding:0.8rem; background:var(--bg-glass); color:var(--text-main); border-radius:10px;">
+                            <option value="">Pilih Penawaran...</option>
+                        </select>
+                        <input type="hidden" id="poc_customer">
                     </div>
                     <div class="input-group">
                         <label>Tanggal PO</label>
@@ -1787,7 +1768,7 @@
                         </div>
                         <div
                             style="text-align: right; margin-top: 10px; font-weight: bold; color: var(--text-main); font-size: 1.1rem;">
-                            Total Harga PO: Rp <span id="poc_total_harga_display">0</span>
+                            Total Harga PO: <span id="poc_total_harga_display">0</span>
                         </div>
                         <input type="hidden" id="poc_total_harga" value="0">
                     </div>
