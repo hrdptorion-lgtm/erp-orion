@@ -1118,10 +1118,11 @@ body.light-mode input[type="date"]::-webkit-calendar-picker-indicator {
   }
 
   .truncate-mobile {
+    display: block !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    max-width: 120px !important;
+    max-width: 150px !important;
   }
 
   .badge {
