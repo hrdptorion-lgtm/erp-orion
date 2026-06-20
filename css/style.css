@@ -1117,6 +1117,13 @@ body.light-mode input[type="date"]::-webkit-calendar-picker-indicator {
     white-space: nowrap !important;
   }
 
+  .truncate-mobile {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 120px !important;
+  }
+
   .badge {
     padding: 0.2rem 0.5rem;
     font-size: 0.7rem;

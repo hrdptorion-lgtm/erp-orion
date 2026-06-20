@@ -2431,7 +2431,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${item.no_penawaran || '-'}</td>
                     <td>${item.tanggal || '-'}</td>
                     <td style="font-weight: 500;">${item.customer}</td>
-                    <td title="${(item.narasi || '').replace(/"/g, '&quot;')}">${displayNarasi}</td>
+                    <td class="truncate-mobile" title="${(item.narasi || '').replace(/"/g, '&quot;')}">${displayNarasi}</td>
                     <td>Rp ${(parseInt(String(item.total_harga || '0').replace(/\D/g, '')) || 0).toLocaleString('id-ID')}</td>
                     <td>Rp ${(parseInt(String(item.down_payment || item.dp || '0').replace(/\D/g, '')) || 0).toLocaleString('id-ID')}</td>
                     <td><span class="badge ${badgeClass}">${item.status || 'Penawaran'}</span></td>
