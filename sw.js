@@ -1,4 +1,4 @@
-const CACHE_NAME = 'transkrip-nilai-v2';
+const CACHE_NAME = 'erporion-v3';
 const urlsToCache = [
   './',
   './index.html',
