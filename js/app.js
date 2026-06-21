@@ -43,7 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
             kode_barang: document.getElementById('edit_bj_kode').value,
             nama_barang: document.getElementById('edit_bj_nama').value,
             stok: document.getElementById('edit_bj_stok').value,
-            harga_jual: document.getElementById('edit_bj_harga').value,
             lokasi_gudang: document.getElementById('edit_bj_lokasi').value
         };
         const btn = e.target.querySelector('button[type="submit"]');
@@ -1807,9 +1806,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const response = await window.ERPAPI.request('get_barang_jadi');
         if (response.status === 'success' && response.data) {
+            window.barangJadiData = response.data;
             tbody.innerHTML = '';
             if (response.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Belum ada data barang jadi.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Belum ada data barang jadi.</td></tr>';
                 return;
             }
 
@@ -1824,7 +1824,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let actionBtns = '';
                 if (isAdmin) {
                     actionBtns = `
-                <button class="btn btn-edit-barang-jadi" data-kode="${item.kode_barang || item.kode}" data-nama="${item.nama_barang || item.nama}" data-stok="${item.stok}" data-harga="${item.harga_jual}" data-lokasi="${item.lokasi_gudang}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--warning); margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn btn-edit-barang-jadi" data-kode="${item.kode_barang || item.kode}" data-nama="${item.nama_barang || item.nama}" data-stok="${item.stok}" data-lokasi="${item.lokasi_gudang}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--warning); margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>
                 <button class="btn btn-reset-barang-jadi" data-kode="${item.kode_barang || item.kode}" data-nama="${item.nama_barang || item.nama}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--danger);"><i class="fa-solid fa-rotate-left"></i></button>
                 `;
                 } else {
@@ -1837,7 +1837,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>
                         <span class="badge ${isKritis ? 'badge-warning' : 'badge-success'}">${parseInt(item.stok || 0).toLocaleString('id-ID')}</span>
                     </td>
-                    <td>Rp ${parseInt(item.harga_jual || 0).toLocaleString('id-ID')}</td>
                     <td>${item.lokasi_gudang || item.lokasi || '-'}</td>
                     <td><div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">${actionBtns}</div></td>
                 `;
@@ -1858,7 +1857,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             document.getElementById('edit_bj_kode').value = btnEdit.getAttribute('data-kode');
                             document.getElementById('edit_bj_nama').value = btnEdit.getAttribute('data-nama');
                             document.getElementById('edit_bj_stok').value = btnEdit.getAttribute('data-stok');
-                            document.getElementById('edit_bj_harga').value = btnEdit.getAttribute('data-harga');
                             document.getElementById('edit_bj_lokasi').value = btnEdit.getAttribute('data-lokasi');
                             document.getElementById('edit-barang-jadi-modal').classList.add('active');
                         });
@@ -2578,14 +2576,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         items.forEach(it => {
                             const iname = String(it.nama || it.part_name || '').trim();
+                            const fg = (window.barangJadiData || []).find(b => (b.nama_barang || b.nama || '').trim().toLowerCase() === iname.toLowerCase());
+                            const st = fg ? parseInt(String(fg.stok).replace(/[^0-9-]/g, '')) : 0;
                             const qty = parseInt(it.qty || it.moq_pcs || 0);
+                            const terkirim = parseInt(it.qty_delivered || 0);
+                            const sisa = Math.max(0, qty - terkirim);
+                            const defaultQty = Math.min(sisa, Math.max(0, st));
+                            
                             const tr = document.createElement('tr');
                             tr.innerHTML = `
-                                <td>${iname}<input type="hidden" class="sj-item-name" value="${iname}"></td>
-                                <td style="text-align: right;">${qty.toLocaleString('id-ID')}</td>
-                                <td style="text-align: right; color: var(--success);">-</td>
                                 <td>
-                                    <input type="number" class="sj-item-qty" min="0" value="${qty}" style="width: 100%; padding: 0.4rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 4px;">
+                                    ${iname}<br>
+                                    <span style="font-size:0.75rem; color:var(--text-muted)">Stok Tersedia: <strong style="color: ${st > 0 ? 'var(--success)' : 'var(--danger)'}">${st.toLocaleString('id-ID')}</strong></span>
+                                    <input type="hidden" class="sj-item-name" value="${iname}">
+                                </td>
+                                <td style="text-align: right;">${qty.toLocaleString('id-ID')}</td>
+                                <td style="text-align: right; color: var(--success);">${terkirim.toLocaleString('id-ID')}</td>
+                                <td>
+                                    <input type="number" class="sj-item-qty" min="0" max="${Math.max(0, st)}" value="${defaultQty}" style="width: 100%; padding: 0.4rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 4px;">
                                 </td>
                             `;
                             tbody.appendChild(tr);
@@ -6536,7 +6544,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <div><div style="font-size:0.75rem; color:var(--text-muted);">KODE</div><div style="font-weight:600;">${item.kode || '-'}</div></div>
             <div><div style="font-size:0.75rem; color:var(--text-muted);">NAMA BARANG</div><div style="font-weight:600;">${item.nama || '-'}</div></div>
             <div><div style="font-size:0.75rem; color:var(--text-muted);">STOK</div><div><span class="badge ${isKritis ? 'badge-warning' : 'badge-success'}">${parseInt(item.stok || 0).toLocaleString('id-ID')} ${item.satuan || ''}</span></div></div>
-            <div><div style="font-size:0.75rem; color:var(--text-muted);">HARGA</div><div style="font-weight:600; color:var(--primary);">Rp ${parseInt(item.harga || 0).toLocaleString('id-ID')}</div></div>
             <div><div style="font-size:0.75rem; color:var(--text-muted);">LOKASI GUDANG</div><div style="font-weight:600;">${item.lokasi || '-'}</div></div>
             <div style="grid-column:1/-1;"><div style="font-size:0.75rem; color:var(--text-muted);">SPESIFIKASI</div><div>${item.spesifikasi || '-'}</div></div>
         </div>

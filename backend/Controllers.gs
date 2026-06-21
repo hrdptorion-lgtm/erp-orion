@@ -382,7 +382,6 @@ function getBarangJadi() {
                 kode_barang: bomKode,
                 nama_barang: bomNama,
                 stok: 0,
-                harga_jual: 0,
                 lokasi_gudang: '-'
               };
               data.push(newObj);
@@ -391,8 +390,7 @@ function getBarangJadi() {
                 const hl = String(h).toLowerCase().trim();
                 if (/kode/i.test(hl)) return bomKode;
                 if (/nama/i.test(hl)) return bomNama;
-                if (/stok/i.test(hl)) return 0;
-                if (/harga/i.test(hl)) return 0;
+                if (/stok|stock/i.test(hl)) return 0;
                 if (/lokasi/i.test(hl)) return '-';
                 return '';
               });
@@ -1888,7 +1886,7 @@ function saveBOM(payload) {
       const bjKodeIdx = bjHeaders.findIndex(h => /kode/i.test(h));
       const bjNamaIdx = bjHeaders.findIndex(h => /nama/i.test(h));
       const bjStokIdx = bjHeaders.findIndex(h => /stok|stock/i.test(h));
-      const bjHargaIdx = bjHeaders.findIndex(h => /harga/i.test(h));
+      const bjLokasiIdx = bjHeaders.findIndex(h => /lokasi/i.test(h));
       
       let bjRowIndex = -1;
       if (bjKodeIdx !== -1) {
@@ -1905,15 +1903,12 @@ function saveBOM(payload) {
           if (i === bjKodeIdx) return payload.kode_barang;
           if (i === bjNamaIdx) return payload.nama_barang;
           if (i === bjStokIdx) return 0;
-          if (i === bjHargaIdx) return payload.total_biaya || 0;
+          if (i === bjLokasiIdx) return '-';
           return '';
         });
         bjSheet.appendRow(newBjRow);
       } else if (bjRowIndex !== -1 && bjNamaIdx !== -1) {
         bjSheet.getRange(bjRowIndex, bjNamaIdx + 1).setValue(payload.nama_barang);
-        if (bjHargaIdx !== -1) {
-          bjSheet.getRange(bjRowIndex, bjHargaIdx + 1).setValue(payload.total_biaya || 0);
-        }
       }
     }
   } catch (e) {
@@ -2208,9 +2203,8 @@ function editBarangJadi(payload) {
       const hMap = {};
       headers.forEach((h, idx) => hMap[h.toLowerCase().trim()] = idx);
       
-      if (payload.nama_barang && hMap['nama barang'] !== undefined) sheet.getRange(i + 1, hMap['nama barang'] + 1).setValue(payload.nama_barang);
+      if (payload.nama_barang !== undefined && hMap['nama barang'] !== undefined) sheet.getRange(i + 1, hMap['nama barang'] + 1).setValue(payload.nama_barang);
       if (payload.stok !== undefined && hMap['stok'] !== undefined) sheet.getRange(i + 1, hMap['stok'] + 1).setValue(payload.stok);
-      if (payload.harga_jual !== undefined && hMap['harga jual'] !== undefined) sheet.getRange(i + 1, hMap['harga jual'] + 1).setValue(payload.harga_jual);
       if (payload.lokasi_gudang !== undefined && hMap['lokasi gudang'] !== undefined) sheet.getRange(i + 1, hMap['lokasi gudang'] + 1).setValue(payload.lokasi_gudang);
       
       return { status: 'success', message: 'Data Barang Jadi berhasil diupdate.' };
