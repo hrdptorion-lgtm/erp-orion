@@ -107,7 +107,10 @@
                 </div>
                 <div class="input-group">
                     <label>Password</label>
-                    <input type="password" id="login-password" required placeholder="Masukkan password">
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <input type="password" id="login-password" required placeholder="Masukkan password" style="width: 100%; padding-right: 40px;">
+                        <i class="fa-solid fa-eye" id="toggle-password" style="position: absolute; right: 15px; cursor: pointer; color: var(--text-muted);"></i>
+                    </div>
                 </div>
                 <button type="submit" class="btn" style="width: 100%; justify-content: center; margin-top: 1rem;">Masuk
                     <i class="fa-solid fa-arrow-right-to-bracket"></i></button>
@@ -163,6 +166,10 @@
                     <li class="nav-item" data-target="grn">
                         <i class="fa-solid fa-boxes-packing"></i>
                         <span>Penerimaan Barang</span>
+                    </li>
+                    <li class="nav-item" data-target="transaksi-gudang">
+                        <i class="fa-solid fa-right-left"></i>
+                        <span>Transaksi Gudang</span>
                     </li>
                     <li class="nav-item" data-target="bom">
                         <i class="fa-solid fa-flask"></i>
@@ -642,6 +649,45 @@
                         <tbody id="table-bom">
                             <tr>
                                 <td colspan="6" style="text-align: center;">Memuat data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- View: Transaksi Gudang -->
+        <div id="view-transaksi-gudang" class="view">
+            <div class="data-section">
+                <div class="section-header"
+                    style="justify-content: space-between; display: flex; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="btn hide-on-mobile" id="btn-add-transaksi" style="background: var(--secondary);"><i
+                                class="fa-solid fa-plus"></i> Buat Transaksi</button>
+                    </div>
+                    <input type="text" class="table-search" data-target="transaksi-tbody" 
+                        placeholder="Cari Transaksi..."
+                        style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main); min-width: 200px;">
+                </div>
+                <div class="table-container">
+                    <table class="table" id="transaksi-table">
+                        <thead>
+                            <tr>
+                                <th>ID TRX</th>
+                                <th>TANGGAL</th>
+                                <th>JENIS</th>
+                                <th>REFERENSI</th>
+                                <th>MATERIAL</th>
+                                <th>QTY</th>
+                                <th>PIC / SISTEM</th>
+                                <th>PEMINTA</th>
+                                <th>PEMBERI</th>
+                                <th>KETERANGAN</th>
+                                <th>AKSI</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transaksi-tbody">
+                            <tr>
+                                <td colspan="8" style="text-align: center;">Memuat data...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1900,7 +1946,62 @@
             </div>
         </div>
 
-        <!-- Produksi Modal Overlay -->
+        <!-- Produksi Modal Overlay --> <!-- Modal Transaksi Gudang -->
+        <div id="transaksi-gudang-modal" class="login-overlay">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h3 id="transaksi-modal-title">Buat Transaksi Gudang (Bahan Baku)</h3>
+                    <button class="btn btn-close-transaksi"
+                        style="background: transparent; color: var(--text-muted); font-size: 1.2rem; padding: 0.5rem;"><i
+                            class="fa-solid fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <form id="transaksi-gudang-form">
+                        <input type="hidden" id="trx_id_transaksi">
+                        <div class="input-group">
+                            <label>Jenis Transaksi <span style="color:var(--danger)">*</span></label>
+                            <select id="trx_jenis" required>
+                                <option value="">-- Pilih Jenis --</option>
+                                <option value="IN">Pemasukan (IN)</option>
+                                <option value="OUT">Pengeluaran (OUT)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Bahan Baku <span style="color:var(--danger)">*</span></label>
+                            <select id="trx_kode_material" required>
+                                <option value="">-- Pilih Bahan Baku --</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Jumlah (Qty) <span style="color:var(--danger)">*</span></label>
+                            <input type="number" id="trx_qty" required min="0.01" step="0.01" placeholder="Misal: 10">
+                            <div id="trx_stok_info"
+                                style="font-size: 0.8rem; color: var(--info); margin-top: 5px; display: none;"></div>
+                        </div>
+                        <div class="input-group">
+                            <label>Referensi (Opsional)</label>
+                            <input type="text" id="trx_referensi" placeholder="Misal: Nomor Surat Jalan / Catatan">
+                        </div>
+                        <div class="input-group">
+                            <label>Peminta Barang (Opsional)</label>
+                            <input type="text" id="trx_peminta" placeholder="Nama peminta barang">
+                        </div>
+                        <div class="input-group">
+                            <label>Pemberi Barang (Opsional)</label>
+                            <input type="text" id="trx_pemberi" placeholder="Nama pemberi barang">
+                        </div>
+                        <div class="input-group">
+                            <label>Keterangan</label>
+                            <textarea id="trx_keterangan" placeholder="Keterangan tambahan..." rows="2"></textarea>
+                        </div>
+                        <button type="submit" class="btn"
+                            style="width: 100%; justify-content: center; margin-top: 10px;"
+                            id="btn-save-transaksi">Simpan Transaksi</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         <div id="produksi-modal" class="login-overlay">
             <div class="login-box" style="max-width: 500px;">
                 <h2 id="produksi-modal-title" style="margin-bottom: 1.5rem;">Form SPK Produksi</h2>

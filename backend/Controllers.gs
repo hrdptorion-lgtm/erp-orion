@@ -2593,3 +2593,184 @@ function savePenerimaanBarang(payload) {
   
   return { status: 'success', message: 'Penerimaan barang berhasil dicatat.' };
 }
+
+// ==========================================
+// TRANSAKSI GUDANG MANUAL
+// ==========================================
+function getTransaksiGudang() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Transaksi Gudang');
+  if (!sheet) return { status: 'success', data: [] };
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length <= 1) return { status: 'success', data: [] };
+  
+  const headers = values[0];
+  const data = values.slice(1).map(row => {
+    let obj = {};
+    headers.forEach((h, i) => obj[String(h).toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/_$/, '')] = row[i]);
+    return obj;
+  });
+  return { status: 'success', data: data };
+}
+
+function saveTransaksiGudang(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const trxSheet = ss.getSheetByName('DB Transaksi Gudang');
+  if (!trxSheet) return { status: 'error', message: 'Sheet DB Transaksi Gudang tidak ditemukan.' };
+  
+  const stockSheet = ss.getSheetByName('DB Master Bahan Baku');
+  if (!stockSheet) return { status: 'error', message: 'Sheet DB Master Bahan Baku tidak ditemukan.' };
+
+  const idTrx = payload.id_transaksi || ('TRX-' + Date.now() + '-' + Math.floor(Math.random() * 100));
+  const tanggal = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy HH:mm');
+  const jenis = payload.jenis;
+  const kode = payload.kode_material;
+  const qty = parseFloat(payload.qty) || 0;
+  const pic = payload.pic || 'Admin';
+  
+  const trxValues = trxSheet.getDataRange().getDisplayValues();
+  const stockValues = stockSheet.getDataRange().getDisplayValues();
+  const stokHeaders = stockValues[0];
+  const stokKodeIdx = stokHeaders.findIndex(h => /kode/i.test(h));
+  const stokValueIdx = stokHeaders.findIndex(h => /stok|stock/i.test(h));
+  
+  let oldJenis = '';
+  let oldQty = 0;
+  let oldKode = '';
+  let rowIndexToUpdate = -1;
+  
+  if (payload.id_transaksi) {
+    for (let i = 1; i < trxValues.length; i++) {
+      if (String(trxValues[i][0]).trim() === String(payload.id_transaksi).trim()) {
+        rowIndexToUpdate = i + 1;
+        oldJenis = String(trxValues[i][2]).trim();
+        oldKode = String(trxValues[i][4]).trim();
+        oldQty = parseFloat(trxValues[i][5]) || 0;
+        break;
+      }
+    }
+  }
+
+  // Stock Modification Logic
+  if (stokKodeIdx !== -1 && stokValueIdx !== -1) {
+    // REVERT OLD STOCK IF EDITING
+    if (payload.id_transaksi && rowIndexToUpdate !== -1) {
+       for (let i = 1; i < stockValues.length; i++) {
+          if (String(stockValues[i][stokKodeIdx]).trim() === oldKode) {
+             let curStok = parseFloat(String(stockSheet.getRange(i + 1, stokValueIdx + 1).getValue()).replace(/[^0-9.-]/g, '')) || 0;
+             // Revert
+             if (oldJenis === 'IN') curStok -= oldQty;
+             if (oldJenis === 'OUT') curStok += oldQty;
+             stockSheet.getRange(i + 1, stokValueIdx + 1).setValue(curStok);
+             // Update local array cache for the subsequent deduction
+             stockValues[i][stokValueIdx] = curStok; 
+             break;
+          }
+       }
+    }
+    
+    // APPLY NEW STOCK
+    let stockUpdated = false;
+    for (let i = 1; i < stockValues.length; i++) {
+      if (String(stockValues[i][stokKodeIdx]).trim() === String(kode).trim()) {
+        let currentStok = parseFloat(String(stockSheet.getRange(i + 1, stokValueIdx + 1).getValue()).replace(/[^0-9.-]/g, '')) || 0;
+        let newStok = currentStok;
+        if (jenis === 'IN') {
+          newStok = currentStok + qty;
+        } else if (jenis === 'OUT') {
+          newStok = currentStok - qty;
+          if (newStok < 0) {
+            // IF EDITING, WE MUST REVERT THE REVERSION (Cancel the entire operation)
+            if (payload.id_transaksi && rowIndexToUpdate !== -1) {
+               // Rollback reversion
+               let rbCurStok = parseFloat(String(stockSheet.getRange(i + 1, stokValueIdx + 1).getValue()).replace(/[^0-9.-]/g, '')) || 0;
+               if (oldJenis === 'IN') rbCurStok += oldQty;
+               if (oldJenis === 'OUT') rbCurStok -= oldQty;
+               stockSheet.getRange(i + 1, stokValueIdx + 1).setValue(rbCurStok);
+            }
+            return { status: 'error', message: 'Stok tidak mencukupi untuk perubahan ini!' };
+          }
+        }
+        stockSheet.getRange(i + 1, stokValueIdx + 1).setValue(newStok);
+        stockUpdated = true;
+        break;
+      }
+    }
+    
+    if (!stockUpdated && jenis === 'OUT') {
+       return { status: 'error', message: 'Bahan baku tidak ditemukan di master.' };
+    }
+  }
+
+  const rowData = [
+    idTrx,
+    tanggal, // Keep original date if editing? Currently updates to now, which is fine for ledger modification trace
+    jenis,
+    payload.referensi || '',
+    kode,
+    qty,
+    pic,
+    payload.keterangan || '',
+    payload.peminta || '',
+    payload.pemberi || ''
+  ];
+
+  if (rowIndexToUpdate !== -1) {
+     trxSheet.getRange(rowIndexToUpdate, 1, 1, 10).setValues([rowData]);
+     return { status: 'success', message: 'Transaksi berhasil diupdate.' };
+  } else {
+     trxSheet.appendRow(rowData);
+     return { status: 'success', message: 'Transaksi berhasil disimpan.' };
+  }
+}
+
+function deleteTransaksiGudang(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const trxSheet = ss.getSheetByName('DB Transaksi Gudang');
+  if (!trxSheet) return { status: 'error', message: 'Sheet DB Transaksi Gudang tidak ditemukan.' };
+  
+  const stockSheet = ss.getSheetByName('DB Master Bahan Baku');
+  if (!stockSheet) return { status: 'error', message: 'Sheet DB Master Bahan Baku tidak ditemukan.' };
+
+  if (!payload.id) return { status: 'error', message: 'ID Transaksi tidak diberikan.' };
+
+  const trxValues = trxSheet.getDataRange().getDisplayValues();
+  let rowIndexToDelete = -1;
+  let oldJenis = '';
+  let oldKode = '';
+  let oldQty = 0;
+
+  for (let i = 1; i < trxValues.length; i++) {
+    if (String(trxValues[i][0]).trim() === String(payload.id).trim()) {
+      rowIndexToDelete = i + 1;
+      oldJenis = String(trxValues[i][2]).trim();
+      oldKode = String(trxValues[i][4]).trim();
+      oldQty = parseFloat(trxValues[i][5]) || 0;
+      break;
+    }
+  }
+
+  if (rowIndexToDelete === -1) {
+    return { status: 'error', message: 'Transaksi tidak ditemukan.' };
+  }
+
+  // Revert Stock
+  const stockValues = stockSheet.getDataRange().getDisplayValues();
+  const stokHeaders = stockValues[0];
+  const stokKodeIdx = stokHeaders.findIndex(h => /kode/i.test(h));
+  const stokValueIdx = stokHeaders.findIndex(h => /stok|stock/i.test(h));
+
+  if (stokKodeIdx !== -1 && stokValueIdx !== -1) {
+    for (let i = 1; i < stockValues.length; i++) {
+      if (String(stockValues[i][stokKodeIdx]).trim() === oldKode) {
+        let curStok = parseFloat(String(stockSheet.getRange(i + 1, stokValueIdx + 1).getValue()).replace(/[^0-9.-]/g, '')) || 0;
+        if (oldJenis === 'IN') curStok -= oldQty;
+        if (oldJenis === 'OUT') curStok += oldQty;
+        stockSheet.getRange(i + 1, stokValueIdx + 1).setValue(curStok);
+        break;
+      }
+    }
+  }
+
+  trxSheet.deleteRow(rowIndexToDelete);
+  return { status: 'success', message: 'Transaksi berhasil dihapus dan stok disesuaikan kembali.' };
+}

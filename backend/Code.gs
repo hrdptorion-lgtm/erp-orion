@@ -101,6 +101,15 @@ function doPost(e) {
       case 'get_inventory':
         response = getInventory();
         break;
+      case 'get_transaksi_gudang':
+        response = getTransaksiGudang();
+        break;
+      case 'save_transaksi_gudang':
+        response = saveTransaksiGudang(payload);
+        break;
+      case 'delete_transaksi_gudang':
+        response = deleteTransaksiGudang(payload);
+        break;
       case 'get_bom':
         response = getBOM();
         break;

@@ -199,7 +199,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Authentication & Session Management ---
     const loginOverlay = document.getElementById('login-overlay');
+    // Login Handling
     const loginForm = document.getElementById('login-form');
+    const togglePassword = document.getElementById('toggle-password');
+    if (togglePassword) {
+        togglePassword.addEventListener('click', function (e) {
+            const passwordInput = document.getElementById('login-password');
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.classList.toggle('fa-eye-slash');
+        });
+    }
+
+    if (loginForm) {
     const loginError = document.getElementById('login-error');
     const btnLogout = document.getElementById('btn-logout');
 
@@ -558,6 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (targetViewId === 'bom') loadBOMData();
         else if (targetViewId === 'produksi') loadProduksiData();
         else if (targetViewId === 'po-internal') loadPOInternalData();
+        else if (targetViewId === 'transaksi-gudang') loadTransaksiGudangData();
         else if (targetViewId === 'barang-jadi') loadBarangJadiData();
         else if (targetViewId === 'profil') loadSettingsData();
         else if (targetViewId === 'coa') loadCOAData();
@@ -744,6 +757,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 { id: 'btn-import-stock', label: 'Import Data', icon: 'fa-file-import', color: 'var(--info)' },
                 { id: 'btn-export-stock', label: 'Export Data', icon: 'fa-file-export', color: 'var(--warning)' }
             ],
+            'transaksi-gudang': [{ id: 'btn-add-transaksi', label: 'Buat Transaksi', icon: 'fa-plus', color: 'var(--secondary)' }],
             'sales': [{ id: 'btn-add-penawaran', label: 'Buat Penawaran', icon: 'fa-plus', color: 'var(--secondary)' }],
             'po-customer': [{ id: 'btn-add-po-customer', label: 'Buat PO dari Penawaran', icon: 'fa-plus', color: 'var(--secondary)' }],
             'surat-jalan': [{ id: 'btn-add-surat-jalan', label: 'Buat Surat Jalan Manual', icon: 'fa-plus', color: 'var(--accent)' }],
@@ -976,14 +990,14 @@ document.addEventListener('DOMContentLoaded', () => {
             paginatedData.forEach(item => {
                 const tr = document.createElement('tr');
                 const isKritis = item.stok < 10;
-                let actionBtns = `<button class="btn btn-edit-stock" data-kode="${item.kode}" data-nama="${item.nama}" data-stok="${item.stok}" data-satuan="${item.satuan || ''}" data-lokasi="${item.lokasi}" data-harga="${item.harga || 0}" data-spesifikasi="${item.spesifikasi || ''}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>`;
+                let actionBtns = `<button class="btn btn-edit-stock" data-kode="${item.kode}" data-nama="${item.nama}" data-stok="${item.stok}" data-satuan="${item.satuan || ''}" data-lokasi="${item.lokasi}" data-harga="${item.harga || 0}" data-spesifikasi="${item.spesifikasi || ''}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;" title="Edit Bahan Baku"><i class="fa-solid fa-pen"></i></button>`;
 
                 const session = localStorage.getItem('erp_session');
                 const user = session ? JSON.parse(session) : {};
                 const isAdmin = ['Admin', 'Super Admin', 'Management', 'Direktur'].some(r => (user.role || '').toLowerCase().includes(r.toLowerCase()));
 
                 if (isAdmin) {
-                    actionBtns += `<button class="btn btn-delete-stock" data-kode="${item.kode}" data-nama="${item.nama}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger); display: inline-flex;"><i class="fa-solid fa-trash"></i></button>`;
+                    actionBtns += `<button class="btn btn-delete-stock" data-kode="${item.kode}" data-nama="${item.nama}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger); display: inline-flex;" title="Hapus Bahan Baku"><i class="fa-solid fa-trash"></i></button>`;
                 }
 
                 tr.innerHTML = `
@@ -994,7 +1008,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </td>
                     <td style="white-space: nowrap !important;">Rp ${parseInt(item.harga || 0).toLocaleString('id-ID')}</td>
                     <td>${item.lokasi}</td>
-                    <td>${actionBtns}</td>
+                    <td><div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">${actionBtns}</div></td>
                 `;
                 tr.style.cursor = 'pointer';
                 tr.querySelectorAll('button').forEach(btn => {
@@ -1299,7 +1313,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td style="text-align:center;"><span style="background:rgba(255,255,255,0.08); border-radius:12px; padding:2px 10px; font-size:0.82rem;">${jumlahItem} item</span></td>
                     <td style="font-weight:600; color:var(--primary);">Rp ${totalEst.toLocaleString('id-ID')}</td>
                     <td><span class="badge ${badgeClass}">${badgeIcon} ${item.status}</span></td>
-                    <td>${actionBtns}</td>
+                    <td><div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">${actionBtns}</div></td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -1734,7 +1748,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </td>
                     <td>Rp ${parseInt(item.harga_jual || 0).toLocaleString('id-ID')}</td>
                     <td>${item.lokasi_gudang || item.lokasi || '-'}</td>
-                    <td>${actionBtns}</td>
+                    <td><div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">${actionBtns}</div></td>
                 `;
                 tr.style.cursor = 'pointer';
                 tr.querySelectorAll('button').forEach(btn => {
@@ -3024,7 +3038,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>Rp ${(parseInt(String(item.total_harga || '0').replace(/\D/g, '')) || 0).toLocaleString('id-ID')}</td>
                     <td>Rp ${(parseInt(String(item.down_payment || item.dp || '0').replace(/\D/g, '')) || 0).toLocaleString('id-ID')}</td>
                     <td><span class="badge ${badgeClass}">${item.status || 'Penawaran'}</span></td>
-                    <td style="white-space: nowrap;">${actionBtns}</td>
+                    <td><div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">${actionBtns}</div></td>
                 `;
 
                 // Prevent row click when clicking buttons
@@ -3824,7 +3838,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td>${item.nama_barang}</td>
                         <td>${imgHtml}</td>
                         <td>Rp ${parseInt(item.total_biaya || 0).toLocaleString('id-ID')}</td>
-                        <td>${actionBtns}</td>
+                        <td><div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">${actionBtns}</div></td>
                     `;
                     tbody.appendChild(tr);
 
@@ -4443,21 +4457,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (item.status === 'Menunggu Pengambilan') {
                         statusBadge = `<span class="badge badge-warning">${item.status}</span>`;
-                        actionBtns += `<button class="btn btn-ambil-bahan" data-no="${item.no_spk}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--warning); margin-right: 5px;">Ambil Bahan</button>`;
-
-                        if (isAdmin) {
-                            actionBtns += `<button class="btn btn-edit-spk" data-no="${item.no_spk}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--info); margin-right: 5px;" title="Edit SPK"><i class="fa-solid fa-pen"></i></button>`;
-                        }
+                        actionBtns += `<button class="btn btn-ambil-bahan" data-no="${item.no_spk}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--warning); margin-right: 5px; color: #000;" title="Ambil Bahan Baku"><i class="fa-solid fa-box-open"></i></button>`;
+                        
+                        actionBtns += `<button class="btn btn-edit-spk" data-no="${item.no_spk}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--info); margin-right: 5px;" title="Edit SPK"><i class="fa-solid fa-pen"></i></button>`;
                     } else if (item.status === 'Dalam Proses') {
                         statusBadge = `<span class="badge badge-info" style="background: var(--info);">${item.status}</span>`;
-                        actionBtns += `<button class="btn btn-selesaikan-spk" data-no="${item.no_spk}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--primary); margin-right: 5px;">Selesaikan</button>`;
+                        actionBtns += `<button class="btn btn-selesaikan-spk" data-no="${item.no_spk}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--primary); margin-right: 5px;" title="Selesaikan SPK"><i class="fa-solid fa-check"></i></button>`;
                     }
 
-                    if (isAdmin) {
-                        actionBtns += `<button class="btn btn-delete-spk" data-no="${item.no_spk}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--danger);"><i class="fa-solid fa-trash"></i></button>`;
-                    } else if (!actionBtns) {
-                        actionBtns = '-';
-                    }
+                    actionBtns += `<button class="btn btn-delete-spk" data-no="${item.no_spk}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--danger);" title="Hapus SPK"><i class="fa-solid fa-trash"></i></button>`;
 
                     tr.innerHTML = `
                     <td>${item.no_spk || '-'}</td>
@@ -4465,7 +4473,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td style="font-weight: 500;">${item.kode_barang_jadi || item.kode_barang || '-'}</td>
                     <td>${item.qty_produksi || item.qty || '-'}</td>
                     <td>${statusBadge}</td>
-                    <td>${actionBtns}</td>
+                    <td style="white-space: nowrap;">
+                        <div style="display: flex; flex-direction: row; gap: 5px; align-items: center;">
+                            ${actionBtns}
+                        </div>
+                    </td>
                 `;
                     tr.style.cursor = 'pointer';
                     tr.querySelectorAll('button').forEach(btn => {
@@ -5094,8 +5106,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${user.nama_lengkap || user.nama || ''}</td>
                     <td><span class="badge badge-success">${user.role}</span></td>
                     <td>
-                        <button class="btn btn-edit-user" data-user='${JSON.stringify(user)}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>
-                        <button class="btn btn-delete-user" data-username="${user.username}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger); display: inline-flex;"><i class="fa-solid fa-trash"></i></button>
+                        <div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">
+                            <button class="btn btn-edit-user" data-user='${JSON.stringify(user)}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-delete-user" data-username="${user.username}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger); display: inline-flex;"><i class="fa-solid fa-trash"></i></button>
+                        </div>
                     </td>
                 `;
                 tr.style.cursor = 'pointer';
@@ -5976,7 +5990,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <td>${c.kontak_telepon || c['kontak_/_telepon'] || '-'}</td>
             <td>${c.alamat_keterangan || c['alamat_/_keterangan'] || '-'}</td>
             <td>${c.tanggal_terdaftar || '-'}</td>
-            <td>${actionBtns}</td>
+            <td><div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">${actionBtns}</div></td>
         `;
             tr.style.cursor = 'pointer';
             tr.querySelectorAll('button').forEach(btn => {
@@ -6152,7 +6166,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <td>${s.kontak___telepon || s['kontak_/_telepon'] || '-'}</td>
             <td>${s.alamat || '-'}</td>
             <td>${s.tanggal_terdaftar || '-'}</td>
-            <td>${actionBtns}</td>
+            <td><div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">${actionBtns}</div></td>
         `;
             tbody.appendChild(tr);
         });
@@ -6552,7 +6566,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <td>${sj.no_penawaran || '-'}</td>
             <td>${sj.customer || '-'}</td>
             <td><span class="badge ${badgeClass}">${sj.status || 'Dikirim'}</span></td>
-            <td>${actionBtns}</td>
+            <td><div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">${actionBtns}</div></td>
         `;
             tbody.appendChild(tr);
         });
@@ -6788,7 +6802,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <td>${inv.customer || '-'}</td>
             <td>${window.formatRupiah(inv.total_tagihan || 0)}</td>
             <td><span class="badge ${badgeClass}">${inv.status_pembayaran || 'Belum Lunas'}</span></td>
-            <td>${actionBtns}</td>
+            <td><div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">${actionBtns}</div></td>
         `;
             tbody.appendChild(tr);
         });
@@ -7016,7 +7030,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast?.('Gagal: ' + res.message, 'danger');
         }
     });
-});
+}
 
 // ==========================================
 // COA
@@ -8069,4 +8083,218 @@ document.addEventListener('input', function (e) {
             row.style.display = text.includes(query) ? '' : 'none';
         });
     }
+});
+
+// Transaksi Gudang Logic
+async function loadTransaksiGudangData(isBackgroundSync = false) {
+    if (!isBackgroundSync) {
+        document.getElementById('transaksi-tbody').innerHTML = '<tr><td colspan="8" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+    }
+    
+    try {
+        const res = await window.ERPAPI.request('get_transaksi_gudang');
+        if (res.status === 'success' && res.data) {
+            const tbody = document.getElementById('transaksi-tbody');
+            if (res.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Belum ada riwayat transaksi.</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = '';
+            // Data descending
+            res.data.reverse().forEach(item => {
+                const tr = document.createElement('tr');
+                const badgeClass = item.jenis === 'IN' ? 'badge-success' : 'badge-danger';
+                tr.innerHTML = `
+                    <td>${item.id_transaksi || '-'}</td>
+                    <td>${item.tanggal || '-'}</td>
+                    <td><span class="badge ${badgeClass}">${item.jenis || '-'}</span></td>
+                    <td>${item.referensi || '-'}</td>
+                    <td style="font-weight: 500;">${item.kode_material || '-'}</td>
+                    <td>${item.qty || '-'}</td>
+                    <td>${item.pic || '-'}</td>
+                    <td>${item.peminta || '-'}</td>
+                    <td>${item.pemberi || '-'}</td>
+                    <td>${item.keterangan || '-'}</td>
+                    <td>
+                        <div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">
+                            <button class="btn btn-edit-transaksi" data-item='${JSON.stringify(item).replace(/'/g, "&#39;")}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex;" title="Edit Transaksi"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-del-transaksi" data-id="${item.id_transaksi}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--danger);" title="Hapus Transaksi"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            // Attach event listeners for Edit and Delete
+            document.querySelectorAll('.btn-edit-transaksi').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const item = JSON.parse(e.currentTarget.getAttribute('data-item'));
+                    
+                    document.getElementById('trx_id_transaksi').value = item.id_transaksi;
+                    document.getElementById('trx_jenis').value = item.jenis;
+                    document.getElementById('trx_qty').value = item.qty;
+                    document.getElementById('trx_referensi').value = item.referensi;
+                    document.getElementById('trx_peminta').value = item.peminta || '';
+                    document.getElementById('trx_pemberi').value = item.pemberi || '';
+                    document.getElementById('trx_keterangan').value = item.keterangan || '';
+                    
+                    const res = await window.ERPAPI.request('get_stock');
+                    const select = document.getElementById('trx_kode_material');
+                    if (select.tomselect) select.tomselect.destroy();
+                    select.innerHTML = '<option value="">-- Pilih Bahan Baku --</option>';
+                    if (res.status === 'success' && res.data) {
+                        window.stockData = res.data;
+                        res.data.forEach(st => {
+                            const opt = document.createElement('option');
+                            opt.value = st.kode_material;
+                            opt.textContent = `${st.kode_material} - ${st.nama_material} (Stok: ${st.stok} ${st.satuan})`;
+                            select.appendChild(opt);
+                        });
+                    }
+                    
+                    select.value = item.kode_material;
+                    new TomSelect('#trx_kode_material', {
+                        create: false,
+                        sortField: { field: 'text', direction: 'asc' }
+                    });
+                    
+                    document.getElementById('transaksi-modal-title').textContent = 'Edit Transaksi Gudang';
+                    document.getElementById('transaksi-gudang-modal').classList.add('active');
+                });
+            });
+            
+            document.querySelectorAll('.btn-del-transaksi').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.currentTarget.getAttribute('data-id');
+                    if (confirm('Yakin ingin menghapus transaksi ini? Stok bahan baku akan dikembalikan/disesuaikan secara otomatis.')) {
+                        e.currentTarget.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                        const res = await window.ERPAPI.request('delete_transaksi_gudang', { id });
+                        if (res.status === 'success') {
+                            showToast(res.message, 'success');
+                            loadTransaksiGudangData();
+                        } else {
+                            showToast(res.message, 'error');
+                            loadTransaksiGudangData();
+                        }
+                    }
+                });
+            });
+        }
+    } catch(err) {
+        console.error('Error load transaksi', err);
+        if (!isBackgroundSync) {
+            document.getElementById('transaksi-tbody').innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--danger);">Gagal memuat data</td></tr>';
+        }
+    }
+}
+
+// Modal Logic
+document.getElementById('btn-add-transaksi')?.addEventListener('click', async () => {
+    // Populate dropdown
+    const res = await window.ERPAPI.request('get_stock');
+    const select = document.getElementById('trx_kode_material');
+    if (select.tomselect) select.tomselect.destroy();
+    
+    select.innerHTML = '<option value="">-- Pilih Bahan Baku --</option>';
+    if (res.status === 'success' && res.data) {
+        window.stockData = res.data;
+        res.data.forEach(st => {
+            const opt = document.createElement('option');
+            opt.value = st.kode_material;
+            opt.textContent = `${st.kode_material} - ${st.nama_material} (Stok: ${st.stok} ${st.satuan})`;
+            select.appendChild(opt);
+        });
+    }
+    
+    new TomSelect('#trx_kode_material', {
+        create: false,
+        sortField: { field: 'text', direction: 'asc' }
+    });
+    
+    document.getElementById('transaksi-gudang-form').reset();
+    document.getElementById('trx_stok_info').style.display = 'none';
+    
+    document.getElementById('transaksi-modal-title').textContent = 'Buat Transaksi Gudang (Bahan Baku)';
+    document.getElementById('trx_id_transaksi').value = '';
+    
+    document.getElementById('transaksi-gudang-modal').classList.add('active');
+});
+
+document.querySelector('.btn-close-transaksi')?.addEventListener('click', () => {
+    document.getElementById('transaksi-gudang-modal').classList.remove('active');
+});
+
+document.getElementById('trx_kode_material')?.addEventListener('change', (e) => {
+    const val = e.target.value;
+    const info = document.getElementById('trx_stok_info');
+    if (!val) {
+        info.style.display = 'none';
+        return;
+    }
+    const item = window.stockData?.find(s => s.kode_material === val);
+    if (item) {
+        info.textContent = `Stok Saat Ini: ${item.stok} ${item.satuan}`;
+        info.style.display = 'block';
+    }
+});
+
+document.getElementById('transaksi-gudang-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const jenis = document.getElementById('trx_jenis').value;
+    const kode = document.getElementById('trx_kode_material').value;
+    const qty = parseFloat(document.getElementById('trx_qty').value) || 0;
+    const ref = document.getElementById('trx_referensi').value;
+    const ket = document.getElementById('trx_keterangan').value;
+    const peminta = document.getElementById('trx_peminta').value;
+    const pemberi = document.getElementById('trx_pemberi').value;
+    
+    const idTrx = document.getElementById('trx_id_transaksi').value;
+    
+    if (jenis === 'OUT') {
+        const item = window.stockData?.find(s => s.kode_material === kode);
+        const stok = item ? parseFloat(String(item.stok).replace(/[^0-9.-]/g, '')) : 0;
+        if (qty > stok && !idTrx) { // Allow bypass if editing (we will handle proper logic in backend)
+            showToast('Stok tidak mencukupi untuk dikeluarkan!', 'error');
+            return;
+        }
+    }
+    
+    const btn = document.getElementById('btn-save-transaksi');
+    const oldText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+    btn.disabled = true;
+    
+    const user = JSON.parse(localStorage.getItem('erp_session') || '{}');
+    const picName = user.nama || user.username || 'Admin';
+    
+    try {
+        const res = await window.ERPAPI.request('save_transaksi_gudang', {
+            id_transaksi: idTrx,
+            jenis,
+            kode_material: kode,
+            qty,
+            referensi: ref,
+            peminta: peminta,
+            pemberi: pemberi,
+            keterangan: ket,
+            pic: picName
+        });
+        
+        if (res.status === 'success') {
+            showToast('Transaksi berhasil disimpan', 'success');
+            document.getElementById('transaksi-gudang-modal').classList.remove('active');
+            loadTransaksiGudangData();
+        } else {
+            showToast(res.message, 'error');
+        }
+    } catch(err) {
+        showToast('Terjadi kesalahan jaringan', 'error');
+    }
+    
+    btn.innerHTML = oldText;
+    btn.disabled = false;
+});
+
 });

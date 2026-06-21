@@ -1314,3 +1314,8 @@ body.light-mode input[type="date"]::-webkit-calendar-picker-indicator {
     color: black;
   }
 }
+
+/* Force action columns to never wrap globally */
+td:has(.btn) {
+    white-space: nowrap !important;
+}
