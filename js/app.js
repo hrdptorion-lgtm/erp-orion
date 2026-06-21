@@ -4512,7 +4512,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             btnAmbil.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
                             btnAmbil.disabled = true;
                             if (typeof showToast !== 'undefined') showToast('Mengambil bahan baku...', 'info');
-                            window.ERPAPI.request('ambil_bahan_spk', { no_spk: noSPK }).then(res => {
+                            const sess = JSON.parse(localStorage.getItem('erp_session') || '{}');
+                            window.ERPAPI.request('ambil_bahan_spk', { no_spk: noSPK, peminta: sess.nama_lengkap || sess.username || '' }).then(res => {
                                 if (res.status === 'success') {
                                     if (typeof showToast !== 'undefined') showToast(`✅ ${noSPK} bahan baku dipotong`, 'success');
                                     loadProduksiData(true);
@@ -7427,6 +7428,7 @@ const MENUS = [
     { id: 'bom', name: 'BOM / Komposisi' },
     { id: 'barang-jadi', name: 'Master Barang Jadi' },
     { id: 'produksi', name: 'SPK Produksi' },
+    { id: 'transaksi-gudang', name: 'Transaksi Gudang' },
     { id: 'finance', name: 'Finance / Petty Cash' },
     { id: 'laporan-kas', name: 'Laporan Kas' },
     { id: 'invoice', name: 'Invoice' },
@@ -8118,6 +8120,7 @@ async function loadTransaksiGudangData(isBackgroundSync = false) {
                     <td>${item.keterangan || '-'}</td>
                     <td>
                         <div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">
+                            ${(!item.pemberi || item.pemberi.trim() === '') ? `<button class="btn btn-approve-transaksi" data-id="${item.id_transaksi}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--success);" title="Setujui/Berikan Barang"><i class="fa-solid fa-check"></i></button>` : ''}
                             <button class="btn btn-edit-transaksi" data-item='${JSON.stringify(item).replace(/'/g, "&#39;")}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex;" title="Edit Transaksi"><i class="fa-solid fa-pen"></i></button>
                             <button class="btn btn-del-transaksi" data-id="${item.id_transaksi}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--danger);" title="Hapus Transaksi"><i class="fa-solid fa-trash"></i></button>
                         </div>
@@ -8180,6 +8183,35 @@ async function loadTransaksiGudangData(isBackgroundSync = false) {
                     }
                 });
             });
+            
+            // Attach event listener for Approve
+            document.querySelectorAll('.btn-approve-transaksi').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.currentTarget.getAttribute('data-id');
+                    const sess = JSON.parse(localStorage.getItem('erp_session') || '{}');
+                    const pemberiName = sess.nama_lengkap || sess.username || 'Admin';
+                    
+                    const ok = await showConfirm({
+                        title: 'Setujui Pengambilan',
+                        message: `Yakin ingin menyetujui transaksi <strong>${id}</strong>?<br>Nama Anda (<strong>${pemberiName}</strong>) akan dicatat sebagai Pemberi.`,
+                        icon: '✅', confirmText: 'Ya, Setujui', cancelText: 'Batal'
+                    });
+                    if (!ok) return;
+                    
+                    e.currentTarget.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                    e.currentTarget.disabled = true;
+                    
+                    window.ERPAPI.request('approve_transaksi', { id_transaksi: id, pemberi: pemberiName }).then(res => {
+                        if (res.status === 'success') {
+                            if (typeof showToast !== 'undefined') showToast('✅ Transaksi disetujui', 'success');
+                            loadTransaksiGudangData();
+                        } else {
+                            if (typeof showToast !== 'undefined') showToast('❌ Gagal menyetujui: ' + res.message, 'error');
+                            loadTransaksiGudangData();
+                        }
+                    });
+                });
+            });
         }
     } catch(err) {
         console.error('Error load transaksi', err);
@@ -8214,6 +8246,8 @@ document.getElementById('btn-add-transaksi')?.addEventListener('click', async ()
     
     document.getElementById('transaksi-gudang-form').reset();
     document.getElementById('trx_stok_info').style.display = 'none';
+    const sess = JSON.parse(localStorage.getItem('erp_session') || '{}');
+    document.getElementById('trx_peminta').value = sess.nama_lengkap || sess.username || '';
     
     document.getElementById('transaksi-modal-title').textContent = 'Buat Transaksi Gudang (Bahan Baku)';
     document.getElementById('trx_id_transaksi').value = '';

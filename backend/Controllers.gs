@@ -1409,13 +1409,16 @@ function ambilBahanSPK(payload) {
   const noSPKIdx = headers.findIndex(h => /no.*spk/i.test(h));
   const statusIdx = headers.findIndex(h => /status/i.test(h));
   const bahanIdx = headers.findIndex(h => /bahan/i.test(h));
+  const namaBarangIdx = headers.findIndex(h => /nama.*barang/i.test(h));
 
   let rowIndex = -1;
   let bahanBakuJson = '[]';
+  let namaBarangSPK = '';
   for (let i = 1; i < spkValues.length; i++) {
     if (String(spkValues[i][noSPKIdx]).trim() === String(payload.no_spk).trim()) {
       rowIndex = i + 1;
       bahanBakuJson = spkValues[i][bahanIdx] || '[]';
+      if (namaBarangIdx !== -1) namaBarangSPK = spkValues[i][namaBarangIdx] || '';
       break;
     }
   }
@@ -1459,7 +1462,9 @@ function ambilBahanSPK(payload) {
               stockSheet.getRange(i + 1, stokIdx + 1).setValue(currentStok - actualDeduct);
               if (trxSheet) {
                 const idTrx = 'TRX-' + Date.now() + '-' + Math.floor(Math.random() * 100);
-                trxSheet.appendRow([idTrx, tanggal, 'OUT', payload.no_spk, bahan.kode, actualDeduct, 'Sistem (SPK)', 'Pengambilan bahan baku SPK']);
+                const ket = 'Kebutuhan untuk SPK ' + payload.no_spk + (namaBarangSPK ? ' (Pembuatan: ' + namaBarangSPK + ')' : '');
+                const peminta = payload.peminta || 'Sistem';
+                trxSheet.appendRow([idTrx, tanggal, 'OUT', payload.no_spk, bahan.kode, actualDeduct, 'Sistem (SPK)', ket, peminta, '']);
               }
             }
 
@@ -2773,4 +2778,32 @@ function deleteTransaksiGudang(payload) {
 
   trxSheet.deleteRow(rowIndexToDelete);
   return { status: 'success', message: 'Transaksi berhasil dihapus dan stok disesuaikan kembali.' };
+}
+
+function approveTransaksi(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const trxSheet = ss.getSheetByName('DB Transaksi Gudang');
+  if (!trxSheet) return { status: 'error', message: 'Sheet DB Transaksi Gudang tidak ditemukan.' };
+
+  if (!payload.id_transaksi) return { status: 'error', message: 'ID Transaksi tidak diberikan.' };
+  if (!payload.pemberi) return { status: 'error', message: 'Nama Pemberi tidak valid.' };
+
+  const trxValues = trxSheet.getDataRange().getDisplayValues();
+  let rowIndexToUpdate = -1;
+
+  for (let i = 1; i < trxValues.length; i++) {
+    if (String(trxValues[i][0]).trim() === String(payload.id_transaksi).trim()) {
+      rowIndexToUpdate = i + 1;
+      break;
+    }
+  }
+
+  if (rowIndexToUpdate === -1) {
+    return { status: 'error', message: 'Transaksi tidak ditemukan.' };
+  }
+
+  // Update kolom Pemberi (Kolom ke-10, index 9)
+  trxSheet.getRange(rowIndexToUpdate, 10).setValue(payload.pemberi);
+
+  return { status: 'success', message: 'Transaksi berhasil disetujui.' };
 }

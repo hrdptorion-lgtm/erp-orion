@@ -110,6 +110,9 @@ function doPost(e) {
       case 'delete_transaksi_gudang':
         response = deleteTransaksiGudang(payload);
         break;
+      case 'approve_transaksi':
+        response = approveTransaksi(payload);
+        break;
       case 'get_bom':
         response = getBOM();
         break;

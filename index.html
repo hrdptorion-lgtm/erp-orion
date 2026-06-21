@@ -1948,11 +1948,11 @@
 
         <!-- Produksi Modal Overlay --> <!-- Modal Transaksi Gudang -->
         <div id="transaksi-gudang-modal" class="login-overlay">
-            <div class="modal-content" style="max-width: 500px;">
-                <div class="modal-header">
-                    <h3 id="transaksi-modal-title">Buat Transaksi Gudang (Bahan Baku)</h3>
+            <div class="login-box" style="max-width: 500px; padding: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3 id="transaksi-modal-title" style="margin: 0;">Buat Transaksi Gudang</h3>
                     <button class="btn btn-close-transaksi"
-                        style="background: transparent; color: var(--text-muted); font-size: 1.2rem; padding: 0.5rem;"><i
+                        style="background: transparent; color: var(--text-muted); font-size: 1.2rem; padding: 0.5rem; box-shadow: none;"><i
                             class="fa-solid fa-times"></i></button>
                 </div>
                 <div class="modal-body">
@@ -1984,7 +1984,7 @@
                         </div>
                         <div class="input-group">
                             <label>Peminta Barang (Opsional)</label>
-                            <input type="text" id="trx_peminta" placeholder="Nama peminta barang">
+                            <input type="text" id="trx_peminta" placeholder="Nama peminta barang" readonly style="opacity: 0.7; cursor: not-allowed; background: rgba(255, 255, 255, 0.02);">
                         </div>
                         <div class="input-group">
                             <label>Pemberi Barang (Opsional)</label>
