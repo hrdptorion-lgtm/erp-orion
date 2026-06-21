@@ -613,39 +613,123 @@ function createPOInternal(payload) {
   return { status: 'success', message: 'Pengajuan belanja berhasil dikirim!', no_po: noPO };
 }
 
-function receiveGRN(payload) {
+function processGRN(payload) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const poSheet = ss.getSheetByName('DB PO Internal');
   const stockSheet = ss.getSheetByName('DB Master Bahan Baku');
-  if (!poSheet || !stockSheet) return { status: 'error', message: 'Sheet tidak ditemukan.' };
-  // Update PO status
-  if (payload.no_po && poSheet) {
-    const poValues = poSheet.getDataRange().getDisplayValues();
-    const poHeaders = poValues[0];
-    const noPOIdx = poHeaders.findIndex(h => /no.*po/i.test(h));
-    const statusIdx = poHeaders.findIndex(h => /status/i.test(h));
-    for (let i = 1; i < poValues.length; i++) {
-      if (String(poValues[i][noPOIdx]).trim() === String(payload.no_po).trim()) {
-        if (statusIdx !== -1) poSheet.getRange(i + 1, statusIdx + 1).setValue('Selesai');
+  const trxSheet = ss.getSheetByName('DB Transaksi Gudang');
+  
+  if (!poSheet || !stockSheet) return { status: 'error', message: 'Sheet DB tidak ditemukan.' };
+  
+  const poValues = poSheet.getDataRange().getDisplayValues();
+  const poHeaders = poValues[0];
+  const noPOIdx = poHeaders.findIndex(h => /no.*po/i.test(h));
+  const statusIdx = poHeaders.findIndex(h => /^status$/i.test(String(h)));
+  const itemsIdx = poHeaders.findIndex(h => /^items$/i.test(String(h)));
+  
+  let poRowIndex = -1;
+  let itemsJson = '';
+  
+  for (let i = 1; i < poValues.length; i++) {
+    if (String(poValues[i][noPOIdx]).trim() === String(payload.no_po).trim()) {
+      poRowIndex = i + 1;
+      itemsJson = poValues[i][itemsIdx] || '[]';
+      break;
+    }
+  }
+  
+  if (poRowIndex === -1) return { status: 'error', message: 'No PO tidak ditemukan.' };
+  
+  let items = [];
+  try { items = JSON.parse(itemsJson); } catch(e) {}
+  
+  const receivedData = payload.received_items || [];
+  let updatedCount = 0;
+  
+  const stockValues = stockSheet.getDataRange().getDisplayValues();
+  const stockHeaders = stockValues[0];
+  const sKodeIdx = stockHeaders.findIndex(h => /kode/i.test(h));
+  const sNamaIdx = stockHeaders.findIndex(h => /nama/i.test(h));
+  const sStokIdx = stockHeaders.findIndex(h => /stok|stock/i.test(h));
+  const sHargaIdx = stockHeaders.findIndex(h => /harga/i.test(h));
+  const sSatuanIdx = stockHeaders.findIndex(h => /satuan/i.test(h));
+  
+  const tanggal = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy HH:mm');
+  
+  // Process each received item
+  receivedData.forEach(rItem => {
+    const qtyIn = parseFloat(rItem.qty_in) || 0;
+    if (qtyIn <= 0) return;
+    
+    // Find in PO items to update qty_received
+    let poItemRef = null;
+    for (let it of items) {
+      if (String(it.kode) === String(rItem.kode)) {
+        it.qty_received = (parseFloat(it.qty_received) || 0) + qtyIn;
+        poItemRef = it;
         break;
       }
     }
-  }
-  // Update stock
-  const stockValues = stockSheet.getDataRange().getDisplayValues();
-  const stockHeaders = stockValues[0];
-  const kodeIdx = stockHeaders.findIndex(h => /kode/i.test(h));
-  const stokIdx = stockHeaders.findIndex(h => /stok|stock/i.test(h));
-  if (kodeIdx !== -1 && stokIdx !== -1) {
+    
+    // Find in Master Stock to add
+    let foundStockRow = -1;
     for (let i = 1; i < stockValues.length; i++) {
-      if (String(stockValues[i][kodeIdx]).trim() === String(payload.kode_material).trim()) {
-        const currentStok = parseFloat(String(stockValues[i][stokIdx]).replace(/[^0-9.]/g, '')) || 0;
-        stockSheet.getRange(i + 1, stokIdx + 1).setValue(currentStok + (parseFloat(payload.qty) || 0));
-        return { status: 'success', message: 'Stok berhasil ditambah.' };
+      const k = String(stockValues[i][sKodeIdx] || '').trim();
+      if (k === String(rItem.kode).trim()) {
+        foundStockRow = i + 1;
+        break;
       }
     }
+    
+    if (foundStockRow !== -1) {
+      const currentStok = parseFloat(String(stockSheet.getRange(foundStockRow, sStokIdx + 1).getValue()).replace(/[^0-9.]/g, '')) || 0;
+      stockSheet.getRange(foundStockRow, sStokIdx + 1).setValue(currentStok + qtyIn);
+      
+      if (trxSheet) {
+        const idTrx = 'TRX-' + Date.now() + '-' + Math.floor(Math.random() * 100);
+        const ket = 'Penerimaan Parsial/GRN dari PO Internal No: ' + payload.no_po;
+        trxSheet.appendRow([idTrx, tanggal, 'IN', payload.no_po, rItem.kode, qtyIn, 'Sistem (GRN)', ket, 'Sistem', 'Sistem (Auto-Approve)']);
+      }
+      updatedCount++;
+    } else if (poItemRef) {
+       // Auto create new material if not found in stock
+       const newRow = stockHeaders.map((h, idx) => {
+          if (idx === sKodeIdx) return poItemRef.kode;
+          if (idx === sNamaIdx) return poItemRef.nama;
+          if (idx === sStokIdx) return qtyIn;
+          if (idx === sHargaIdx) return poItemRef.harga || 0;
+          if (idx === sSatuanIdx) return poItemRef.satuan || 'pcs';
+          return '';
+       });
+       stockSheet.appendRow(newRow);
+       
+       if (trxSheet) {
+        const idTrx = 'TRX-' + Date.now() + '-' + Math.floor(Math.random() * 100);
+        const ket = 'Penerimaan Material Baru GRN dari PO Internal No: ' + payload.no_po;
+        trxSheet.appendRow([idTrx, tanggal, 'IN', payload.no_po, poItemRef.kode, qtyIn, 'Sistem (GRN)', ket, 'Sistem', 'Sistem (Auto-Approve)']);
+       }
+       updatedCount++;
+    }
+  });
+  
+  // Update PO items JSON
+  poSheet.getRange(poRowIndex, itemsIdx + 1).setValue(JSON.stringify(items));
+  
+  // Check completion
+  let allComplete = true;
+  for (let it of items) {
+    const qPesan = parseFloat(it.qty) || 0;
+    const qTerima = parseFloat(it.qty_received) || 0;
+    if (qTerima < qPesan) {
+      allComplete = false;
+      break;
+    }
   }
-  return { status: 'error', message: 'Kode material tidak ditemukan di stok.' };
+  
+  const newStatus = allComplete ? 'Selesai (Barang Diterima)' : 'Parsial';
+  poSheet.getRange(poRowIndex, statusIdx + 1).setValue(newStatus);
+  
+  return { status: 'success', message: `${updatedCount} item stok berhasil ditambahkan. Status PO saat ini: ${newStatus}` };
 }
 
 // ==========================================
@@ -686,81 +770,6 @@ function updatePOInternalStatus(payload) {
   if (payload.status === 'Disetujui (Sedang Dibelikan)' || payload.status === 'Ditolak') {
     if (disetujuiOlehIdx !== -1) sheet.getRange(rowIndex, disetujuiOlehIdx + 1).setValue(payload.user_nama || '');
     if (tglApproveIdx !== -1) sheet.getRange(rowIndex, tglApproveIdx + 1).setValue(Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy HH:mm'));
-  }
-  
-  // If status = Selesai, sync all items to stock
-  if (payload.status === 'Selesai (Barang Diterima)') {
-    let items = [];
-    try { items = JSON.parse(itemsJson); } catch(e) {}
-    
-    if (items.length === 0) return { status: 'success', message: 'Status diperbarui (tidak ada item untuk disinkronkan).' };
-    
-    const stockSheet = ss.getSheetByName('DB Master Bahan Baku');
-    if (!stockSheet) return { status: 'error', message: 'Sheet DB Master Bahan Baku tidak ditemukan.' };
-    
-    const stockValues = stockSheet.getDataRange().getDisplayValues();
-    const stockHeaders = stockValues[0];
-    const sKodeIdx = stockHeaders.findIndex(h => /kode/i.test(h));
-    const sNamaIdx = stockHeaders.findIndex(h => /nama/i.test(h));
-    const sStokIdx = stockHeaders.findIndex(h => /stok|stock/i.test(h));
-    const sHargaIdx = stockHeaders.findIndex(h => /harga/i.test(h));
-    const sSatuanIdx = stockHeaders.findIndex(h => /satuan/i.test(h));
-    
-    let addedNew = 0;
-    let updated = 0;
-    
-    items.forEach(item => {
-      const kodeItem = String(item.kode || '').trim();
-      const namaItem = String(item.nama || '').trim().toLowerCase();
-      const qtyTambah = parseFloat(item.qty) || 0;
-      
-      // Find by kode first, then fallback to nama
-      let foundRow = -1;
-      for (let i = 1; i < stockValues.length; i++) {
-        const kodeDB = String(stockValues[i][sKodeIdx] || '').trim();
-        const namaDB = String(stockValues[i][sNamaIdx] || '').trim().toLowerCase();
-        if ((kodeItem && kodeDB === kodeItem) || namaDB === namaItem) {
-          foundRow = i + 1;
-          break;
-        }
-      }
-      
-      if (foundRow !== -1) {
-        // Update existing stock
-        const currentStok = parseFloat(String(stockSheet.getRange(foundRow, sStokIdx + 1).getValue()).replace(/[^0-9.]/g, '')) || 0;
-        stockSheet.getRange(foundRow, sStokIdx + 1).setValue(currentStok + qtyTambah);
-        
-        // Update harga & sync BOM if changed
-        if (sHargaIdx !== -1) {
-          const oldHarga = parseFloat(String(stockSheet.getRange(foundRow, sHargaIdx + 1).getValue()).replace(/[^0-9.]/g, '')) || 0;
-          const newHarga = parseFloat(String(item.harga_aktual > 0 ? item.harga_aktual : (item.harga || '0')).replace(/[^0-9.]/g, '')) || 0;
-          if (newHarga > 0 && newHarga !== oldHarga) {
-            stockSheet.getRange(foundRow, sHargaIdx + 1).setValue(newHarga);
-            try { syncBOMPrices(namaItem, newHarga); } catch(e) { Logger.log("Error sync BOM: " + e.message); }
-          }
-        }
-        
-        updated++;
-      } else {
-        // New material — auto create
-        const newKode = kodeItem || ('RM' + Date.now().toString().slice(-6));
-        const newRow = stockHeaders.map((h, i) => {
-          if (i === sKodeIdx) return newKode;
-          if (i === sNamaIdx) return item.nama;
-          if (i === sStokIdx) return qtyTambah;
-          if (i === sHargaIdx) return item.harga || 0;
-          if (i === sSatuanIdx) return item.satuan || 'pcs';
-          return '';
-        });
-        stockSheet.appendRow(newRow);
-        addedNew++;
-      }
-    });
-    
-    return { 
-      status: 'success', 
-      message: `Selesai! ${updated} item stok diperbarui, ${addedNew} material baru ditambahkan ke gudang.` 
-    };
   }
   
   return { status: 'success', message: 'Status PO berhasil diperbarui menjadi: ' + payload.status };

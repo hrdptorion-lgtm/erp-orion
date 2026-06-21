@@ -1290,6 +1290,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (item.status === 'Disetujui (Sedang Dibelikan)') { badgeClass = 'badge-success'; badgeIcon = '✅'; }
                 else if (item.status === 'Selesai (Barang Diterima)') { badgeClass = 'badge-success'; badgeIcon = '📦'; }
                 else if (item.status === 'Ditolak') { badgeClass = 'badge-danger'; badgeIcon = '❌'; }
+                else if (item.status === 'Parsial') { badgeClass = 'badge-warning'; badgeIcon = '📦'; }
 
                 let actionBtns = `<button class="btn btn-detail-po" data-no="${item.no_po}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: var(--accent);" title="Lihat Detail"><i class="fa-solid fa-eye"></i> Detail</button>`;
                 actionBtns += `<button class="btn btn-print-po" data-item='${JSON.stringify(item).replace(/'/g, "&apos;")}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background:var(--info);" title="Print PO"><i class="fa-solid fa-print"></i></button>`;
@@ -1297,8 +1298,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (item.status === 'Menunggu Approval' && isAtasan) {
                     actionBtns += `<button class="btn btn-approve-po" data-no="${item.no_po}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;" title="Approve"><i class="fa-solid fa-check"></i></button>`;
                     actionBtns += `<button class="btn btn-reject-po" data-no="${item.no_po}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background:var(--danger); margin-right: 5px;" title="Tolak"><i class="fa-solid fa-times"></i></button>`;
-                } else if (item.status === 'Disetujui (Sedang Dibelikan)' && isPurchasing) {
-                    actionBtns += `<button class="btn btn-selesai-po" data-no="${item.no_po}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background:var(--info); margin-right: 5px;" title="Selesai - Terima Barang"><i class="fa-solid fa-box-open"></i> Terima</button>`;
+                } else if ((item.status === 'Disetujui (Sedang Dibelikan)' || item.status === 'Parsial') && isPurchasing) {
+                    actionBtns += `<button class="btn btn-grn-po" data-item='${JSON.stringify(item).replace(/'/g, "&apos;")}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background:var(--secondary); margin-right: 5px;" title="Terima Barang (GRN)"><i class="fa-solid fa-truck"></i> Terima</button>`;
                 }
 
                 // Tombol hapus hanya untuk Admin / Super Admin
@@ -1319,6 +1320,16 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // Event delegation
+            tbody.querySelectorAll('.btn-grn-po').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const itemStr = e.currentTarget.getAttribute('data-item');
+                    if (itemStr) {
+                        const item = JSON.parse(itemStr);
+                        openGRNModal(item);
+                    }
+                });
+            });
+
             tbody.querySelectorAll('.btn-detail-po').forEach(btn => {
                 btn.addEventListener('click', () => openPODetail(btn.getAttribute('data-no'), response.data));
             });
@@ -1337,14 +1348,94 @@ document.addEventListener('DOMContentLoaded', () => {
             tbody.querySelectorAll('.btn-reject-po').forEach(btn => {
                 btn.addEventListener('click', () => updatePOStatusAction(btn.getAttribute('data-no'), 'Ditolak'));
             });
-            tbody.querySelectorAll('.btn-selesai-po').forEach(btn => {
-                btn.addEventListener('click', () => updatePOStatusAction(btn.getAttribute('data-no'), 'Selesai (Barang Diterima)'));
-            });
+
             tbody.querySelectorAll('.btn-delete-po').forEach(btn => {
                 btn.addEventListener('click', (e) => deletePOInternal(btn.getAttribute('data-no'), e.currentTarget.closest('tr')));
             });
         }
     }
+
+    function openGRNModal(item) {
+        document.getElementById('grn-no-po').textContent = item.no_po;
+        document.getElementById('grn_no_po_input').value = item.no_po;
+        
+        const tbody = document.getElementById('grn-items-tbody');
+        tbody.innerHTML = '';
+        
+        let items = [];
+        try {
+            items = typeof item.items_parsed === 'object' ? item.items_parsed : JSON.parse(item.items || '[]');
+        } catch(e){}
+
+        items.forEach((it, idx) => {
+            const qtyPesan = parseFloat(it.qty) || 0;
+            const qtyTerima = parseFloat(it.qty_received) || 0;
+            const sisa = Math.max(0, qtyPesan - qtyTerima);
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>
+                    <strong>${it.kode || '-'}</strong><br>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">${it.nama || '-'}</span>
+                    <input type="hidden" name="grn_kode[]" value="${it.kode || ''}">
+                </td>
+                <td style="text-align: center;">${qtyPesan} ${it.satuan || ''}</td>
+                <td style="text-align: center; color: var(--success);">${qtyTerima}</td>
+                <td>
+                    <input type="number" name="grn_qty_in[]" class="form-control" style="width: 100px; padding: 0.2rem 0.5rem;" min="0" max="${sisa}" value="${sisa > 0 ? sisa : 0}" ${sisa === 0 ? 'readonly' : ''} step="any">
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        
+        document.getElementById('grn-modal').classList.add('active');
+    }
+
+    document.querySelector('.btn-close-grn')?.addEventListener('click', () => {
+        document.getElementById('grn-modal').classList.remove('active');
+    });
+
+    document.getElementById('grn-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const no_po = document.getElementById('grn_no_po_input').value;
+        const form = e.target;
+        const kodes = form.querySelectorAll('input[name="grn_kode[]"]');
+        const qtys = form.querySelectorAll('input[name="grn_qty_in[]"]');
+        
+        const receivedItems = [];
+        for(let i=0; i<kodes.length; i++) {
+            const q = parseFloat(qtys[i].value) || 0;
+            if (q > 0) {
+                receivedItems.push({ kode: kodes[i].value, qty_in: q });
+            }
+        }
+        
+        if (receivedItems.length === 0) {
+            alert('Tidak ada jumlah barang masuk yang diisi.');
+            return;
+        }
+
+        const btnSubmit = document.getElementById('btn-save-grn');
+        const oldHtml = btnSubmit.innerHTML;
+        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+        btnSubmit.disabled = true;
+
+        const res = await window.ERPAPI.request('process_grn', {
+            no_po: no_po,
+            received_items: receivedItems
+        });
+
+        btnSubmit.innerHTML = oldHtml;
+        btnSubmit.disabled = false;
+
+        alert(res.message);
+        if (res.status === 'success') {
+            document.getElementById('grn-modal').classList.remove('active');
+            loadPOInternalData();
+            loadPurchasingData(); // Reload stock
+            loadTransaksiGudangData(); // Reload history
+        }
+    });
 
     function printPOInternal(item) {
         let info = {};
@@ -7687,7 +7778,7 @@ async function loadGRNData() {
         ]);
 
         if (poRes.status === 'success') {
-            currentGRN_PO_Data = poRes.data.filter(po => po.status === 'Approved' || po.status === 'Parsial');
+            currentGRN_PO_Data = poRes.data.filter(po => po.status === 'Disetujui (Sedang Dibelikan)' || po.status === 'Parsial');
         }
         if (grnRes.status === 'success') {
             currentGRN_History = grnRes.data;
@@ -8106,6 +8197,7 @@ async function loadTransaksiGudangData(isBackgroundSync = false) {
             // Data descending
             res.data.reverse().forEach(item => {
                 const tr = document.createElement('tr');
+                tr.style.cursor = 'pointer';
                 const badgeClass = item.jenis === 'IN' ? 'badge-success' : 'badge-danger';
                 tr.innerHTML = `
                     <td>${item.id_transaksi || '-'}</td>
@@ -8120,13 +8212,29 @@ async function loadTransaksiGudangData(isBackgroundSync = false) {
                     <td>${item.keterangan || '-'}</td>
                     <td>
                         <div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">
-                            ${(!item.pemberi || item.pemberi.trim() === '') ? `<button class="btn btn-approve-transaksi" data-id="${item.id_transaksi}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--success);" title="Setujui/Berikan Barang"><i class="fa-solid fa-check"></i></button>` : ''}
+                            ${(!item.pemberi || item.pemberi.trim() === '') ? `<button class="btn btn-approve-transaksi" data-id="${item.id_transaksi}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--secondary);" title="Setujui/Berikan Barang"><i class="fa-solid fa-check"></i></button>` : ''}
                             <button class="btn btn-edit-transaksi" data-item='${JSON.stringify(item).replace(/'/g, "&#39;")}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex;" title="Edit Transaksi"><i class="fa-solid fa-pen"></i></button>
                             <button class="btn btn-del-transaksi" data-id="${item.id_transaksi}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--danger);" title="Hapus Transaksi"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </td>
                 `;
                 tbody.appendChild(tr);
+                
+                tr.addEventListener('click', (e) => {
+                    if (e.target.closest('button')) return;
+                    document.getElementById('td_id').textContent = item.id_transaksi || '-';
+                    document.getElementById('td_tanggal').textContent = item.tanggal || '-';
+                    document.getElementById('td_jenis').textContent = item.jenis || '-';
+                    document.getElementById('td_jenis').className = 'badge ' + badgeClass;
+                    document.getElementById('td_referensi').textContent = item.referensi || '-';
+                    document.getElementById('td_bahan').textContent = item.kode_material || '-';
+                    document.getElementById('td_qty').textContent = item.qty || '-';
+                    document.getElementById('td_pic').textContent = item.pic || '-';
+                    document.getElementById('td_peminta').textContent = item.peminta || '-';
+                    document.getElementById('td_pemberi').textContent = item.pemberi || '-';
+                    document.getElementById('td_keterangan').textContent = item.keterangan || '-';
+                    document.getElementById('transaksi-detail-modal').classList.add('active');
+                });
             });
             
             // Attach event listeners for Edit and Delete
@@ -8257,6 +8365,10 @@ document.getElementById('btn-add-transaksi')?.addEventListener('click', async ()
 
 document.querySelector('.btn-close-transaksi')?.addEventListener('click', () => {
     document.getElementById('transaksi-gudang-modal').classList.remove('active');
+});
+
+document.querySelector('.btn-close-transaksi-detail')?.addEventListener('click', () => {
+    document.getElementById('transaksi-detail-modal').classList.remove('active');
 });
 
 document.getElementById('trx_kode_material')?.addEventListener('change', (e) => {

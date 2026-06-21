@@ -62,8 +62,8 @@ function doPost(e) {
       case 'delete_user':
         response = deleteUser(payload);
         break;
-      case 'receive_grn':
-        response = receiveGRN(payload);
+      case 'process_grn':
+        response = processGRN(payload);
         break;
       case 'get_penawaran':
         response = getPenawaran();
