@@ -213,15 +213,52 @@ document.addEventListener('DOMContentLoaded', () => {
     const pageTitle = document.getElementById('page-title-text');
     const pageSubtitle = document.getElementById('page-subtitle-text');
 
-    function checkSession() {
+    async function checkSession() {
         const session = localStorage.getItem('erp_session');
         if (session) {
-            const user = JSON.parse(session);
+            let user = JSON.parse(session);
             applyUserSession(user);
+
+            // Auto sync permissions in background
+            try {
+                const rolePermRes = await window.ERPAPI.request('get_role_permissions', { role: user.role });
+                if (rolePermRes.status === 'success') {
+                    user.permissions = rolePermRes.data;
+                    localStorage.setItem('erp_session', JSON.stringify(user));
+                    applyUserSession(user);
+                }
+            } catch (e) {
+                console.log('Background RBAC sync failed', e);
+            }
         } else {
             loginOverlay.classList.add('active');
         }
     }
+    window.checkSession = checkSession;
+
+    // Background interval to sync RBAC across devices without overloading server (every 2 minutes)
+    setInterval(async () => {
+        // Only sync if tab is active/visible
+        if (document.visibilityState === 'visible') {
+            const session = localStorage.getItem('erp_session');
+            if (session) {
+                try {
+                    let user = JSON.parse(session);
+                    const rolePermRes = await window.ERPAPI.request('get_role_permissions', { role: user.role });
+                    if (rolePermRes.status === 'success') {
+                        // Check if permissions actually changed to avoid unnecessary UI updates
+                        if (JSON.stringify(user.permissions) !== JSON.stringify(rolePermRes.data)) {
+                            user.permissions = rolePermRes.data;
+                            localStorage.setItem('erp_session', JSON.stringify(user));
+                            applyUserSession(user);
+                        }
+                    }
+                } catch (e) {
+                    console.log('Interval RBAC sync failed', e);
+                }
+            }
+        }
+    }, 120000); // 120,000 ms = 2 menit
 
     function applyUserSession(user) {
         loginOverlay.classList.remove('active');
@@ -269,10 +306,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 // Fallback jika DB Hak Akses kosong
                 if (!isAdmin) {
-                    if (isPurchasing && target !== 'dashboard' && target !== 'purchasing') item.style.display = 'none';
-                    if (isProduksi && target !== 'dashboard' && target !== 'produksi' && target !== 'bom') item.style.display = 'none';
-                    if (isFinance && target !== 'dashboard' && target !== 'finance') item.style.display = 'none';
-                    if (isSales && target !== 'dashboard' && target !== 'sales') item.style.display = 'none';
+                    if (isPurchasing && !['dashboard', 'purchasing', 'po-internal', 'supplier'].includes(target)) item.style.display = 'none';
+                    if (isProduksi && !['dashboard', 'produksi', 'bom', 'grn', 'surat-jalan', 'barang-jadi'].includes(target)) item.style.display = 'none';
+                    if (isFinance && !['dashboard', 'finance', 'invoice', 'laporan-kas', 'coa'].includes(target)) item.style.display = 'none';
+                    if (isSales && !['dashboard', 'sales', 'po-customer', 'customer'].includes(target)) item.style.display = 'none';
                     if (item.classList.contains('admin-only')) item.style.display = 'none';
                 } else {
                     if (item.classList.contains('admin-only')) item.style.display = 'flex';
@@ -280,6 +317,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (item.classList.contains('super-admin-only')) {
                     item.style.display = isSuperAdmin ? 'flex' : 'none';
+                }
+            }
+        });
+
+        // Apply RBAC to Bottom Nav Items on Mobile
+        document.querySelectorAll('.bottom-nav-item').forEach(item => {
+            const target = item.getAttribute('data-target');
+            if (!target) return; // Profil has no target, always show
+
+            if (target === 'dashboard' || target === 'menu-more') {
+                item.style.display = 'flex'; // always show
+                return;
+            }
+
+            if (hasPermissions) {
+                if (target === 'menu-finance') {
+                    // Check if they have access to any finance child
+                    const hasFinanceAccess = ['finance', 'invoice', 'laporan-kas'].some(k => user.permissions[k] && user.permissions[k].can_view !== false);
+                    item.style.display = hasFinanceAccess ? 'flex' : 'none';
+                } else {
+                    if (user.permissions[target] && user.permissions[target].can_view === false) {
+                        item.style.display = 'none';
+                    } else if (!user.permissions[target]) {
+                        item.style.display = isAdmin ? 'flex' : 'none';
+                    } else {
+                        item.style.display = 'flex';
+                    }
+                }
+            } else {
+                // Fallback logic
+                if (!isAdmin) {
+                    if (target === 'menu-finance' && !isFinance) item.style.display = 'none';
+                    if (target === 'sales' && !isSales) item.style.display = 'none';
+                } else {
+                    item.style.display = 'flex';
                 }
             }
         });
@@ -423,6 +495,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Core View Switcher (must be defined before event listeners & checkSession) ---
     function switchView(targetViewId, save = true) {
         if (!targetViewId) return;
+        if (targetViewId === 'pengaturan') targetViewId = 'menu-pengaturan';
 
         // Persist
         if (save) {
@@ -453,10 +526,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Switch visible view panel
+        let activeViewNode = null;
         views.forEach(view => {
             view.classList.remove('active');
-            if (view.id === `view-${targetViewId}`) view.classList.add('active');
+            if (view.id === `view-${targetViewId}`) {
+                view.classList.add('active');
+                activeViewNode = view;
+            }
         });
+
+        // Apply RBAC to buttons immediately
+        if (activeViewNode && targetViewId !== 'admin' && targetViewId !== 'rbac' && targetViewId !== 'profil' && targetViewId !== 'dashboard') {
+            if (typeof window.applyRBACToButtons === 'function') {
+                window.applyRBACToButtons(targetViewId, activeViewNode);
+            }
+        }
 
         // Update header text
         if (titles[targetViewId]) {
@@ -683,7 +767,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!fabWrapper) return;
 
         // Hide FAB on desktop, rely on CSS media query, but in JS we just populate the actions
-        const actions = fabMappings[viewId];
+        let actions = fabMappings[viewId];
+
+        // Check RBAC to see if user is allowed to ADD
+        // Admin, rbac, and profil don't use this strict RBAC check in the same way, but let's check for standard views
+        if (viewId !== 'admin' && viewId !== 'rbac' && viewId !== 'profil' && viewId !== 'dashboard') {
+            const canAdd = typeof window.checkRBACAction === 'function' ? window.checkRBACAction('can_add', viewId) : true;
+            if (!canAdd) {
+                // If they can't add, clear all actions that start with btn-add
+                actions = actions ? actions.filter(a => !a.id.startsWith('btn-add')) : [];
+            }
+        }
 
         // Handle special cases (e.g., Approval where buttons depend on tabs)
         // If view doesn't have mappings here, we hide FAB
@@ -1312,8 +1406,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!item) return;
         const items = item.items_parsed || [];
         let infoTambahan = {};
-        try { infoTambahan = item.info_tambahan ? JSON.parse(item.info_tambahan) : {}; } catch(e) {}
-        
+        try { infoTambahan = item.info_tambahan ? JSON.parse(item.info_tambahan) : {}; } catch (e) { }
+
         document.getElementById('po-detail-title').textContent = `Detail: ${noPO}`;
 
         const totalEst = parseInt(item.total_estimasi || 0);
@@ -1483,12 +1577,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const user = session ? JSON.parse(session) : {};
         document.getElementById('po-info-pemohon').textContent = user.nama || user.username || 'System';
         document.getElementById('po-info-tanggal').textContent = new Date().toLocaleString('id-ID');
-        
+
         // Populate Ref PO Customer dropdown
         const refSelect = document.getElementById('po_customer_ref');
         if (refSelect) {
             const populateRef = (data) => {
-                refSelect.innerHTML = '<option value="">-- Pilih PO Customer --</option>' + 
+                refSelect.innerHTML = '<option value="">-- Pilih PO Customer --</option>' +
                     data.map(po => `<option value="${po.id_po_customer}">${po.id_po_customer} - ${po.nama_customer || '-'}</option>`).join('');
             };
             if (window.poCustomerData && window.poCustomerData.length > 0) {
@@ -1720,11 +1814,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (resPoc.status === 'success' && resPoc.data) {
             window.poCustomerData = resPoc.data.reverse();
-            
+
             const spkList = resSpk.data || [];
             const sjList = resSj.data || [];
             const invList = resInv.data || [];
-            
+
             tbody.innerHTML = '';
             if (window.poCustomerData.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Tidak ada data PO Customer.</td></tr>';
@@ -1880,7 +1974,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         }
                     });
-                    
+
                     if (window._pendingAutoFillPO && window._pendingAutoFillPO.no_penawaran) {
                         setTimeout(() => {
                             if (sel.tomselect) {
@@ -2074,7 +2168,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const boms = resBom.data || [];
             const stocks = resStock.data || [];
             window.stockData = stocks;
-            
+
             let totalShortageData = {};
 
             if (Array.isArray(rincian)) {
@@ -2085,7 +2179,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         mats.forEach(mat => {
                             const matName = (mat.nama || mat.nama_material || '').trim();
                             const reqQty = parseFloat(mat.qty || 0) * parseFloat(poItem.qty || 1);
-                            
+
                             if (!totalShortageData[matName]) {
                                 const stockItem = stocks.find(s => (s.nama || s.nama_material || '').trim().toLowerCase() === matName.toLowerCase());
                                 const currentStock = stockItem ? (parseFloat(String(stockItem.stok).replace(/[^\d.,]/g, '').replace(/\./g, '').replace(',', '.')) || 0) : 0;
@@ -2113,8 +2207,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         const tr = document.createElement('tr');
                         const isShortage = data.required > data.stock;
                         const formatQty = (qty) => Number(qty).toLocaleString('id-ID');
-                        const statusBadge = isShortage 
-                            ? `<span class="badge badge-danger">Kurang ${formatQty(data.required - data.stock)} ${data.satuan}</span>` 
+                        const statusBadge = isShortage
+                            ? `<span class="badge badge-danger">Kurang ${formatQty(data.required - data.stock)} ${data.satuan}</span>`
                             : `<span class="badge badge-success">Aman</span>`;
 
                         tr.innerHTML = `
@@ -2141,7 +2235,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.ERPAPI.request('get_surat_jalan'),
                 window.ERPAPI.request('get_invoices')
             ]);
-            
+
             const spkList = resProduksi.data || [];
             const sjList = resSJ.data || [];
             const invList = resInv.data || [];
@@ -2224,17 +2318,17 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             const btn = document.getElementById('btn-run-spk');
             if (btn) btn.click();
-            
+
             setTimeout(() => {
                 document.getElementById('spk_no_penawaran').value = window.currentDetailPOC.id_po_customer || window.currentDetailPOC.no_penawaran || '';
                 document.getElementById('produksi-modal-title').textContent = 'SPK Produksi (Referensi PO: ' + (window.currentDetailPOC.id_po_customer || window.currentDetailPOC.no_penawaran) + ')';
-                
+
                 try {
                     const items = typeof window.currentDetailPOC.item_po === 'string' ? JSON.parse(window.currentDetailPOC.item_po) : (window.currentDetailPOC.item_po || []);
                     if (items.length > 0) {
                         const iname = String(items[0].nama || items[0].part_name || '').trim();
                         const qty = parseInt(items[0].qty || items[0].moq_pcs || 0);
-                        
+
                         const checkInterval = setInterval(() => {
                             const select = document.getElementById('spk_kode_jadi');
                             if (select && select.options.length > 1) {
@@ -2255,14 +2349,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         }, 200);
                         setTimeout(() => clearInterval(checkInterval), 5000);
                     }
-                } catch(e) {}
+                } catch (e) { }
             }, 300);
         }, 500);
     });
 
     document.getElementById('btn-detail-act-po')?.addEventListener('click', async () => {
         if (!window.currentDetailPOC) return;
-        
+
         if (window.currentShortageData) {
             const keys = Object.keys(window.currentShortageData);
             const shortages = keys.filter(k => window.currentShortageData[k].required > window.currentShortageData[k].stock);
@@ -2301,7 +2395,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ref.value = pocId;
                     }
                 }
-                
+
                 // Pre-fill items based on shortage
                 if (window.currentShortageData) {
                     const keys = Object.keys(window.currentShortageData);
@@ -2312,7 +2406,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         shortages.forEach(matName => {
                             const data = window.currentShortageData[matName];
                             const kur = data.required - data.stock;
-                            
+
                             // Ambil harga dari master stock jika ada
                             let hargaEstimasi = '0';
                             if (window.stockData && Array.isArray(window.stockData)) {
@@ -2322,7 +2416,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     hargaEstimasi = hargaNum.toLocaleString('id-ID');
                                 }
                             }
-                            
+
                             if (typeof addPOItemRow === 'function') {
                                 addPOItemRow('', matName, hargaEstimasi, kur, data.satuan);
                             }
@@ -2347,7 +2441,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const st = fg ? parseInt(String(fg.stok).replace(/\D/g, '')) : 0;
                 if (st < req) isKosong = true;
             });
-        } catch(e) {}
+        } catch (e) { }
 
         if (isKosong) {
             const proceed = await window.showConfirm({
@@ -2368,7 +2462,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('surat-jalan-form').reset();
             document.getElementById('sj_no_penawaran').value = window.currentDetailPOC.id_po_customer || window.currentDetailPOC.no_penawaran || '';
             document.getElementById('sj_customer').value = window.currentDetailPOC.nama_customer || window.currentDetailPOC.customer || '';
-            
+
             const tbody = document.getElementById('sj-items-tbody');
             if (tbody) {
                 tbody.innerHTML = '';
@@ -2392,7 +2486,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             tbody.appendChild(tr);
                         });
                     }
-                } catch(e) {
+                } catch (e) {
                     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Gagal memuat rincian item</td></tr>';
                 }
             }
@@ -4350,7 +4444,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (item.status === 'Menunggu Pengambilan') {
                         statusBadge = `<span class="badge badge-warning">${item.status}</span>`;
                         actionBtns += `<button class="btn btn-ambil-bahan" data-no="${item.no_spk}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--warning); margin-right: 5px;">Ambil Bahan</button>`;
-                        
+
                         if (isAdmin) {
                             actionBtns += `<button class="btn btn-edit-spk" data-no="${item.no_spk}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--info); margin-right: 5px;" title="Edit SPK"><i class="fa-solid fa-pen"></i></button>`;
                         }
@@ -4377,7 +4471,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     tr.querySelectorAll('button').forEach(btn => {
                         btn.addEventListener('click', e => e.stopPropagation());
                     });
-                    
+
                     const editBtn = tr.querySelector('.btn-edit-spk');
                     if (editBtn) {
                         editBtn.addEventListener('click', (e) => {
@@ -4531,7 +4625,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('spk-bahan-container').innerHTML = 'Pilih barang dan isi Qty untuk melihat estimasi...';
         document.getElementById('spk_total_biaya').textContent = '0';
         document.getElementById('spk_qty_info').style.display = 'none';
-        
+
         document.getElementById('spk_edit_mode_no').value = '';
         document.getElementById('produksi-modal-title').textContent = 'Form SPK Produksi';
         const batchGroup = document.getElementById('spk_batch_count')?.closest('.input-group');
@@ -4558,7 +4652,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (resInv.status === 'success' && resInv.data) {
             cachedInventoryData = resInv.data;
         }
-        
+
         if (resProduksi.status === 'success' && resProduksi.data) {
             cachedProduksiData = resProduksi.data;
         }
@@ -4566,7 +4660,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Populate PO Customer dropdown
         if (poSelect.tomselect) poSelect.tomselect.destroy();
         poSelect.innerHTML = '<option value="" selected>-- Buat SPK Internal / Tanpa PO --</option>';
-        
+
         if (resPO.status === 'success' && resPO.data) {
             cachedPOData = resPO.data;
             resPO.data.filter(po => po.status !== 'Selesai' && po.status !== 'Batal').forEach(po => {
@@ -4576,7 +4670,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 poSelect.appendChild(opt);
             });
         }
-        
+
         new TomSelect('#spk_po_customer', {
             create: false,
             sortField: { field: 'text', direction: 'asc' },
@@ -4601,7 +4695,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('spk_edit_mode_no').value = item.no_spk;
         document.getElementById('produksi-modal-title').textContent = 'Edit SPK: ' + item.no_spk;
-        
+
         const batchGroup = document.getElementById('spk_batch_count')?.closest('.input-group');
         if (batchGroup) batchGroup.style.display = 'none';
 
@@ -4619,7 +4713,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!cachedProduksiData || cachedProduksiData.length === 0) pProd = window.ERPAPI.request('get_produksi');
 
         const results = await Promise.all([pBom, pInv, pPO, pProd]);
-        
+
         if (results[0] && results[0].status === 'success') cachedBOMData = results[0].data || [];
         if (results[1] && results[1].status === 'success') cachedInventoryData = results[1].data || [];
         if (results[2] && results[2].status === 'success') cachedPOData = results[2].data || [];
@@ -4627,7 +4721,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (poSelect.tomselect) poSelect.tomselect.destroy();
         poSelect.innerHTML = '<option value="">-- Buat SPK Internal / Tanpa PO --</option>';
-        
+
         cachedPOData.filter(po => po.status !== 'Selesai' && po.status !== 'Batal').forEach(po => {
             const opt = document.createElement('option');
             const poVal = po.id_po_customer || po.no_penawaran;
@@ -4635,7 +4729,7 @@ document.addEventListener('DOMContentLoaded', () => {
             opt.textContent = `${poVal} - ${po.nama_customer}`;
             poSelect.appendChild(opt);
         });
-        
+
         new TomSelect('#spk_po_customer', {
             create: false,
             sortField: { field: 'text', direction: 'asc' },
@@ -4644,7 +4738,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Determine reference
         let refPo = item.referensi_penawaran_x002f_po || item['referensi_penawaran_/_po'] || item.referensi_po || item.no_penawaran || item.referensi_penawaran || '';
-        
+
         // Match with existing data to ensure correct selection
         if (refPo) {
             if (poSelect.tomselect) {
@@ -4656,7 +4750,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         populateSPKBarangJadi(refPo);
-        
+
         const kodeVal = item.kode_barang_jadi || item.barang_jadi || item.kode_barang;
         if (kodeVal) {
             if (select.tomselect) {
@@ -4667,7 +4761,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         document.getElementById('spk_qty_jadi').value = parseInt(item.qty_produksi || item.qty || 0);
-        
+
         setTimeout(() => {
             const pemberiSelect = document.getElementById('spk_pemberi');
             if (item.pemberi) {
@@ -4689,28 +4783,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const select = document.getElementById('spk_kode_jadi');
         if (select.tomselect) select.tomselect.destroy();
         select.innerHTML = '<option value="">-- Pilih Barang Jadi --</option>';
-        
+
         let filteredBOM = cachedBOMData;
-        
+
         if (poId) {
             const po = cachedPOData.find(p => (p.id_po_customer === poId || p.no_penawaran === poId));
             if (po && po.item_po) {
                 try {
                     const items = typeof po.item_po === 'string' ? JSON.parse(po.item_po) : po.item_po;
                     const poItemNames = items.map(i => String(i.nama || i.part_name || '').trim().toLowerCase());
-                    
+
                     filteredBOM = cachedBOMData.filter(bom => {
                         const bomName = String(bom.nama_barang || '').toLowerCase();
                         return poItemNames.some(pi => pi === bomName || bomName.includes(pi) || pi.includes(bomName));
                     });
-                    
+
                     if (filteredBOM.length === 0) {
                         filteredBOM = cachedBOMData; // Fallback to all if no match
                     }
-                } catch(e) {}
+                } catch (e) { }
             }
         }
-        
+
         filteredBOM.forEach(bom => {
             const opt = document.createElement('option');
             opt.value = bom.kode_barang;
@@ -4730,7 +4824,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const kode = document.getElementById('spk_kode_jadi').value;
         const qtyInfo = document.getElementById('spk_qty_info');
         const qtyInput = document.getElementById('spk_qty_jadi');
-        
+
         if (!poId || !kode) {
             qtyInfo.style.display = 'none';
             qtyInput.removeAttribute('max');
@@ -4745,17 +4839,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const items = typeof po.item_po === 'string' ? JSON.parse(po.item_po) : po.item_po;
             const bom = cachedBOMData.find(b => b.kode_barang === kode);
             const bomName = bom ? String(bom.nama_barang || '').toLowerCase() : '';
-            
+
             const matchItem = items.find(i => {
                 const iName = String(i.nama || i.part_name || '').trim().toLowerCase();
                 return iName === bomName || bomName.includes(iName) || iName.includes(bomName);
             });
-            
+
             if (matchItem) {
                 orderedQty = parseInt(matchItem.qty || matchItem.moq_pcs || 0);
             }
-        } catch(e) {}
-        
+        } catch (e) { }
+
         if (orderedQty > 0) {
             let producedQty = 0;
             cachedProduksiData.forEach(spk => {
@@ -4767,14 +4861,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             });
-            
+
             let sisaQty = orderedQty - producedQty;
             if (sisaQty < 0) sisaQty = 0;
-            
+
             qtyInfo.textContent = `Sisa Qty Belum SPK: ${sisaQty} (Pesanan: ${orderedQty}, Sudah SPK: ${producedQty})`;
             qtyInfo.style.display = 'block';
             qtyInput.setAttribute('max', sisaQty);
-            
+
             if (sisaQty === 0) {
                 qtyInfo.style.color = 'var(--danger)';
                 qtyInput.value = 0;
@@ -4935,7 +5029,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.style.opacity = '0.6';
             let badgeText = batch_count > 1 ? `Memproses ${batch_count} Batch...` : `Menyimpan...`;
             if (editModeNo) badgeText = `Memperbarui...`;
-            
+
             tr.innerHTML = `
             <td>${editModeNo ? editModeNo : '<i class="fa-solid fa-spinner fa-spin"></i>'}</td>
             <td>Hari ini</td>
@@ -7386,10 +7480,10 @@ function renderRBACTable() {
 
                 let defaultView = isAdmin;
                 if (!isAdmin) {
-                    if (isPurchasing && (menu.id === 'purchasing')) defaultView = true;
-                    if (isProduksi && (menu.id === 'produksi' || menu.id === 'bom')) defaultView = true;
-                    if (isFinance && (menu.id === 'finance')) defaultView = true;
-                    if (isSales && (menu.id === 'sales')) defaultView = true;
+                    if (isPurchasing && ['purchasing', 'po-internal', 'supplier'].includes(menu.id)) defaultView = true;
+                    if (isProduksi && ['produksi', 'bom', 'grn', 'surat-jalan', 'barang-jadi'].includes(menu.id)) defaultView = true;
+                    if (isFinance && ['finance', 'invoice', 'laporan-kas', 'coa'].includes(menu.id)) defaultView = true;
+                    if (isSales && ['sales', 'po-customer', 'customer'].includes(menu.id)) defaultView = true;
                 }
 
                 perm = {
@@ -7466,7 +7560,13 @@ function renderRBACTable() {
                     perm.can_add = false;
                     perm.can_edit = false;
                     perm.can_delete = false;
-                    renderRBACTable(); // re-render to reflect disabled state visually
+
+                    // Update DOM directly to avoid re-rendering and collapsing the accordion
+                    const tr = e.target.closest('tr');
+                    if (tr) {
+                        const rowCbs = tr.querySelectorAll('.rbac-cb');
+                        rowCbs.forEach(cb => cb.checked = false);
+                    }
                 }
             }
         });
@@ -7482,6 +7582,7 @@ document.getElementById('btn-save-rbac')?.addEventListener('click', async () => 
         const response = await window.ERPAPI.request('save_permissions', { permissions: currentRBACData });
         if (response.status === 'success') {
             showToast('✅ Hak Akses berhasil disimpan!', 'success');
+            if (typeof window.checkSession === 'function') window.checkSession(); // Re-sync session immediately for current user
         } else {
             showToast('❌ Gagal: ' + response.message, 'error');
         }
@@ -7514,19 +7615,18 @@ window.applyRBACToButtons = function (menuId, container) {
     const canEdit = window.checkRBACAction('can_edit', menuId);
     const canDelete = window.checkRBACAction('can_delete', menuId);
 
-    // Hide/Show Add buttons (Usually specific IDs or classes)
-    const btnAdd1 = dom.querySelector(`#btn-add-${menuId}`);
-    const btnAdd2 = dom.querySelector(`#btn-add-${menuId.replace('purchasing', 'stock').replace('sales', 'penawaran')}`);
-    if (btnAdd1) btnAdd1.style.display = canAdd ? '' : 'none';
-    if (btnAdd2) btnAdd2.style.display = canAdd ? '' : 'none';
+    // Hide/Show Add buttons
+    dom.querySelectorAll('[id^="btn-add"], [class*="btn-add"]').forEach(btn => {
+        btn.style.display = canAdd ? '' : 'none';
+    });
 
     // Hide/Show Edit buttons
-    dom.querySelectorAll('.btn-edit, .btn-edit-barang-jadi, .btn-edit-coa').forEach(btn => {
+    dom.querySelectorAll('[class*="btn-edit"]').forEach(btn => {
         btn.style.display = canEdit ? '' : 'none';
     });
 
     // Hide/Show Delete buttons
-    dom.querySelectorAll('.btn-delete, .btn-delete-barang-jadi, .btn-del').forEach(btn => {
+    dom.querySelectorAll('[class*="btn-delete"], [class*="btn-del"]').forEach(btn => {
         btn.style.display = canDelete ? '' : 'none';
     });
 };

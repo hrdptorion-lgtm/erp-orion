@@ -197,7 +197,7 @@
                     </li>
                 </ul>
                 <!-- Submenu Pengaturan -->
-                <li class="nav-item has-submenu admin-only" id="menu-pengaturan-toggle"
+                <li class="nav-item has-submenu admin-only" data-target="pengaturan" id="menu-pengaturan-toggle"
                     style="display: none; border-top: 1px solid var(--glass-border); margin-top: 10px; padding-top: 15px;">
                     <i class="fa-solid fa-cog"></i>
                     <span style="flex: 1;">Pengaturan</span>
@@ -903,7 +903,6 @@
         <div id="view-rbac" class="view">
             <div class="data-section">
                 <div class="section-header" style="justify-content: space-between;">
-                    <h2>Pengaturan Hak Akses per Role</h2>
                     <button class="btn" id="btn-save-rbac"><i class="fa-solid fa-save"></i> Simpan Hak Akses</button>
                 </div>
                 <div class="table-container">
@@ -1598,7 +1597,6 @@
                 <div style="display: flex; justify-content: flex-end;">
                     <div style="width: 300px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
                         <div
-
                             style="display: flex; justify-content: space-between; font-size: 1.2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
                             <span style="color: var(--primary);">Grand Total</span>
                             <strong id="detail_total_harga" style="color: var(--primary);">Rp 0</strong>
@@ -1663,8 +1661,10 @@
                                 style="padding: 0.4rem 0.8rem; font-size: 0.8rem;"><i class="fa-solid fa-plus"></i>
                                 Tambah Item</button>
                         </div>
-                        <div id="p-items-container">
-                            <!-- Items will be injected here -->
+                        <div style="overflow-x: auto;">
+                            <div id="p-items-container" style="min-width: 700px;">
+                                <!-- Items will be injected here -->
+                            </div>
                         </div>
                         <div
                             style="text-align: right; margin-top: 10px; font-weight: bold; color: var(--text-main); font-size: 1.1rem;">
@@ -2125,19 +2125,19 @@
                         </div>
                     </div>
                 </div>
-                <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                <div class="nav-item" data-target="pengaturan"
+                    style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
                     <div class="stat-card hover-lift"
-                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
-                        onclick="switchView('menu-pengaturan')">
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
                         <i class="fa-solid fa-gear"
                             style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Pengaturan</div>
                     </div>
                 </div>
-                <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                <div class="nav-item" data-target="po-customer"
+                    style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
                     <div class="stat-card hover-lift"
-                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
-                        onclick="switchView('po-customer')">
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
                         <i class="fa-solid fa-file-signature"
                             style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">PO Customer
@@ -2154,22 +2154,24 @@
                         </div>
                     </div>
                 </div>
-                <div class="admin-only" style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                <div class="nav-item" data-target="customer"
+                    style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
                     <div class="stat-card hover-lift"
-                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
-                        onclick="switchView('customer')">
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
                         <i class="fa-solid fa-users"
                             style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Customer</div>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Master Customer
+                        </div>
                     </div>
                 </div>
-                <div class="admin-only" style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                <div class="nav-item" data-target="supplier"
+                    style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
                     <div class="stat-card hover-lift"
-                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
-                        onclick="switchView('supplier')">
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
                         <i class="fa-solid fa-truck-field"
                             style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Supplier</div>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Master Supplier
+                        </div>
                     </div>
                 </div>
                 <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
@@ -2187,50 +2189,59 @@
         <!-- View: Menu Produk -->
         <div id="view-menu-produk" class="view">
             <div style="display: flex; flex-wrap: wrap; gap: 1rem; padding: 1rem; justify-content: center;">
-                <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                <div class="nav-item" data-target="purchasing"
+                    style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
                     <div class="stat-card hover-lift"
-                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
-                        onclick="switchView('purchasing')">
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
                         <i class="fa-solid fa-cart-shopping"
                             style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Bahan Baku</div>
                     </div>
                 </div>
-                <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                <div class="nav-item" data-target="po-internal"
+                    style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
                     <div class="stat-card hover-lift"
-                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
-                        onclick="switchView('po-internal')">
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
                         <i class="fa-solid fa-clipboard-list"
                             style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Permintaan
-                            Belanja
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Permintaan Belanja
                         </div>
                     </div>
                 </div>
-                <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                <div class="nav-item" data-target="grn"
+                    style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
                     <div class="stat-card hover-lift"
-                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
-                        onclick="switchView('bom')">
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
+                        <i class="fa-solid fa-boxes-packing"
+                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Penerimaan Barang
+                        </div>
+                    </div>
+                </div>
+                <div class="nav-item" data-target="bom"
+                    style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                    <div class="stat-card hover-lift"
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
                         <i class="fa-solid fa-flask"
                             style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">PMO & BOM Sampel
                         </div>
                     </div>
                 </div>
-                <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                <div class="nav-item" data-target="barang-jadi"
+                    style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
                     <div class="stat-card hover-lift"
-                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
-                        onclick="switchView('barang-jadi')">
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
                         <i class="fa-solid fa-boxes-stacked"
                             style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Inventori Barang
                             Jadi</div>
                     </div>
                 </div>
-                <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                <div class="nav-item" data-target="produksi"
+                    style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
                     <div class="stat-card hover-lift"
-                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
-                        onclick="switchView('produksi')">
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
                         <i class="fa-solid fa-industry"
                             style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Produksi &
@@ -2244,10 +2255,10 @@
         <!-- View: Menu Finance (Mobile) -->
         <div id="view-menu-finance" class="view">
             <div style="display: flex; flex-wrap: wrap; gap: 1rem; padding: 1rem; justify-content: center;">
-                <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                <div class="nav-item" data-target="finance"
+                    style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
                     <div class="stat-card hover-lift"
-                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
-                        onclick="switchView('finance')">
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
                         <i class="fa-solid fa-cash-register"
                             style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Kasir & Petty
@@ -2255,10 +2266,10 @@
                         </div>
                     </div>
                 </div>
-                <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                <div class="nav-item" data-target="invoice"
+                    style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
                     <div class="stat-card hover-lift"
-                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
-                        onclick="switchView('invoice')">
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
                         <i class="fa-solid fa-receipt"
                             style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Invoice
@@ -2266,10 +2277,10 @@
                         </div>
                     </div>
                 </div>
-                <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                <div class="nav-item" data-target="laporan-kas"
+                    style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
                     <div class="stat-card hover-lift"
-                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
-                        onclick="switchView('laporan-kas')">
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
                         <i class="fa-solid fa-chart-line"
                             style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Laporan Kas
@@ -2319,7 +2330,17 @@
                         onclick="switchView('admin')">
                         <i class="fa-solid fa-users-gear"
                             style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Manajemen Akses
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Manajemen User
+                        </div>
+                    </div>
+                </div>
+                <div class="super-admin-only" style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                    <div class="stat-card hover-lift"
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
+                        onclick="switchView('rbac')">
+                        <i class="fa-solid fa-user-shield"
+                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Hak Akses (RBAC)
                         </div>
                     </div>
                 </div>
