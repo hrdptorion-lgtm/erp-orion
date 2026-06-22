@@ -485,6 +485,19 @@ body::after {
   justify-content: center;
   align-items: center;
   aspect-ratio: 1 / 1;
+  height: auto !important;
+  width: 100%; /* Force fill the wrapper even if wrapper is flex */
+  padding: 1rem 0.5rem !important; /* Kurangi padding agar muat di layar sempit */
+}
+
+[id^="view-menu-"] .stat-card i {
+  font-size: 2rem !important;
+  margin-bottom: 10px !important;
+}
+
+[id^="view-menu-"] .stat-card div {
+  font-size: 0.9rem !important;
+  line-height: 1.2;
 }
 
 /* Light Mode overrides for grid menu cards */
