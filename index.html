@@ -1867,28 +1867,26 @@
 
                 <!-- Quick Actions -->
                 <div id="detail-poc-actions"
-                    style="display: flex; gap: 15px; margin-bottom: 20px; overflow-x: auto; padding-top: 5px; padding-bottom: 5px;">
+                    style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px;">
                     <button type="button" class="btn" id="btn-detail-act-spk"
-                        style="flex: 1; flex-direction: column; align-items: center; justify-content: center; min-width: 130px; height: 90px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; color: #60a5fa; cursor: pointer; transition: all 0.2s;">
-                        <i class="fa-solid fa-industry" style="font-size: 1.5rem; margin-bottom: 8px;"></i>
-                        <span style="font-size: 0.75rem; text-align: center; font-weight: bold;">Buat SPK
-                            Produksi</span>
+                        style="flex-direction: column; align-items: center; justify-content: center; height: 80px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; color: #60a5fa; cursor: pointer; padding: 10px;">
+                        <i class="fa-solid fa-industry" style="font-size: 1.3rem; margin-bottom: 5px;"></i>
+                        <span style="font-size: 0.7rem; text-align: center; font-weight: bold; line-height: 1.2;">Buat SPK Produksi</span>
                     </button>
                     <button type="button" class="btn" id="btn-detail-act-po"
-                        style="flex: 1; flex-direction: column; align-items: center; justify-content: center; min-width: 130px; height: 90px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; color: #34d399; cursor: pointer; transition: all 0.2s;">
-                        <i class="fa-solid fa-cart-shopping" style="font-size: 1.5rem; margin-bottom: 8px;"></i>
-                        <span style="font-size: 0.75rem; text-align: center; font-weight: bold;">Pengajuan
-                            Belanja</span>
+                        style="flex-direction: column; align-items: center; justify-content: center; height: 80px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; color: #34d399; cursor: pointer; padding: 10px;">
+                        <i class="fa-solid fa-cart-shopping" style="font-size: 1.3rem; margin-bottom: 5px;"></i>
+                        <span style="font-size: 0.7rem; text-align: center; font-weight: bold; line-height: 1.2;">Pengajuan Belanja</span>
                     </button>
                     <button type="button" class="btn" id="btn-detail-act-sj"
-                        style="flex: 1; flex-direction: column; align-items: center; justify-content: center; min-width: 130px; height: 90px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; color: #fbbf24; cursor: pointer; transition: all 0.2s;">
-                        <i class="fa-solid fa-truck" style="font-size: 1.5rem; margin-bottom: 8px;"></i>
-                        <span style="font-size: 0.75rem; text-align: center; font-weight: bold;">Buat Surat Jalan</span>
+                        style="flex-direction: column; align-items: center; justify-content: center; height: 80px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; color: #fbbf24; cursor: pointer; padding: 10px;">
+                        <i class="fa-solid fa-truck" style="font-size: 1.3rem; margin-bottom: 5px;"></i>
+                        <span style="font-size: 0.7rem; text-align: center; font-weight: bold; line-height: 1.2;">Buat Surat Jalan</span>
                     </button>
                     <button type="button" class="btn" id="btn-detail-act-inv"
-                        style="flex: 1; flex-direction: column; align-items: center; justify-content: center; min-width: 130px; height: 90px; background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 10px; color: #a78bfa; cursor: pointer; transition: all 0.2s;">
-                        <i class="fa-solid fa-file-invoice-dollar" style="font-size: 1.5rem; margin-bottom: 8px;"></i>
-                        <span style="font-size: 0.75rem; text-align: center; font-weight: bold;">Buat Invoice</span>
+                        style="flex-direction: column; align-items: center; justify-content: center; height: 80px; background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 10px; color: #a78bfa; cursor: pointer; padding: 10px;">
+                        <i class="fa-solid fa-file-invoice-dollar" style="font-size: 1.3rem; margin-bottom: 5px;"></i>
+                        <span style="font-size: 0.7rem; text-align: center; font-weight: bold; line-height: 1.2;">Buat Invoice</span>
                     </button>
                 </div>
 
@@ -2316,16 +2314,7 @@
                         </div>
                     </div>
                 </div>
-                <div style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
-                    <div class="stat-card hover-lift"
-                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
-                        onclick="window.handleMyProfile()">
-                        <i class="fa-solid fa-user"
-                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Profil Saya
-                        </div>
-                    </div>
-                </div>
+
                 <div class="nav-item" data-target="customer"
                     style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
                     <div class="stat-card hover-lift"
@@ -2465,10 +2454,9 @@
         <!-- View: Menu Pengaturan -->
         <div id="view-menu-pengaturan" class="view">
             <div style="display: flex; flex-wrap: wrap; gap: 1rem; padding: 1rem; justify-content: center;">
-                <div class="admin-only" style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                <div class="nav-item admin-only" data-target="profil" style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
                     <div class="stat-card hover-lift"
-                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
-                        onclick="switchView('profil')">
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
                         <i class="fa-solid fa-building"
                             style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Profil
@@ -2476,40 +2464,36 @@
                         </div>
                     </div>
                 </div>
-                <div class="admin-only" style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                <div class="nav-item admin-only" data-target="coa" style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
                     <div class="stat-card hover-lift"
-                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
-                        onclick="switchView('coa')">
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
                         <i class="fa-solid fa-file-invoice"
                             style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Kategori COA
                         </div>
                     </div>
                 </div>
-                <div class="super-admin-only" style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                <div class="nav-item super-admin-only" data-target="approval" style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
                     <div class="stat-card hover-lift"
-                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
-                        onclick="switchView('approval')">
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
                         <i class="fa-solid fa-diagram-project"
                             style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Alur Approval
                         </div>
                     </div>
                 </div>
-                <div class="admin-only" style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                <div class="nav-item admin-only" data-target="admin" style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
                     <div class="stat-card hover-lift"
-                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
-                        onclick="switchView('admin')">
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
                         <i class="fa-solid fa-users-gear"
                             style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Manajemen User
                         </div>
                     </div>
                 </div>
-                <div class="super-admin-only" style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                <div class="nav-item super-admin-only" data-target="rbac" style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
                     <div class="stat-card hover-lift"
-                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;"
-                        onclick="switchView('rbac')">
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
                         <i class="fa-solid fa-user-shield"
                             style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Hak Akses (RBAC)
