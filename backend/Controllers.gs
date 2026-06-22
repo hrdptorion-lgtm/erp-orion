@@ -106,7 +106,8 @@ function handleLogin(payload) {
   
   if (superHash && username === superUser && hashedPassword === superHash) {
     const token = generateSessionToken(username, 'Super Admin');
-    return { status: 'success', role: 'Super Admin', nama: 'Super Admin', token: token };
+    const permsRes = getRolePermissions({role: 'Super Admin'});
+    return { status: 'success', role: 'Super Admin', nama: 'Super Admin', token: token, permissions: permsRes.data };
   }
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -144,12 +145,15 @@ function handleLogin(payload) {
       }
 
       if (isMatch) {
-        const token = generateSessionToken(username, row[roleIdx] || 'Admin');
+        const role = row[roleIdx] || 'Admin';
+        const token = generateSessionToken(username, role);
+        const permsRes = getRolePermissions({role: role});
         return { 
           status: 'success', 
-          role: row[roleIdx] || 'Admin', 
+          role: role, 
           nama: row[namaIdx] || username,
-          token: token
+          token: token,
+          permissions: permsRes.data
         };
       }
     }

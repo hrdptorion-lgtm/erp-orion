@@ -454,8 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('erp_token', res.token);
             }
 
-            const rolePermRes = await window.ERPAPI.request('get_role_permissions', { role: res.role });
-            const permissions = (rolePermRes.status === 'success') ? rolePermRes.data : {};
+            const permissions = res.permissions || {};
 
             const userSession = { username, role: res.role, nama: res.nama, permissions };
             localStorage.setItem('erp_session', JSON.stringify(userSession));
