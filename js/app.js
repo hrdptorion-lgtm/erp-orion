@@ -782,8 +782,9 @@ document.addEventListener('DOMContentLoaded', () => {
             'produksi': [{ id: 'btn-run-spk', label: 'Selesaikan SPK', icon: 'fa-play', color: 'var(--secondary)' }],
             'finance': [{ id: 'btn-add-cash', label: 'Mutasi Kas', icon: 'fa-plus', color: 'var(--primary)' }],
             'coa': [{ id: 'btn-add-coa', label: 'Tambah COA', icon: 'fa-plus', color: 'var(--primary)' }],
-            'admin': [{ id: 'btn-add-user', label: 'Tambah User', icon: 'fa-user-plus', color: 'var(--primary)' }],
-            'customer': [{ id: 'btn-add-customer', label: 'Tambah Customer', icon: 'fa-user-plus', color: 'var(--primary)' }],
+            'admin': [{ id: 'btn-add-user', label: 'Tambah User', icon: 'fa-plus', color: 'var(--primary)' }],
+            'customer': [{ id: 'btn-add-customer', label: 'Tambah Customer', icon: 'fa-plus', color: 'var(--primary)' }],
+            'supplier': [{ id: 'btn-add-supplier', label: 'Tambah Supplier', icon: 'fa-plus', color: 'var(--primary)' }],
             'approval': [
                 { id: 'btn-add-kategori', label: 'Tambah Kategori', icon: 'fa-plus', color: 'var(--primary)' },
                 { id: 'btn-add-jabatan', label: 'Tambah Jabatan', icon: 'fa-plus', color: 'var(--secondary)' }
@@ -4548,7 +4549,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!tbody) return;
         if (!isBackgroundSync) {
             if (!tbody.innerHTML.trim() || tbody.innerHTML.includes('Tidak ada') || tbody.innerHTML.includes('Gagal') || tbody.innerHTML.includes('Memuat data')) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
             }
         }
 
@@ -4557,7 +4558,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.status === 'success' && response.data) {
                 tbody.innerHTML = '';
                 if (response.data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Belum ada SPK Produksi.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Belum ada SPK Produksi.</td></tr>';
                     return;
                 }
 
@@ -4588,6 +4589,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${item.tanggal || '-'}</td>
                     <td style="font-weight: 500;">${item.kode_barang_jadi || item.kode_barang || '-'}</td>
                     <td>${item.qty_produksi || item.qty || '-'}</td>
+                    <td style="color: var(--accent); font-weight: 500;">${item.no_penawaran || '<span style="color:var(--text-muted); font-size:0.8rem; font-weight:normal;">Internal</span>'}</td>
                     <td>${statusBadge}</td>
                     <td style="white-space: nowrap;">
                         <div style="display: flex; flex-direction: row; gap: 5px; align-items: center;">
@@ -6272,10 +6274,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const session = localStorage.getItem('erp_session');
             if (session) {
-                const user = JSON.parse(session);
-                if (user.role === 'Direktur') {
-                    actionBtns += `<button class="btn btn-delete-supplier" data-id="${s.id_supplier}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i class="fa-solid fa-trash"></i></button>`;
-                }
+                actionBtns += `<button class="btn btn-delete-supplier btn-del" data-id="${s.id_supplier}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i class="fa-solid fa-trash"></i></button>`;
             }
 
             tr.innerHTML = `
@@ -6612,6 +6611,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="grid-column:1/-1;"><div style="font-size:0.75rem; color:var(--text-muted);">BARANG JADI</div><div style="font-weight:600;">${item.kode_barang_jadi || item.kode_barang || '-'}</div></div>
             <div><div style="font-size:0.75rem; color:var(--text-muted);">QTY PRODUKSI</div><div style="font-weight:600;">${item.qty_produksi || item.qty || '-'}</div></div>
             <div><div style="font-size:0.75rem; color:var(--text-muted);">STATUS</div><div><span class="badge badge-success">${item.status || '-'}</span></div></div>
+            <div style="grid-column:1/-1;"><div style="font-size:0.75rem; color:var(--text-muted);">REFERENSI PO</div><div style="font-weight:600; color:var(--accent);">${item.no_penawaran || '<span style="color:var(--text-muted); font-weight:normal;">Internal (Tidak Terkoneksi)</span>'}</div></div>
         </div>
     `;
         document.getElementById('spk-detail-modal').classList.add('active');
