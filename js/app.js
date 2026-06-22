@@ -1,5 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
 
+    // --- SHA-256 Hashing Utility (untuk hash password di browser) ---
+    async function sha256(message) {
+        const msgBuffer = new TextEncoder().encode(message);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    window.sha256 = sha256;
+
     // --- Lightbox Image Viewer ---
     function openLightbox(imgSrc, caption = '') {
         const overlay = document.getElementById('lightbox-overlay');
@@ -425,19 +434,26 @@ document.addEventListener('DOMContentLoaded', () => {
     loginForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const username = document.getElementById('login-username').value;
-        const password = document.getElementById('login-password').value;
+        const passwordRaw = document.getElementById('login-password').value;
 
         const btnSubmit = loginForm.querySelector('button[type="submit"]');
         btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading...';
         btnSubmit.disabled = true;
         loginError.style.display = 'none';
 
-        const res = await window.ERPAPI.request('login', { username, password });
+        // Hash password di browser sebelum dikirim ke server
+        const hashedPassword = await sha256(passwordRaw);
+        const res = await window.ERPAPI.request('login', { username, password: hashedPassword });
 
         btnSubmit.innerHTML = 'Masuk <i class="fa-solid fa-arrow-right-to-bracket"></i>';
         btnSubmit.disabled = false;
 
         if (res.status === 'success') {
+            // Simpan token autentikasi SEGERA sebelum request lain
+            if (res.token) {
+                localStorage.setItem('erp_token', res.token);
+            }
+
             const rolePermRes = await window.ERPAPI.request('get_role_permissions', { role: res.role });
             const permissions = (rolePermRes.status === 'success') ? rolePermRes.data : {};
 
@@ -470,6 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-confirm-logout')?.addEventListener('click', () => {
         logoutModal.classList.remove('active');
         localStorage.removeItem('erp_session');
+        localStorage.removeItem('erp_token');
         loginOverlay.classList.add('active');
     });
 
@@ -5278,11 +5295,12 @@ document.addEventListener('DOMContentLoaded', () => {
         userModal.classList.remove('active');
     });
 
-    userForm?.addEventListener('submit', (e) => {
+    userForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const rawPassword = document.getElementById('u_password').value;
         const payload = {
             username: document.getElementById('u_username').value,
-            password: document.getElementById('u_password').value,
+            password: rawPassword ? await sha256(rawPassword) : '',
             nama_lengkap: document.getElementById('u_nama').value,
             nama: document.getElementById('u_nama').value,
             role: document.getElementById('u_role').value

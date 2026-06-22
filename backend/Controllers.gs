@@ -1,5 +1,8 @@
-// Sample Controllers for ERP modules
+// ERP Orion Controllers — Secured Version
 
+// ==========================================
+// PASSWORD HASHING
+// ==========================================
 function hashPassword(password) {
   const rawHash = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, password);
   let txtHash = '';
@@ -16,13 +19,94 @@ function hashPassword(password) {
   return txtHash;
 }
 
+// ==========================================
+// SESSION TOKEN MANAGEMENT (CacheService)
+// ==========================================
+
+/**
+ * Generate a session token and store it in CacheService (24 hour expiry).
+ * @param {string} username
+ * @param {string} role
+ * @returns {string} token
+ */
+function generateSessionToken(username, role) {
+  const token = Utilities.getUuid();
+  const sessionData = JSON.stringify({
+    username: username,
+    role: role,
+    created: new Date().toISOString()
+  });
+  // Store in CacheService with 24 hour expiry (86400 seconds)
+  CacheService.getScriptCache().put('session_' + token, sessionData, 86400);
+  return token;
+}
+
+/**
+ * Validate a session token from CacheService.
+ * @param {string} token
+ * @returns {{ valid: boolean, username?: string, role?: string }}
+ */
+function validateSessionToken(token) {
+  if (!token || typeof token !== 'string' || token.trim() === '') {
+    return { valid: false };
+  }
+  const cached = CacheService.getScriptCache().get('session_' + token.trim());
+  if (!cached) {
+    return { valid: false };
+  }
+  try {
+    const sessionData = JSON.parse(cached);
+    return { valid: true, username: sessionData.username, role: sessionData.role };
+  } catch (e) {
+    return { valid: false };
+  }
+}
+
+// ==========================================
+// SUPER ADMIN SETUP (Run ONCE from Apps Script Editor)
+// ==========================================
+
+/**
+ * Run this function ONCE from the Apps Script Editor to store the super admin hash.
+ * Menu: Run > initSuperAdmin
+ * After running, the hardcoded hash is safely stored in PropertiesService.
+ */
+function initSuperAdmin() {
+  const props = PropertiesService.getScriptProperties();
+  // Hash of the super admin password — change 'ciko1234' to your desired password before running
+  const superAdminHash = hashPassword('ciko1234');
+  props.setProperty('SUPER_ADMIN_USER', 'super');
+  props.setProperty('SUPER_ADMIN_HASH', superAdminHash);
+  Logger.log('✅ Super Admin credentials stored in PropertiesService successfully.');
+  Logger.log('Username: super');
+  Logger.log('Hash: ' + superAdminHash);
+}
+
+// ==========================================
+// LOGIN (Secured)
+// ==========================================
 function handleLogin(payload) {
   const { username, password } = payload;
-  const hashedPassword = hashPassword(password);
   
-  // Hardcoded Super Admin account (Hash of ciko1234)
-  if (username === 'super' && hashedPassword === '90145cca92176dffdba677c0e523db8faeb1414bfb24583899c0bec846346f8f') {
-    return { status: 'success', role: 'Super Admin', nama: 'Super Admin' };
+  // Frontend sudah mengirim password dalam bentuk hash SHA-256
+  // Tapi untuk backward compatibility, jika belum di-hash (plain text), hash di sini
+  let hashedPassword;
+  if (password && password.length === 64 && /^[a-f0-9]+$/.test(password)) {
+    // Sudah di-hash oleh frontend (64 karakter hex = SHA-256)
+    hashedPassword = password;
+  } else {
+    // Fallback: hash di backend (untuk kompatibilitas sementara)
+    hashedPassword = hashPassword(password);
+  }
+  
+  // Super Admin — ambil dari PropertiesService
+  const props = PropertiesService.getScriptProperties();
+  const superUser = props.getProperty('SUPER_ADMIN_USER') || 'super';
+  const superHash = props.getProperty('SUPER_ADMIN_HASH');
+  
+  if (superHash && username === superUser && hashedPassword === superHash) {
+    const token = generateSessionToken(username, 'Super Admin');
+    return { status: 'success', role: 'Super Admin', nama: 'Super Admin', token: token };
   }
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -45,11 +129,13 @@ function handleLogin(payload) {
 
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
-    if (row[userIdx] === username && (row[passIdx] === hashedPassword || row[passIdx] === password)) {
+    if (row[userIdx] === username && row[passIdx] === hashedPassword) {
+      const token = generateSessionToken(username, row[roleIdx] || 'Admin');
       return { 
         status: 'success', 
         role: row[roleIdx] || 'Admin', 
-        nama: row[namaIdx] || username 
+        nama: row[namaIdx] || username,
+        token: token
       };
     }
   }
@@ -444,7 +530,7 @@ function saveUser(payload) {
   const headers = values[0];
   const userIdx = headers.findIndex(h => /username/i.test(h));
   const passIdx = headers.findIndex(h => /password/i.test(h));
-  if (payload.password) payload.password = hashPassword(payload.password);
+  // Password sudah di-hash oleh frontend, langsung simpan
   for (let i = 1; i < values.length; i++) {
     if (String(values[i][userIdx]).trim() === String(payload.username).trim()) {
       const rowData = headers.map((h, idx) => {

@@ -15,15 +15,21 @@ class ERPAPI {
         try {
             activeRequests++;
             toggleSyncIcon(true);
-            
-            console.log(`[API] Mengirim request: action=${action}, payload keys=${Object.keys(payload).join(',')}`);
 
             // Create abort controller for timeout
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-            // Gunakan x-www-form-urlencoded untuk mencegah bug CORS redirect di Google Apps Script
-            const formBody = 'payload=' + encodeURIComponent(JSON.stringify({ action, payload }));
+            // Sertakan token autentikasi untuk semua request kecuali login
+            const requestBody = { action, payload };
+            if (action !== 'login') {
+                const token = localStorage.getItem('erp_token');
+                if (token) {
+                    requestBody.token = token;
+                }
+            }
+
+            const formBody = 'payload=' + encodeURIComponent(JSON.stringify(requestBody));
 
             const response = await fetch(API_URL, {
                 method: 'POST',
@@ -36,45 +42,44 @@ class ERPAPI {
 
             clearTimeout(timeoutId);
 
-            console.log(`[API] Response status: ${response.status}`);
-
-            // Note: with text/plain to GAS, it returns opaque response in no-cors, 
-            // so we might need JSONP or ensure GAS handles CORS properly.
-            // Assuming GAS allows CORS for this implementation.
             const responseText = await response.text();
-            console.log(`[API] Response text length: ${responseText.length}`);
 
             try {
                 const jsonResponse = JSON.parse(responseText);
-                console.log(`[API] Response parsed successfully:`, jsonResponse);
+
+                // Handle unauthorized — token expired atau tidak valid
+                if (jsonResponse.code === 'UNAUTHORIZED') {
+                    localStorage.removeItem('erp_session');
+                    localStorage.removeItem('erp_token');
+                    showToast?.('⚠️ Sesi Anda telah berakhir. Silakan login kembali.', 'error', 5000);
+                    // Tampilkan login overlay
+                    const loginOverlay = document.getElementById('login-overlay');
+                    if (loginOverlay) loginOverlay.classList.add('active');
+                    return jsonResponse;
+                }
 
                 if (action.startsWith('get_') && jsonResponse.status === 'success') {
                     localStorage.setItem(`erp_cache_${action}`, JSON.stringify(jsonResponse));
                 }
 
                 if (jsonResponse.status === 'error' && jsonResponse.message) {
-                    console.warn(`[API] Server mengembalikan error:`, jsonResponse.message);
                     if (jsonResponse.message.includes('Action tidak dikenali') && action.startsWith('get_')) {
-                        console.warn(`[API] Action ${action} belum di-deploy di server. Menggunakan mock data.`);
                         return ERPAPI.getMockData(action);
                     }
                 }
 
                 return jsonResponse;
             } catch (parseErr) {
-                console.error('[API] Gagal parse response JSON:', parseErr);
-                console.error('[API] Response text:', responseText.substring(0, 500));
+                console.error('[API] Gagal parse response.');
                 return {
                     status: 'error',
-                    message: 'Server mengembalikan response yang tidak valid. Silakan periksa Console (F12) untuk detail.'
+                    message: 'Server mengembalikan response yang tidak valid.'
                 };
             }
         } catch (error) {
-            console.error('[API] Fetch error:', error);
-
             let errorMsg = error.message;
             if (error.name === 'AbortError') {
-                errorMsg = `Request timeout (lebih dari ${60000 / 1000} detik). Server mungkin terlalu lambat atau file gambar terlalu besar.`;
+                errorMsg = `Request timeout (lebih dari ${60000 / 1000} detik). Server mungkin terlalu lambat.`;
             }
 
             showToast?.(`❌ Koneksi gagal: ${errorMsg}`, 'error', 5000);

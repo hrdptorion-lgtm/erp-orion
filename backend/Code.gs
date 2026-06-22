@@ -40,6 +40,21 @@ function doPost(e) {
       throw new Error('Field action dibutuhkan.');
     }
 
+    // ==========================================
+    // TOKEN AUTHENTICATION — Semua action kecuali 'login' wajib token
+    // ==========================================
+    if (action !== 'login') {
+      const token = data.token || '';
+      const session = validateSessionToken(token);
+      if (!session.valid) {
+        return createJsonResponse({ 
+          status: 'error', 
+          message: 'Unauthorized: Sesi tidak valid atau sudah kedaluwarsa. Silakan login kembali.',
+          code: 'UNAUTHORIZED'
+        });
+      }
+    }
+
     switch (action) {
       case 'create_po':
         response = createPO(payload);
