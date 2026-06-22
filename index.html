@@ -889,7 +889,7 @@
                     style="justify-content: space-between; display: flex; flex-wrap: wrap; gap: 10px;">
                     <div style="display: flex; gap: 10px; align-items: center;">
                         <h3>Invoice Penagihan</h3>
-                        <button class="btn" id="btn-add-invoice" style="background: var(--accent);"><i
+                        <button class="btn hide-on-mobile" id="btn-add-invoice" style="background: var(--accent);"><i
                                 class="fa-solid fa-plus"></i> Buat Invoice Manual</button>
                     </div>
                     <input type="text" class="table-search" data-target="table-invoice" placeholder="Cari Invoice..."
@@ -1899,12 +1899,14 @@
                 <div style="margin-bottom: 20px;">
                     <h3 style="margin-bottom: 10px; font-size: 1.1rem; color: var(--accent);">Daftar Pesanan (Barang
                         Jadi)</h3>
-                    <div class="table-responsive">
+                    <div class="table-responsive" style="min-height: auto;">
                         <table class="data-table">
                             <thead>
                                 <tr>
                                     <th>Nama Barang / Deskripsi</th>
-                                    <th>Qty</th>
+                                    <th style="text-align: center;">Pesanan</th>
+                                    <th style="text-align: center;">Sudah SPK</th>
+                                    <th style="text-align: center;">Sisa</th>
                                 </tr>
                             </thead>
                             <tbody id="detail-poc-items-tbody">
@@ -1917,7 +1919,7 @@
                 <div>
                     <h3 style="margin-bottom: 10px; font-size: 1.1rem; color: var(--warning);">Analisis Kebutuhan Bahan
                         Baku</h3>
-                    <div class="table-responsive">
+                    <div class="table-responsive" style="min-height: auto;">
                         <table class="data-table">
                             <thead>
                                 <tr>
@@ -1940,7 +1942,7 @@
                     <div style="margin-top: 20px; border-top: 1px solid var(--glass-border); padding-top: 20px;">
                         <h3 style="margin-bottom: 15px; font-size: 1.1rem; color: var(--success);"><i
                                 class="fa-solid fa-route"></i> Lacak Progress Pesanan (End-to-End)</h3>
-                        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <div style="display: flex; flex-direction: column; gap: 15px;">
                             <div
                                 style="flex: 1; min-width: 200px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
                                 <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px;">Tahap 1:
@@ -3120,11 +3122,15 @@
                     </div>
                     <div class="input-group" style="margin-bottom:0;">
                         <label>ID PO Customer Ref.</label>
-                        <input type="text" id="sj_no_penawaran">
+                        <select id="sj_no_penawaran" style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border);">
+                            <option value="" disabled selected>Memuat data PO...</option>
+                        </select>
                     </div>
                     <div class="input-group" style="margin-bottom:0;">
                         <label>Customer</label>
-                        <input type="text" id="sj_customer" required list="customer-list">
+                        <select id="sj_customer" required style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border);">
+                            <option value="" disabled selected>Memuat data customer...</option>
+                        </select>
                     </div>
                     <div class="input-group" style="margin-bottom:0;">
                         <label>Supir</label>
@@ -3146,7 +3152,7 @@
                 </div>
 
                 <h4 style="margin-bottom: 10px; color: var(--primary);">Rincian Item Pengiriman</h4>
-                <div class="table-responsive" style="margin-bottom: 1.5rem;">
+                <div class="table-responsive" style="margin-bottom: 1.5rem; min-height: auto;">
                     <table class="glass-table">
                         <thead>
                             <tr>

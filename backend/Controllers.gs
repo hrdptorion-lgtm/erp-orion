@@ -462,7 +462,7 @@ function getBarangJadi() {
   const headers = values[0];
   const data = values.slice(1).map(row => {
     let obj = {};
-    headers.forEach((h, i) => { obj[String(h).toLowerCase().replace(/ /g, '_')] = row[i]; });
+    headers.forEach((h, i) => { obj[String(h).trim().toLowerCase().replace(/ /g, '_')] = row[i]; });
     return obj;
   });
 
@@ -1370,6 +1370,21 @@ function saveSPK(payload) {
   const baseNoSPK = 'SPK-' + Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyyyMMdd') + '-' + Math.floor(Math.random() * 1000);
   const tanggal = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy HH:mm');
   
+  const poId = payload.kode_po_customer || payload.no_penawaran || '';
+  let existingBatchCount = 0;
+  
+  if (poId && payload.kode_barang) {
+    const values = sheet.getDataRange().getDisplayValues();
+    for (let r = 1; r < values.length; r++) {
+      const rowRef = values[r][8] || '';
+      const rowCode = values[r][2] || '';
+      const rowStatus = values[r][6] || '';
+      if ((rowRef === poId || rowRef === payload.no_penawaran) && rowCode === payload.kode_barang && rowStatus !== 'Batal') {
+        existingBatchCount++;
+      }
+    }
+  }
+
   for (let i = 0; i < batchCount; i++) {
     let currentQty = baseQty;
     if (i === batchCount - 1) {
@@ -1385,7 +1400,8 @@ function saveSPK(payload) {
       }));
     }
 
-    let batchSuffix = batchCount > 1 ? `-${i+1}/${batchCount}` : '';
+    let globalBatchSeq = existingBatchCount + i + 1;
+    let batchSuffix = `-B${globalBatchSeq}`;
     
     sheet.appendRow([
       baseNoSPK + batchSuffix,
@@ -1396,7 +1412,7 @@ function saveSPK(payload) {
       payload.pemberi || '',
       'Menunggu Pengambilan',
       JSON.stringify(currentBahanBaku),
-      payload.no_penawaran || ''
+      poId
     ]);
   }
 
@@ -1448,7 +1464,7 @@ function editSPK(payload) {
   sheet.getRange(rowIndex, 5).setValue(payload.peminta || '');
   sheet.getRange(rowIndex, 6).setValue(payload.pemberi || '');
   sheet.getRange(rowIndex, 8).setValue(JSON.stringify(currentBahanBaku));
-  sheet.getRange(rowIndex, 9).setValue(payload.no_penawaran || '');
+  sheet.getRange(rowIndex, 9).setValue(payload.kode_po_customer || payload.no_penawaran || '');
   
   return { status: 'success', message: 'SPK berhasil diperbarui.' };
 }

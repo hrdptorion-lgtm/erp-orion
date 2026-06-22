@@ -799,6 +799,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'po-internal': [{ id: 'btn-add-po-internal', label: 'Buat Pengajuan', icon: 'fa-plus', color: 'var(--primary)' }],
             'bom': [{ id: 'btn-add-bom', label: 'Buat BOM Baru', icon: 'fa-plus', color: 'var(--accent)' }],
             'produksi': [{ id: 'btn-run-spk', label: 'Selesaikan SPK', icon: 'fa-play', color: 'var(--secondary)' }],
+            'invoice': [{ id: 'btn-add-invoice', label: 'Buat Invoice Manual', icon: 'fa-plus', color: 'var(--accent)' }],
             'finance': [{ id: 'btn-add-cash', label: 'Mutasi Kas', icon: 'fa-plus', color: 'var(--primary)' }],
             'coa': [{ id: 'btn-add-coa', label: 'Tambah COA', icon: 'fa-plus', color: 'var(--primary)' }],
             'admin': [{ id: 'btn-add-user', label: 'Tambah User', icon: 'fa-plus', color: 'var(--primary)' }],
@@ -1969,7 +1970,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let progressLabel = "PO Diterima";
                 let progressColor = "var(--secondary)";
 
-                const relatedSPK = spkList.filter(s => s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer);
+                const relatedSPK = spkList.filter(s => s.referensi_po === item.no_penawaran || s.referensi_po === item.id_po_customer || s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer || s.kode_po_customer === item.id_po_customer);
                 const relatedSJ = sjList.filter(s => s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer);
                 const relatedInv = invList.filter(s => s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer);
 
@@ -2279,16 +2280,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (itemsTbody) {
             itemsTbody.innerHTML = '';
             if (Array.isArray(rincian) && rincian.length > 0) {
-                rincian.forEach(poItem => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${poItem.nama || poItem.nama_barang || '-'}</td>
-                        <td>${poItem.qty || 1}</td>
-                    `;
-                    itemsTbody.appendChild(tr);
-                });
+                itemsTbody.innerHTML = '<tr><td colspan="4" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data pesanan & SPK...</td></tr>';
             } else {
-                itemsTbody.innerHTML = '<tr><td colspan="2" style="text-align: center;">Tidak ada rincian item.</td></tr>';
+                itemsTbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Tidak ada rincian item.</td></tr>';
             }
         }
 
@@ -2381,9 +2375,64 @@ document.addEventListener('DOMContentLoaded', () => {
             const invList = resInv.data || [];
 
             // Find related records based on no_penawaran or id_po_customer
-            const relatedSPK = spkList.filter(s => s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer);
+            const relatedSPK = spkList.filter(s => s.referensi_po === item.no_penawaran || s.referensi_po === item.id_po_customer || s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer || s.kode_po_customer === item.id_po_customer);
             const relatedSJ = sjList.filter(s => s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer);
             const relatedInv = invList.filter(s => s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer);
+
+            // Populate Items Table with SPK Progress
+            if (itemsTbody) {
+                itemsTbody.innerHTML = '';
+                if (Array.isArray(rincian) && rincian.length > 0) {
+                    rincian.forEach(poItem => {
+                        const itemName = poItem.nama || poItem.part_name || poItem.nama_barang || '-';
+                        const orderedQty = parseInt(poItem.qty || poItem.moq_pcs || 1);
+                        
+                        let producedQty = 0;
+                        relatedSPK.forEach(spk => {
+                            const spkName = spk.kode_barang_jadi || spk.kode_barang || spk.barang_jadi || '';
+                            let spkNameResolved = spkName;
+                            const cBom = window.ERPAPI.getCached('get_bom');
+                            const cInv = window.ERPAPI.getCached('get_inventory');
+                            let foundName = null;
+                            if (cBom && cBom.data) {
+                                const match = cBom.data.find(b => b.kode_barang === spkName || b.kode === spkName);
+                                if (match) foundName = match.nama_barang || match.nama;
+                            }
+                            if (!foundName && cInv && cInv.data) {
+                                const match = cInv.data.find(b => b.kode_barang === spkName || b.kode === spkName || b.kode_material === spkName);
+                                if (match) foundName = match.nama_barang || match.nama_material || match.nama;
+                            }
+                            if (foundName) spkNameResolved = foundName;
+                            
+                            const spkNameCompare = String(spkNameResolved).trim().toLowerCase();
+                            const itemNameCompare = String(itemName).trim().toLowerCase();
+                            
+                            if (spk.status !== 'Batal' && (spkNameCompare === itemNameCompare || itemNameCompare.includes(spkNameCompare) || spkNameCompare.includes(itemNameCompare) || spkName === poItem.part_number)) {
+                                producedQty += parseInt(spk.qty_produksi || spk.qty || 0);
+                            }
+                        });
+                        
+                        let sisaQty = orderedQty - producedQty;
+                        if (sisaQty < 0) sisaQty = 0;
+                        
+                        let sisaHtml = `<strong>${sisaQty}</strong>`;
+                        if (sisaQty === 0) sisaHtml = `<span style="color: var(--success);"><i class="fa-solid fa-check"></i> Terpenuhi</span>`;
+                        else if (sisaQty < orderedQty) sisaHtml = `<span style="color: var(--warning);">${sisaQty}</span>`;
+                        else sisaHtml = `<span style="color: var(--danger);">${sisaQty}</span>`;
+
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${itemName}</td>
+                            <td style="text-align: center;">${orderedQty}</td>
+                            <td style="text-align: center;">${producedQty}</td>
+                            <td style="text-align: center;">${sisaHtml}</td>
+                        `;
+                        itemsTbody.appendChild(tr);
+                    });
+                } else {
+                    itemsTbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Tidak ada rincian item.</td></tr>';
+                }
+            }
 
             // SPK Status
             const spkStatusEl = document.getElementById('track-spk-status');
@@ -2398,7 +2447,61 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     if (spkStatusEl) spkStatusEl.innerHTML = `<span class="badge badge-success">Selesai</span>`;
                 }
-                if (spkDescEl) spkDescEl.innerText = `${relatedSPK.length} SPK ditemukan`;
+                if (spkDescEl) {
+                    let spkListHtml = `<div style="margin-top: 8px; color: var(--text-main); font-weight: 500; font-size: 0.9rem; margin-bottom: 5px;">Rincian SPK:</div>
+                    <div style="overflow-x: auto; margin-top: 5px; border-radius: 5px; border: 1px solid rgba(255,255,255,0.1);">
+                        <table style="width: 100%; min-width: 350px; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                            <thead>
+                                <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                    <th style="padding: 5px 8px; color: var(--text-muted);">No SPK</th>
+                                    <th style="padding: 5px 8px; color: var(--text-muted);">Item</th>
+                                    <th style="padding: 5px 8px; text-align: center; color: var(--text-muted);">Qty</th>
+                                    <th style="padding: 5px 8px; color: var(--text-muted);">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+                            
+                    relatedSPK.forEach(s => {
+                        const no = s.no_spk || '-';
+                        const qty = s.qty_produksi || s.qty || 0;
+                        const kode = s.kode_barang_jadi || s.kode_barang || s.barang_jadi || '';
+                        
+                        // Resolve item name
+                        let itemName = kode;
+                        const cBom = window.ERPAPI.getCached('get_bom');
+                        const cInv = window.ERPAPI.getCached('get_inventory');
+                        let foundName = null;
+                        
+                        if (cBom && cBom.data) {
+                            const match = cBom.data.find(b => b.kode_barang === kode || b.kode === kode);
+                            if (match) foundName = match.nama_barang || match.nama;
+                        }
+                        if (!foundName && cInv && cInv.data) {
+                            const match = cInv.data.find(b => b.kode_barang === kode || b.kode === kode || b.kode_material === kode);
+                            if (match) foundName = match.nama_barang || match.nama_material || match.nama;
+                        }
+                        if (foundName) itemName = foundName;
+                        
+                        let st = s.status || '-';
+                        let badgeColor = 'rgba(255,255,255,0.1)';
+                        let textColor = '#fff';
+                        if (st === 'Dalam Proses' || st === 'Dijadwalkan') badgeColor = 'var(--info)';
+                        if (st === 'Menunggu Pengambilan') { badgeColor = 'var(--warning)'; textColor = '#000'; }
+                        if (st === 'Selesai') badgeColor = 'var(--success)';
+                        if (st === 'Batal') badgeColor = 'var(--danger)';
+
+                        spkListHtml += `
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                    <td style="padding: 5px 8px; font-weight: 500;">${no}</td>
+                                    <td style="padding: 5px 8px; white-space: nowrap;">${itemName}</td>
+                                    <td style="padding: 5px 8px; text-align: center; font-weight: bold;">${qty}</td>
+                                    <td style="padding: 5px 8px; white-space: nowrap;"><span style="background: ${badgeColor}; color: ${textColor}; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">${st}</span></td>
+                                </tr>`;
+                    });
+                    
+                    spkListHtml += `</tbody></table></div>`;
+                    spkDescEl.innerHTML = spkListHtml;
+                }
             }
 
             // SJ Status
@@ -2460,8 +2563,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (btn) btn.click();
 
             setTimeout(() => {
-                document.getElementById('spk_no_penawaran').value = window.currentDetailPOC.id_po_customer || window.currentDetailPOC.no_penawaran || '';
-                document.getElementById('produksi-modal-title').textContent = 'SPK Produksi (Referensi PO: ' + (window.currentDetailPOC.id_po_customer || window.currentDetailPOC.no_penawaran) + ')';
+                const poRef = window.currentDetailPOC.id_po_customer || window.currentDetailPOC.no_penawaran || '';
+                document.getElementById('spk_no_penawaran').value = poRef;
+                document.getElementById('produksi-modal-title').textContent = 'SPK Produksi (Referensi PO: ' + poRef + ')';
+                
+                const poCheckInterval = setInterval(() => {
+                    const poSelect = document.getElementById('spk_po_customer');
+                    if (poSelect && poSelect.tomselect) {
+                        clearInterval(poCheckInterval);
+                        poSelect.tomselect.setValue(poRef);
+                    } else if (poSelect && poSelect.options.length > 1) {
+                        clearInterval(poCheckInterval);
+                        poSelect.value = poRef;
+                        poSelect.dispatchEvent(new Event('change'));
+                    }
+                }, 200);
+                setTimeout(() => clearInterval(poCheckInterval), 5000);
 
                 try {
                     const items = typeof window.currentDetailPOC.item_po === 'string' ? JSON.parse(window.currentDetailPOC.item_po) : (window.currentDetailPOC.item_po || []);
@@ -2576,9 +2693,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const items = typeof window.currentDetailPOC.item_po === 'string' ? JSON.parse(window.currentDetailPOC.item_po) : (window.currentDetailPOC.item_po || []);
             items.forEach(it => {
                 const name = (it.nama || it.part_name || '').trim().toLowerCase();
-                const fg = (window.barangJadiData || []).find(b => (b.nama_barang || b.nama || '').trim().toLowerCase() === name);
+                const fg = (window.barangJadiData || []).find(b => {
+                    let bNameRaw = '';
+                    const nameKey = Object.keys(b).find(k => k.includes('nama') || k.includes('deskripsi') || k.includes('item'));
+                    if (nameKey) bNameRaw = String(b[nameKey]);
+                    else bNameRaw = String(b.nama_barang || b.nama || b.deskripsi || '');
+                    
+                    const bName = bNameRaw.trim().toLowerCase();
+                    return bName === name;
+                });
                 const req = parseInt(it.qty || it.moq_pcs || 0);
-                const st = fg ? parseInt(String(fg.stok).replace(/\D/g, '')) : 0;
+                let rawStok = 0;
+                if (fg) {
+                    const stokKey = Object.keys(fg).find(k => k.includes('stok') || k.includes('qty') || k.includes('jumlah'));
+                    if (stokKey) rawStok = fg[stokKey];
+                }
+                const st = fg ? parseInt(String(rawStok).replace(/[^0-9-]/g, '') || 0) : 0;
                 if (st < req) isKosong = true;
             });
         } catch (e) { }
@@ -2598,10 +2728,32 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('detail-poc-modal').classList.remove('active');
         // Navigasi ke Surat Jalan
         document.querySelector('[data-target="surat-jalan"]')?.click();
-        setTimeout(() => {
+        setTimeout(async () => {
             document.getElementById('surat-jalan-form').reset();
-            document.getElementById('sj_no_penawaran').value = window.currentDetailPOC.id_po_customer || window.currentDetailPOC.no_penawaran || '';
-            document.getElementById('sj_customer').value = window.currentDetailPOC.nama_customer || window.currentDetailPOC.customer || '';
+            
+            const today = new Date();
+            const offset = today.getTimezoneOffset() * 60000;
+            const localDate = new Date(today.getTime() - offset).toISOString().split('T')[0];
+            document.getElementById('sj_tanggal').value = localDate;
+            
+            const poRefSelect = document.getElementById('sj_no_penawaran');
+            const custSelect = document.getElementById('sj_customer');
+            
+            if (poRefSelect.tomselect) poRefSelect.tomselect.destroy();
+            if (custSelect.tomselect) custSelect.tomselect.destroy();
+            
+            const poVal = window.currentDetailPOC.id_po_customer || window.currentDetailPOC.no_penawaran || '';
+            const custVal = window.currentDetailPOC.nama_customer || window.currentDetailPOC.customer || '';
+            
+            poRefSelect.innerHTML = `<option value="${poVal}">${poVal}</option>`;
+            custSelect.innerHTML = `<option value="${custVal}">${custVal}</option>`;
+            
+            poRefSelect.value = poVal;
+            custSelect.value = custVal;
+            
+            // Disable so they can't change it
+            poRefSelect.setAttribute('disabled', 'true');
+            custSelect.setAttribute('disabled', 'true');
 
             const tbody = document.getElementById('sj-items-tbody');
             if (tbody) {
@@ -2613,8 +2765,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         items.forEach(it => {
                             const iname = String(it.nama || it.part_name || '').trim();
-                            const fg = (window.barangJadiData || []).find(b => (b.nama_barang || b.nama || '').trim().toLowerCase() === iname.toLowerCase());
-                            const st = fg ? parseInt(String(fg.stok).replace(/[^0-9-]/g, '')) : 0;
+                            const fg = (window.barangJadiData || []).find(b => {
+                                let bNameRaw = '';
+                                const nameKey = Object.keys(b).find(k => k.includes('nama') || k.includes('deskripsi') || k.includes('item'));
+                                if (nameKey) bNameRaw = String(b[nameKey]);
+                                else bNameRaw = String(b.nama_barang || b.nama || b.deskripsi || '');
+                                
+                                const bName = bNameRaw.trim().toLowerCase();
+                                return bName === iname.toLowerCase();
+                            });
+                            let rawStok = 0;
+                            if (fg) {
+                                const stokKey = Object.keys(fg).find(k => k.includes('stok') || k.includes('qty') || k.includes('jumlah'));
+                                if (stokKey) rawStok = fg[stokKey];
+                            }
+                            const st = fg ? parseInt(String(rawStok).replace(/[^0-9-]/g, '') || 0) : 0;
                             const qty = parseInt(it.qty || it.moq_pcs || 0);
                             const terkirim = parseInt(it.qty_delivered || 0);
                             const sisa = Math.max(0, qty - terkirim);
@@ -4608,7 +4773,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${item.tanggal || '-'}</td>
                     <td style="font-weight: 500;">${item.kode_barang_jadi || item.kode_barang || '-'}</td>
                     <td>${item.qty_produksi || item.qty || '-'}</td>
-                    <td style="color: var(--accent); font-weight: 500;">${item.no_penawaran || '<span style="color:var(--text-muted); font-size:0.8rem; font-weight:normal;">Internal</span>'}</td>
+                    <td style="color: var(--accent); font-weight: 500;">${item.kode_po_customer || item.no_penawaran || '<span style="color:var(--text-muted); font-size:0.8rem; font-weight:normal;">Internal</span>'}</td>
                     <td>${statusBadge}</td>
                     <td style="white-space: nowrap;">
                         <div style="display: flex; flex-direction: row; gap: 5px; align-items: center;">
@@ -5003,7 +5168,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (orderedQty > 0) {
             let producedQty = 0;
             cachedProduksiData.forEach(spk => {
-                const spkRef = spk['referensi_penawaran'] || spk['referensi_po'] || spk['referensi_penawaran_/_po'] || Object.values(spk)[8] || '';
+                const spkRef = spk['kode_po_customer'] || spk['referensi_penawaran'] || spk['referensi_po'] || spk['referensi_penawaran_/_po'] || Object.values(spk)[8] || '';
                 const spkKode = spk['kode_barang_jadi'] || spk['barang_jadi'] || '';
                 if (String(spkRef).trim() === poId && spkKode === kode) {
                     if (spk.status !== 'Batal') {
@@ -5024,7 +5189,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 qtyInput.value = 0;
             } else {
                 qtyInfo.style.color = 'var(--warning)';
-                if (parseInt(qtyInput.value || 0) > sisaQty) {
+                if (!qtyInput.value || parseInt(qtyInput.value || 0) === 0 || parseInt(qtyInput.value || 0) > sisaQty || parseInt(qtyInput.value || 0) === orderedQty) {
                     qtyInput.value = sisaQty;
                 }
             }
@@ -5154,6 +5319,7 @@ document.addEventListener('DOMContentLoaded', () => {
             qty: qty,
             batch_count: batch_count,
             bahan_baku: calculatedBahan,
+            kode_po_customer: document.getElementById('spk_po_customer')?.value || '',
             no_penawaran: document.getElementById('spk_no_penawaran')?.value || '',
             peminta: document.getElementById('spk_peminta').value,
             pemberi: Array.from(document.getElementById('spk_pemberi').selectedOptions).map(o => o.value).join(', ')
@@ -6811,10 +6977,23 @@ document.addEventListener('DOMContentLoaded', () => {
         window.print();
     }
 
-    document.getElementById('btn-add-surat-jalan')?.addEventListener('click', () => {
+    document.getElementById('btn-add-surat-jalan')?.addEventListener('click', async () => {
         document.getElementById('surat-jalan-form').reset();
         document.getElementById('sj_no').value = '';
         document.getElementById('sj_items_hidden').value = '';
+        
+        const poRefSelect = document.getElementById('sj_no_penawaran');
+        const custSelect = document.getElementById('sj_customer');
+        
+        poRefSelect.removeAttribute('disabled');
+        custSelect.removeAttribute('disabled');
+        
+        if (poRefSelect.tomselect) poRefSelect.tomselect.destroy();
+        if (custSelect.tomselect) custSelect.tomselect.destroy();
+        
+        poRefSelect.innerHTML = '<option value="" disabled selected>Memuat data PO...</option>';
+        custSelect.innerHTML = '<option value="" disabled selected>Memuat data customer...</option>';
+        
         const today = new Date();
         const offset = today.getTimezoneOffset() * 60000;
         const localDate = new Date(today.getTime() - offset).toISOString().split('T')[0];
@@ -6824,6 +7003,48 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Gunakan tombol dari Detail PO untuk fitur korelasi otomatis</td></tr>';
 
         document.getElementById('surat-jalan-modal').classList.add('active');
+        
+        try {
+            const [poRes, custRes] = await Promise.all([
+                window.ERPAPI.request('get_po_customer'),
+                window.ERPAPI.request('get_customer')
+            ]);
+            
+            poRefSelect.innerHTML = '<option value="">-- Pilih PO Customer --</option>';
+            if (poRes.status === 'success' && poRes.data) {
+                poRes.data.filter(po => po.status !== 'Selesai' && po.status !== 'Batal').forEach(po => {
+                    const opt = document.createElement('option');
+                    opt.value = po.id_po_customer || po.no_penawaran;
+                    opt.textContent = `${po.id_po_customer || po.no_penawaran} - ${po.nama_customer}`;
+                    poRefSelect.appendChild(opt);
+                });
+            }
+            
+            custSelect.innerHTML = '<option value="">-- Pilih Customer --</option>';
+            if (custRes.status === 'success' && custRes.data) {
+                custRes.data.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.nama_perusahaan || c.nama;
+                    opt.textContent = c.nama_perusahaan || c.nama;
+                    custSelect.appendChild(opt);
+                });
+            }
+        } catch (err) {
+            poRefSelect.innerHTML = '<option value="" disabled>Gagal memuat PO</option>';
+            custSelect.innerHTML = '<option value="" disabled>Gagal memuat customer</option>';
+        }
+        
+        new TomSelect('#sj_no_penawaran', {
+            create: false,
+            sortField: { field: 'text', direction: 'asc' },
+            maxOptions: 50
+        });
+        
+        new TomSelect('#sj_customer', {
+            create: true,
+            sortField: { field: 'text', direction: 'asc' },
+            maxOptions: 50
+        });
     });
 
     document.getElementById('btn-close-sj-modal')?.addEventListener('click', () => {
@@ -6878,7 +7099,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const payload = {
             no_sj: document.getElementById('sj_no').value,
             tanggal: document.getElementById('sj_tanggal').value,
-            no_penawaran: document.getElementById('sj_id_po_customer').value,
+            no_penawaran: document.getElementById('sj_no_penawaran').value,
             customer: document.getElementById('sj_customer').value,
             supir: document.getElementById('sj_supir').value,
             plat_nomor: document.getElementById('sj_plat').value,
