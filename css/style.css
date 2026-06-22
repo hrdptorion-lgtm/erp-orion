@@ -70,23 +70,23 @@ body.light-mode .sidebar {
   box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
 }
 
-body.light-mode .nav-item {
+body.light-mode .sidebar .nav-item {
   color: rgba(255, 255, 255, 0.8) !important;
 }
 
-body.light-mode .nav-item i {
+body.light-mode .sidebar .nav-item i {
   color: rgba(255, 255, 255, 0.8) !important;
 }
 
-body.light-mode .nav-item:hover,
-body.light-mode .nav-item.active {
+body.light-mode .sidebar .nav-item:hover,
+body.light-mode .sidebar .nav-item.active {
   background: rgba(255, 255, 255, 0.15) !important;
   color: white !important;
   border-right-color: white !important;
 }
 
-body.light-mode .nav-item:hover i,
-body.light-mode .nav-item.active i {
+body.light-mode .sidebar .nav-item:hover i,
+body.light-mode .sidebar .nav-item.active i {
   color: white !important;
 }
 
@@ -174,15 +174,20 @@ body.light-mode p[id^="detail_"] {
 }
 
 body.light-mode .bottom-nav {
-  background: var(--primary) !important;
+  background: var(--card-bg) !important;
+  border-top: 1px solid var(--glass-border);
 }
 
 body.light-mode .bottom-nav-item {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-muted) !important;
 }
 
 body.light-mode .bottom-nav-item.active {
-  color: #ffffff;
+  color: var(--primary) !important;
+}
+
+body.light-mode .bottom-nav-item i {
+  color: inherit !important;
 }
 
 
@@ -468,6 +473,32 @@ body::after {
   position: relative;
   overflow: hidden;
 }
+
+/* Remove padding from nav-item wrapper in grid menus so inner stat-cards expand fully */
+[id^="view-menu-"] .nav-item {
+  padding: 0 !important;
+  border: none !important;
+}
+
+/* Specifically for mobile grid menu cards to ensure uniform size */
+[id^="view-menu-"] .stat-card {
+  justify-content: center;
+  align-items: center;
+  aspect-ratio: 1 / 1;
+}
+
+/* Light Mode overrides for grid menu cards */
+body.light-mode [id^="view-menu-"] .stat-card {
+  background: var(--primary) !important;
+  box-shadow: 0 10px 30px rgba(59, 130, 246, 0.2);
+}
+
+body.light-mode [id^="view-menu-"] .stat-card i,
+body.light-mode [id^="view-menu-"] .stat-card div {
+  color: white !important;
+}
+
+
 
 .stat-card::before {
   content: '';

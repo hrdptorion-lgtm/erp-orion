@@ -300,10 +300,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const target = item.getAttribute('data-target');
             item.style.display = 'flex'; // Reset display
 
-            if (hasPermissions) {
-                // Selalu tampilkan dashboard dan profil
-                if (target === 'dashboard' || target === 'profil') return;
+            // Selalu tampilkan dashboard dan profil untuk semua user
+            if (target === 'dashboard' || target === 'profil') return;
 
+            if (hasPermissions) {
                 // Menu khusus super admin
                 if (item.classList.contains('super-admin-only')) {
                     item.style.display = isSuperAdmin ? 'flex' : 'none';

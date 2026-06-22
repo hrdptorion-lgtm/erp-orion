@@ -129,14 +129,29 @@ function handleLogin(payload) {
 
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
-    if (row[userIdx] === username && row[passIdx] === hashedPassword) {
-      const token = generateSessionToken(username, row[roleIdx] || 'Admin');
-      return { 
-        status: 'success', 
-        role: row[roleIdx] || 'Admin', 
-        nama: row[namaIdx] || username,
-        token: token
-      };
+    if (row[userIdx] === username) {
+      const dbPass = String(row[passIdx] || '');
+      let isMatch = false;
+
+      if (dbPass === hashedPassword) {
+        isMatch = true; // Normal match (already hashed in DB)
+      } else if (dbPass.length < 64 && hashPassword(dbPass) === hashedPassword) {
+        // Auto-upgrade: The DB contains a plain text password whose hash matches the frontend's hash
+        isMatch = true;
+        // Update the spreadsheet with the hashed version for future security
+        sheet.getRange(i + 1, passIdx + 1).setValue(hashedPassword);
+        SpreadsheetApp.flush(); // Paksa simpan seketika
+      }
+
+      if (isMatch) {
+        const token = generateSessionToken(username, row[roleIdx] || 'Admin');
+        return { 
+          status: 'success', 
+          role: row[roleIdx] || 'Admin', 
+          nama: row[namaIdx] || username,
+          token: token
+        };
+      }
     }
   }
 
