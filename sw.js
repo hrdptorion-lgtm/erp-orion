@@ -1,4 +1,4 @@
-const CACHE_NAME = 'erporion-v17';
+const CACHE_NAME = 'erporion-v18';
 const urlsToCache = [
   './',
   './index.html',
@@ -16,6 +16,7 @@ self.addEventListener('install', event => {
         return cache.addAll(urlsToCache);
       })
   );
+  self.skipWaiting();
 });
 
 // Fetch event: serve from cache or network
@@ -69,4 +70,5 @@ self.addEventListener('activate', event => {
       );
     })
   );
+  self.clients.claim();
 });

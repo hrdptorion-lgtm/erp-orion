@@ -738,16 +738,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Sync Data
+    // Sync Data (Hard Reload & Clear Cache)
     const btnSync = document.getElementById('btn-sync');
-    btnSync?.addEventListener('click', () => {
+    btnSync?.addEventListener('click', async () => {
         const icon = btnSync.querySelector('i');
         icon.classList.add('spin');
-        showToast('Sinkronisasi data sedang berjalan...', 'info');
-        setTimeout(() => {
+        showToast('Menyinkronkan pembaruan aplikasi...', 'info');
+        
+        try {
+            // Unregister Service Workers
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let registration of registrations) {
+                    await registration.unregister();
+                }
+            }
+            
+            // Clear API & Static Caches
+            if ('caches' in window) {
+                const keys = await caches.keys();
+                await Promise.all(keys.map(key => caches.delete(key)));
+            }
+
+            setTimeout(() => {
+                window.location.reload(true); // Force reload from server
+            }, 1000);
+        } catch (e) {
+            console.error('Gagal sinkronisasi:', e);
             icon.classList.remove('spin');
-            showToast('Sinkronisasi selesai!', 'success');
-        }, 1500);
+            showToast('Gagal sinkronisasi. Coba muat ulang halaman.', 'error');
+        }
     });
 
     // Mobile Bottom Nav Logic
