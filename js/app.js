@@ -1974,22 +1974,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 const relatedSJ = sjList.filter(s => s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer);
                 const relatedInv = invList.filter(s => s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer);
 
-                if (relatedInv.length > 0 && relatedInv.every(i => i.status_pembayaran === 'Lunas')) {
-                    progress = 100;
-                    progressLabel = "Lunas / Selesai";
-                    progressColor = "var(--success)";
+                if (relatedInv.length > 0) {
+                    if (relatedInv.every(i => i.status_pembayaran === 'Lunas')) {
+                        progress = 100;
+                        progressLabel = "Lunas / Selesai";
+                        progressColor = "var(--success)";
+                    } else {
+                        progress = 85;
+                        progressLabel = "Menunggu Pembayaran";
+                        progressColor = "var(--warning)";
+                    }
                 } else if (relatedSJ.length > 0) {
-                    progress = 75;
-                    progressLabel = "Tahap Pengiriman";
-                    progressColor = "var(--info)";
-                } else if (relatedSPK.length > 0 && relatedSPK.every(s => s.status === 'Selesai')) {
-                    progress = 50;
-                    progressLabel = "Produksi Selesai";
-                    progressColor = "#10b981"; // distinct green
+                    if (relatedSJ.every(s => s.status === 'Selesai (Diterima)')) {
+                        progress = 70;
+                        progressLabel = "Barang Terkirim";
+                        progressColor = "#6366f1"; // Indigo
+                    } else {
+                        progress = 50;
+                        progressLabel = "Proses Pengiriman";
+                        progressColor = "var(--info)";
+                    }
                 } else if (relatedSPK.length > 0) {
-                    progress = 25;
-                    progressLabel = "Proses Produksi";
-                    progressColor = "var(--warning)";
+                    if (relatedSPK.every(s => s.status === 'Selesai')) {
+                        progress = 30;
+                        progressLabel = "Produksi Selesai";
+                        progressColor = "#10b981"; // Distinct green
+                    } else {
+                        progress = 15;
+                        progressLabel = "Proses Produksi";
+                        progressColor = "var(--warning)";
+                    }
                 } else {
                     progress = 0;
                     progressLabel = "Menunggu SPK";
@@ -2757,6 +2771,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const tbody = document.getElementById('sj-items-tbody');
             if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat Data Barang...</td></tr>';
+                
+                // Ensure barangJadiData is loaded
+                if (!window.barangJadiData || window.barangJadiData.length === 0) {
+                    const resBJ = await window.ERPAPI.request('get_barang_jadi');
+                    if (resBJ && resBJ.status === 'success' && resBJ.data) {
+                        window.barangJadiData = resBJ.data;
+                    } else {
+                        window.lastBjError = resBJ ? resBJ.message : 'Unknown error';
+                    }
+                }
+
                 tbody.innerHTML = '';
                 try {
                     const items = typeof window.currentDetailPOC.item_po === 'string' ? JSON.parse(window.currentDetailPOC.item_po) : (window.currentDetailPOC.item_po || []);
@@ -2785,11 +2811,17 @@ document.addEventListener('DOMContentLoaded', () => {
                             const sisa = Math.max(0, qty - terkirim);
                             const defaultQty = Math.min(sisa, Math.max(0, st));
                             
+                            let debugLog = `iname: "${iname}" | fg: ${fg ? 'Found' : 'Not Found'} | rawStok: ${rawStok} | st: ${st} | len: ${(window.barangJadiData||[]).length}`;
+                            if (!fg) {
+                                debugLog += ` | error: ${window.lastBjError || 'none'}`;
+                            }
+
                             const tr = document.createElement('tr');
                             tr.innerHTML = `
                                 <td>
                                     ${iname}<br>
                                     <span style="font-size:0.75rem; color:var(--text-muted)">Stok Tersedia: <strong style="color: ${st > 0 ? 'var(--success)' : 'var(--danger)'}">${st.toLocaleString('id-ID')}</strong></span>
+                                    <div style="font-size: 0.6rem; color: #ff6b6b; margin-top: 5px; word-break: break-all;">[DBG] ${debugLog}</div>
                                     <input type="hidden" class="sj-item-name" value="${iname}">
                                 </td>
                                 <td style="text-align: right;">${qty.toLocaleString('id-ID')}</td>
@@ -3038,7 +3070,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (btnSj) {
             const item = JSON.parse(btnSj.getAttribute('data-item'));
             document.getElementById('surat-jalan-form').reset();
-            const poSelect = document.getElementById('sj_id_po_customer');
+            const poSelect = document.getElementById('sj_no_penawaran');
             if (poSelect) {
                 let found = Array.from(poSelect.options).find(o => o.value === item.no_penawaran);
                 if (!found && item.no_penawaran) {
@@ -6850,23 +6882,49 @@ document.addEventListener('DOMContentLoaded', () => {
             tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Tidak ada data surat jalan.</td></tr>';
             return;
         }
-        suratJalanData.forEach(sj => {
+        
+        // Sort data by newest first (assuming chronological append to array)
+        const sortedData = [...suratJalanData].reverse();
+        
+        sortedData.forEach(sj => {
+            const sjNo = sj.no_sj || sj.no_surat_jalan || '';
+            const sjTanggal = sj.tanggal || sj.tanggal_kirim || '-';
+            const sjPenawaran = sj.no_penawaran || sj.referensi_penawaran || sj.id_po_customer || '-';
+            const sjCustomer = sj.customer || '-';
+
             const tr = document.createElement('tr');
             let badgeClass = 'badge-warning';
-            if (sj.status === 'Selesai (Diterima)') badgeClass = 'badge-success';
-            else if (sj.status === 'Batal') badgeClass = 'badge-danger';
+            let isSelesai = false;
+            if (sj.status === 'Selesai (Diterima)') {
+                badgeClass = 'badge-success';
+                isSelesai = true;
+            } else if (sj.status === 'Batal') {
+                badgeClass = 'badge-danger';
+            }
 
-            let actionBtns = `
-            <button class="btn btn-edit-sj" data-idx="${suratJalanData.indexOf(sj)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(16, 185, 129, 0.2); color: var(--secondary); margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>
-            <button class="btn btn-print-sj" data-idx="${suratJalanData.indexOf(sj)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(59, 130, 246, 0.2); color: #60a5fa; margin-right: 5px;"><i class="fa-solid fa-print"></i></button>
-            <button class="btn btn-delete-sj" data-no="${sj.no_sj}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i class="fa-solid fa-trash"></i></button>
-        `;
+            let actionBtns = '';
+            if (isSelesai) {
+                // If finished, only show Print button, hide edit/delete/finish
+                actionBtns = `
+                <button class="btn btn-print-sj" data-idx="${suratJalanData.indexOf(sj)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(59, 130, 246, 0.2); color: #60a5fa; margin-right: 5px;" title="Print"><i class="fa-solid fa-print"></i></button>
+                <button class="btn btn-print-proforma-sj" data-idx="${suratJalanData.indexOf(sj)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(168, 85, 247, 0.2); color: #a855f7; margin-right: 5px;" title="Print Proforma Invoice"><i class="fa-solid fa-file-invoice-dollar"></i></button>
+                <span style="font-size: 0.8rem; color: var(--success); display: inline-flex; align-items: center; padding: 0.4rem;"><i class="fa-solid fa-check-circle"></i> Selesai</span>
+                `;
+            } else {
+                actionBtns = `
+                <button class="btn btn-finish-sj" data-no="${sjNo}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(16, 185, 129, 0.1); color: var(--success); margin-right: 5px;" title="Tandai Selesai"><i class="fa-solid fa-check-double"></i></button>
+                <button class="btn btn-edit-sj" data-idx="${suratJalanData.indexOf(sj)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(16, 185, 129, 0.2); color: var(--secondary); margin-right: 5px;" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn btn-print-sj" data-idx="${suratJalanData.indexOf(sj)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(59, 130, 246, 0.2); color: #60a5fa; margin-right: 5px;" title="Print SJ"><i class="fa-solid fa-print"></i></button>
+                <button class="btn btn-print-proforma-sj" data-idx="${suratJalanData.indexOf(sj)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(168, 85, 247, 0.2); color: #a855f7; margin-right: 5px;" title="Print Proforma Invoice"><i class="fa-solid fa-file-invoice-dollar"></i></button>
+                <button class="btn btn-delete-sj" data-no="${sjNo}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(239, 68, 68, 0.1); color: var(--danger);" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+                `;
+            }
 
             tr.innerHTML = `
-            <td><strong>${sj.no_sj}</strong></td>
-            <td>${sj.tanggal || '-'}</td>
-            <td>${sj.no_penawaran || '-'}</td>
-            <td>${sj.customer || '-'}</td>
+            <td style="font-weight: 700;">${sjNo || '<i style="color:#666">Kosong (Error)</i>'}</td>
+            <td>${sjTanggal}</td>
+            <td>${sjPenawaran}</td>
+            <td>${sjCustomer}</td>
             <td><span class="badge ${badgeClass}">${sj.status || 'Dikirim'}</span></td>
             <td><div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">${actionBtns}</div></td>
         `;
@@ -6880,16 +6938,26 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        document.querySelectorAll('.btn-edit-sj').forEach(btn => {
+        document.querySelectorAll('.btn-print-proforma-sj').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const idx = e.currentTarget.getAttribute('data-idx');
+                printProformaInvoice(suratJalanData[idx]);
+            });
+        });
+
+        document.querySelectorAll('.btn-edit-sj').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const idx = e.currentTarget.getAttribute('data-idx');
                 const item = suratJalanData[idx];
+                const sjNo = item.no_sj || item.no_surat_jalan || '';
+                const sjTanggal = item.tanggal || item.tanggal_kirim || '';
+                const sjPenawaran = item.no_penawaran || item.referensi_penawaran || item.id_po_customer || '';
+                const sjCustomer = item.customer || '';
 
                 document.getElementById('surat-jalan-form').reset();
-                document.getElementById('sj_no').value = item.no_sj || '';
-                document.getElementById('sj_tanggal').value = item.tanggal ? item.tanggal.split('/').reverse().join('-') : '';
-                document.getElementById('sj_id_po_customer').value = item.no_penawaran || '';
-                document.getElementById('sj_customer').value = item.customer || '';
+                document.getElementById('sj_no').value = sjNo;
+                document.getElementById('sj_tanggal').value = sjTanggal ? sjTanggal.split('/').reverse().join('-') : '';
+
                 document.getElementById('sj_supir').value = item.supir || '';
                 document.getElementById('sj_plat').value = item.plat_nomor || '';
                 document.getElementById('sj_status').value = item.status || 'Dikirim';
@@ -6899,54 +6967,258 @@ document.addEventListener('DOMContentLoaded', () => {
                 try { sjItems = typeof item.items === 'string' ? JSON.parse(item.items) : (item.items || []); } catch (e) { }
                 document.getElementById('sj_items_hidden').value = JSON.stringify(sjItems);
 
-                const tbody = document.getElementById('sj-items-tbody');
-                if (tbody) {
-                    tbody.innerHTML = '';
+                const tbody2 = document.getElementById('sj-items-tbody');
+                if (tbody2) {
+                    tbody2.innerHTML = '';
                     if (sjItems.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Tidak ada item</td></tr>';
+                        tbody2.innerHTML = '<tr><td colspan="4" style="text-align:center;">Tidak ada item</td></tr>';
                     } else {
                         sjItems.forEach(it => {
                             const iname = String(it.nama || it.item || '').trim();
                             const qty = parseInt(it.qty || 0);
-                            const tr = document.createElement('tr');
-                            tr.innerHTML = `
-                            <td>${iname}<input type="hidden" class="sj-item-name" value="${iname}"></td>
-                            <td style="text-align: right;">-</td>
-                            <td style="text-align: right; color: var(--success);">-</td>
-                            <td>
-                                <input type="number" class="sj-item-qty" min="0" value="${qty}" style="width: 100%; padding: 0.4rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 4px;">
-                            </td>
-                        `;
-                            tbody.appendChild(tr);
+                            const tr2 = document.createElement('tr');
+                            tr2.innerHTML = `
+                                <td>${iname}<input type="hidden" class="sj-item-name" value="${iname}"></td>
+                                <td style="text-align: right;">-</td>
+                                <td style="text-align: right; color: var(--success);">-</td>
+                                <td>
+                                    <input type="number" class="sj-item-qty" min="0" value="${qty}" style="width: 100%; padding: 0.4rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 4px;">
+                                </td>
+                            `;
+                            tbody2.appendChild(tr2);
                         });
                     }
                 }
 
                 document.getElementById('surat-jalan-modal').classList.add('active');
+
+                // Init TomSelect for Edit
+                const poRefSelect = document.getElementById('sj_no_penawaran');
+                const custSelect = document.getElementById('sj_customer');
+                
+                poRefSelect.removeAttribute('disabled');
+                custSelect.removeAttribute('disabled');
+                
+                if (poRefSelect.tomselect) poRefSelect.tomselect.destroy();
+                if (custSelect.tomselect) custSelect.tomselect.destroy();
+                
+                poRefSelect.innerHTML = '<option value="" disabled selected>Memuat data PO...</option>';
+                custSelect.innerHTML = '<option value="" disabled selected>Memuat data customer...</option>';
+                
+                let loadedPOs = [];
+                try {
+                    const [poRes, custRes] = await Promise.all([
+                        window.ERPAPI.request('get_po_customer'),
+                        window.ERPAPI.request('get_customer')
+                    ]);
+                    
+                    poRefSelect.innerHTML = '<option value="">-- Pilih PO Customer --</option>';
+                    if (poRes.status === 'success' && poRes.data) {
+                        loadedPOs = poRes.data;
+                        // Include the current PO even if it's completed/cancelled, so we don't lose it from the select
+                        poRes.data.filter(po => po.status !== 'Selesai' && po.status !== 'Batal' || (po.id_po_customer === sjPenawaran || po.no_penawaran === sjPenawaran)).forEach(po => {
+                            const opt = document.createElement('option');
+                            opt.value = po.id_po_customer || po.no_penawaran;
+                            opt.textContent = po.id_po_customer || po.no_penawaran;
+                            poRefSelect.appendChild(opt);
+                        });
+                    }
+                    
+                    custSelect.innerHTML = '<option value="">-- Pilih Customer --</option>';
+                    if (custRes.status === 'success' && custRes.data) {
+                        custRes.data.forEach(c => {
+                            const opt = document.createElement('option');
+                            opt.value = c.nama_perusahaan || c.nama;
+                            opt.textContent = c.nama_perusahaan || c.nama;
+                            custSelect.appendChild(opt);
+                        });
+                    }
+                } catch (err) {}
+
+                if (sjPenawaran && !Array.from(poRefSelect.options).find(o => o.value === sjPenawaran)) {
+                    const o = document.createElement('option'); o.value = sjPenawaran; o.textContent = sjPenawaran; poRefSelect.appendChild(o);
+                }
+                if (sjCustomer && !Array.from(custSelect.options).find(o => o.value === sjCustomer)) {
+                    const o = document.createElement('option'); o.value = sjCustomer; o.textContent = sjCustomer; custSelect.appendChild(o);
+                }
+
+                poRefSelect.value = sjPenawaran;
+                custSelect.value = sjCustomer;
+                
+                new TomSelect('#sj_no_penawaran', {
+                    create: false,
+                    sortField: { field: 'text', direction: 'asc' },
+                    maxOptions: 50,
+                    onChange: function(value) {
+                        if (!value) return;
+                        const po = loadedPOs.find(p => (p.id_po_customer || p.no_penawaran) === value);
+                        if (po) {
+                            const tsCust = document.getElementById('sj_customer').tomselect;
+                            if (tsCust) {
+                                tsCust.addOption({value: po.nama_customer, text: po.nama_customer});
+                                tsCust.setValue(po.nama_customer);
+                            }
+                            
+                            // Auto-populate items if it's not the initial load of the edit modal
+                            // Or we just overwrite it when user manually changes it.
+                            if (value !== sjPenawaran) {
+                                let poItems = [];
+                                try { poItems = typeof po.items === 'string' ? JSON.parse(po.items) : (po.items || []); } catch(e) {}
+                                const tbody = document.getElementById('sj-items-tbody');
+                                tbody.innerHTML = '';
+                                if (poItems.length === 0) {
+                                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Tidak ada item di PO ini</td></tr>';
+                                } else {
+                                    poItems.forEach(it => {
+                                        const iname = String(it.nama || it.item || '').trim();
+                                        const qty = parseInt(it.sisa_qty ?? it.qty ?? 0);
+                                        const tr2 = document.createElement('tr');
+                                        tr2.innerHTML = `
+                                            <td>${iname}<input type="hidden" class="sj-item-name" value="${iname}"></td>
+                                            <td>${parseInt(it.qty || 0).toLocaleString('id-ID')}</td>
+                                            <td>${parseInt((it.qty || 0) - qty).toLocaleString('id-ID')}</td>
+                                            <td><input type="number" class="sj-item-qty" value="${qty}" max="${qty}" min="0" style="width:80px; padding:0.3rem; border-radius:5px; border:1px solid var(--glass-border); background:var(--bg-main); color:var(--text-main);"></td>
+                                        `;
+                                        tbody.appendChild(tr2);
+                                    });
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                new TomSelect('#sj_customer', {
+                    create: true,
+                    sortField: { field: 'text', direction: 'asc' },
+                    maxOptions: 50
+                });
             });
         });
 
         document.querySelectorAll('.btn-delete-sj').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const no = e.currentTarget.getAttribute('data-no');
-                if (confirm(`Hapus Surat Jalan ${no}?`)) {
-                    e.currentTarget.closest('tr').style.display = 'none';
-                    const res = await window.ERPAPI.request('delete_surat_jalan', { no_sj: no });
-                    if (res.status === 'success') loadSuratJalanData(true);
-                    else { showToast?.(res.message, 'danger'); loadSuratJalanData(true); }
+                if (!no) {
+                    showToast?.('Data ini rusak (tidak memiliki No Surat Jalan) dan tidak bisa dihapus dari sini. Hapus manual dari Google Sheets.', 'error');
+                    return;
                 }
+                
+                // Better Custom Confirm Modal
+                const overlay = document.createElement('div');
+                overlay.className = 'login-overlay active';
+                overlay.style.zIndex = '9999';
+                overlay.innerHTML = `
+                    <div class="login-box" style="max-width: 400px; text-align: center;">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size: 3rem; color: var(--danger); margin-bottom: 1rem;"></i>
+                        <h3 style="margin-bottom: 0.5rem;">Hapus Surat Jalan?</h3>
+                        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Tindakan ini akan menghapus <strong>${no}</strong> permanen dari database.</p>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-cancel-del" style="flex:1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                            <button class="btn btn-confirm-del" style="flex:1; background: var(--danger); justify-content: center;">Ya, Hapus!</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+
+                overlay.querySelector('.btn-cancel-del').onclick = () => overlay.remove();
+                overlay.querySelector('.btn-confirm-del').onclick = async () => {
+                    overlay.querySelector('.btn-confirm-del').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghapus...';
+                    overlay.querySelector('.btn-confirm-del').disabled = true;
+                    
+                    const res = await window.ERPAPI.request('delete_surat_jalan', { no_sj: no });
+                    overlay.remove();
+                    
+                    if (res.status === 'success') {
+                        showToast?.('Surat Jalan berhasil dihapus.', 'success');
+                        loadSuratJalanData(true);
+                    } else {
+                        showToast?.(res.message || 'Gagal menghapus', 'error');
+                        loadSuratJalanData(true);
+                    }
+                };
+            });
+        });
+
+        document.querySelectorAll('.btn-finish-sj').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const no = e.currentTarget.getAttribute('data-no');
+                if (!no) return;
+                
+                const overlay = document.createElement('div');
+                overlay.className = 'login-overlay active';
+                overlay.style.zIndex = '9999';
+                overlay.innerHTML = `
+                    <div class="login-box" style="max-width: 400px; text-align: center;">
+                        <i class="fa-solid fa-check-circle" style="font-size: 3rem; color: var(--success); margin-bottom: 1rem;"></i>
+                        <h3 style="margin-bottom: 0.5rem;">Barang Sudah Terkirim?</h3>
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">Silakan masukkan nama penerima barang di lokasi tujuan.</p>
+                        
+                        <div class="input-group" style="text-align: left; margin-bottom: 1.5rem;">
+                            <label>Nama Penerima</label>
+                            <input type="text" id="input_nama_penerima" placeholder="Contoh: Bapak Budi" required style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border);">
+                        </div>
+
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-cancel-fin" style="flex:1; background: var(--bg-glass); justify-content: center;">Batal</button>
+                            <button class="btn btn-confirm-fin" style="flex:1; background: var(--success); justify-content: center;">Selesai!</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+
+                overlay.querySelector('.btn-cancel-fin').onclick = () => overlay.remove();
+                overlay.querySelector('.btn-confirm-fin').onclick = async () => {
+                    const inputPenerima = document.getElementById('input_nama_penerima').value.trim();
+                    if (!inputPenerima) {
+                        showToast?.('Nama Penerima wajib diisi!', 'error');
+                        return;
+                    }
+
+                    overlay.querySelector('.btn-confirm-fin').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
+                    overlay.querySelector('.btn-confirm-fin').disabled = true;
+                    
+                    const res = await window.ERPAPI.request('save_surat_jalan', { 
+                        no_sj: no, 
+                        status: 'Selesai (Diterima)',
+                        penerima: inputPenerima 
+                    });
+                    overlay.remove();
+                    
+                    if (res.status === 'success') {
+                        showToast?.('Status Surat Jalan berhasil diupdate!', 'success');
+                        loadSuratJalanData(true);
+                    } else {
+                        showToast?.(res.message || 'Gagal update status', 'error');
+                        loadSuratJalanData(true);
+                    }
+                };
             });
         });
     }
 
-    function printSuratJalan(item) {
+    async function printSuratJalan(item) {
         document.getElementById('print_sj_company_name').textContent = cachedSettings['NAMA_PERUSAHAAN'] || 'PT. Orion Karya Sejahtera';
         document.getElementById('print_sj_company_address').innerHTML = (cachedSettings['ALAMAT'] || '') + '<br>' + (cachedSettings['NO_TELP'] || '');
 
-        document.getElementById('print_sj_customer').textContent = item.customer || '-';
-        document.getElementById('print_sj_no').textContent = item.no_sj || '-';
-        document.getElementById('print_sj_date').textContent = item.tanggal || '-';
-        document.getElementById('print_sj_po').textContent = item.no_penawaran || '-';
+        const sjNo = item.no_sj || item.no_surat_jalan || '-';
+        const sjTanggal = item.tanggal || item.tanggal_kirim || '-';
+        const sjPenawaran = item.no_penawaran || item.referensi_penawaran || item.id_po_customer || '-';
+        
+        let customerName = item.customer || item.nama_penerima;
+        if (!customerName) {
+            try {
+                const poRes = await window.ERPAPI.request('get_po_customer');
+                if (poRes.status === 'success' && poRes.data) {
+                    const poData = poRes.data.find(p => p.id_po_customer === sjPenawaran || p.no_po_customer === sjPenawaran || p.no_penawaran === sjPenawaran || p.referensi_penawaran === sjPenawaran);
+                    if (poData) customerName = poData.nama_customer || poData.customer;
+                }
+            } catch (e) {}
+        }
+        
+        document.getElementById('print_sj_customer').textContent = customerName || '-';
+        document.getElementById('print_sj_no').textContent = sjNo;
+        document.getElementById('print_sj_date').textContent = sjTanggal;
+        document.getElementById('print_sj_po').textContent = sjPenawaran;
         document.getElementById('print_sj_plat').textContent = item.plat_nomor || '-';
         document.getElementById('print_sj_supir').textContent = item.supir || '-';
 
@@ -6971,6 +7243,14 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             tbody.innerHTML = `<tr><td colspan="5" style="border: 1px solid #000; padding: 5px; text-align: center;">Tidak ada barang</td></tr>`;
         }
+
+        const activeUser = JSON.parse(localStorage.getItem('erp_session') || '{}');
+        const penerimaName = item.penerima || item.nama_penerima || '';
+
+        const elPenerima = document.getElementById('print_sj_penerima_name');
+        const elGudang = document.getElementById('print_sj_gudang_name');
+        if (elPenerima) elPenerima.textContent = penerimaName ? `( ${penerimaName} )` : '';
+        if (elGudang) elGudang.textContent = '';
 
         document.body.classList.remove('printing-sj', 'printing-inv', 'printing-po');
         document.body.classList.add('printing-sj');
@@ -7004,6 +7284,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('surat-jalan-modal').classList.add('active');
         
+        let loadedPOs = [];
         try {
             const [poRes, custRes] = await Promise.all([
                 window.ERPAPI.request('get_po_customer'),
@@ -7012,10 +7293,11 @@ document.addEventListener('DOMContentLoaded', () => {
             
             poRefSelect.innerHTML = '<option value="">-- Pilih PO Customer --</option>';
             if (poRes.status === 'success' && poRes.data) {
+                loadedPOs = poRes.data;
                 poRes.data.filter(po => po.status !== 'Selesai' && po.status !== 'Batal').forEach(po => {
                     const opt = document.createElement('option');
                     opt.value = po.id_po_customer || po.no_penawaran;
-                    opt.textContent = `${po.id_po_customer || po.no_penawaran} - ${po.nama_customer}`;
+                    opt.textContent = po.id_po_customer || po.no_penawaran;
                     poRefSelect.appendChild(opt);
                 });
             }
@@ -7037,7 +7319,39 @@ document.addEventListener('DOMContentLoaded', () => {
         new TomSelect('#sj_no_penawaran', {
             create: false,
             sortField: { field: 'text', direction: 'asc' },
-            maxOptions: 50
+            maxOptions: 50,
+            onChange: function(value) {
+                if (!value) return;
+                const po = loadedPOs.find(p => (p.id_po_customer || p.no_penawaran) === value);
+                if (po) {
+                    const tsCust = document.getElementById('sj_customer').tomselect;
+                    if (tsCust) {
+                        tsCust.addOption({value: po.nama_customer, text: po.nama_customer});
+                        tsCust.setValue(po.nama_customer);
+                    }
+                    
+                    let poItems = [];
+                    try { poItems = typeof po.items === 'string' ? JSON.parse(po.items) : (po.items || []); } catch(e) {}
+                    const tbody = document.getElementById('sj-items-tbody');
+                    tbody.innerHTML = '';
+                    if (poItems.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Tidak ada item di PO ini</td></tr>';
+                    } else {
+                        poItems.forEach(it => {
+                            const iname = String(it.nama || it.item || '').trim();
+                            const qty = parseInt(it.sisa_qty ?? it.qty ?? 0);
+                            const tr2 = document.createElement('tr');
+                            tr2.innerHTML = `
+                                <td>${iname}<input type="hidden" class="sj-item-name" value="${iname}"></td>
+                                <td>${parseInt(it.qty || 0).toLocaleString('id-ID')}</td>
+                                <td>${parseInt((it.qty || 0) - qty).toLocaleString('id-ID')}</td>
+                                <td><input type="number" class="sj-item-qty" value="${qty}" max="${qty}" min="0" style="width:80px; padding:0.3rem; border-radius:5px; border:1px solid var(--glass-border); background:var(--bg-main); color:var(--text-main);"></td>
+                            `;
+                            tbody.appendChild(tr2);
+                        });
+                    }
+                }
+            }
         });
         
         new TomSelect('#sj_customer', {
@@ -7261,6 +7575,112 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.remove('printing-sj', 'printing-inv', 'printing-po');
         document.body.classList.add('printing-inv');
         window.print();
+        
+        // Reset titles back to default after printing just in case
+        setTimeout(() => {
+            const t1 = document.getElementById('print_inv_title_1');
+            const t2 = document.getElementById('print_inv_title_2');
+            if(t1) t1.textContent = 'INVOICE';
+            if(t2) t2.textContent = 'INVOICE';
+        }, 500);
+    }
+
+    async function printProformaInvoice(sjItem) {
+        // Change title to PROFORMA INVOICE
+        const t1 = document.getElementById('print_inv_title_1');
+        const t2 = document.getElementById('print_inv_title_2');
+        if(t1) t1.textContent = 'PROFORMA INVOICE';
+        if(t2) t2.textContent = 'PROFORMA INVOICE';
+
+        document.getElementById('print_inv_company_name').textContent = cachedSettings['NAMA_PERUSAHAAN'] || 'PT. Orion Karya Sejahtera';
+        document.getElementById('print_inv_company_address').innerHTML = (cachedSettings['ALAMAT'] || '') + '<br>' + (cachedSettings['NO_TELP'] || '');
+
+        // The customer name assignment is done later to include PO customer name
+        const noSjStr = sjItem.no_sj || sjItem.no_surat_jalan || '';
+        document.getElementById('print_inv_no').textContent = 'PROFORMA-INV-' + noSjStr.replace('SJ-', '');
+        const tglSjStr = sjItem.tanggal || sjItem.tanggal_kirim || '-';
+        document.getElementById('print_inv_date').textContent = tglSjStr;
+        document.getElementById('print_inv_due').textContent = tglSjStr; // Disamakan dengan tanggal SJ
+        document.getElementById('print_inv_po').textContent = sjItem.no_penawaran || sjItem.referensi_penawaran || '-';
+
+        const tbody = document.getElementById('print-inv-items');
+        tbody.innerHTML = '<tr><td colspan="5" style="border: 1px solid #000; padding: 5px; text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Menghitung...</td></tr>';
+        
+        document.body.classList.remove('printing-sj', 'printing-inv', 'printing-po');
+        document.body.classList.add('printing-inv');
+
+        let sjItems = [];
+        try { sjItems = typeof sjItem.items === 'string' ? JSON.parse(sjItem.items) : (sjItem.items || []); } catch (e) { }
+
+        // Fetch PO Customer to get the unit prices and customer name
+        let poData = null;
+        try {
+            const poRes = await window.ERPAPI.request('get_po_customer');
+            if (poRes.status === 'success' && poRes.data) {
+                const searchPenawaran = sjItem.no_penawaran || sjItem.referensi_penawaran || sjItem.id_po_customer;
+                poData = poRes.data.find(p => (p.id_po_customer === searchPenawaran || p.no_po_customer === searchPenawaran || p.no_penawaran === searchPenawaran || p.referensi_penawaran === searchPenawaran));
+            }
+        } catch (e) {}
+
+        const finalCustomerName = sjItem.customer || sjItem.nama_penerima || (poData ? (poData.nama_customer || poData.customer) : null) || '-';
+        document.getElementById('print_inv_customer').textContent = finalCustomerName;
+
+        let poItems = [];
+        if (poData) {
+            try { poItems = typeof poData.item_po === 'string' ? JSON.parse(poData.item_po) : (poData.item_po || poData.items || []); } catch(e) {}
+        }
+
+        tbody.innerHTML = '';
+        let total = 0;
+
+        if (sjItems && sjItems.length > 0) {
+            sjItems.forEach((it, i) => {
+                const iname = String(it.nama || it.item || '').trim();
+                let harga = 0;
+                
+                // Find matching item in PO
+                const matchedPoItem = poItems.find(pi => String(pi.nama || pi.item || '').trim() === iname);
+                if (matchedPoItem) {
+                    harga = parseFloat(matchedPoItem.harga || matchedPoItem.harga_satuan || 0);
+                }
+
+                const qty = parseInt(it.qty || 0);
+                const sub = qty * harga;
+                total += sub;
+
+                tbody.innerHTML += `
+                <tr>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: center;">${i + 1}</td>
+                    <td style="border: 1px solid #000; padding: 5px;">${iname}</td>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: center;">${qty} ${it.satuan || matchedPoItem?.satuan || 'Pcs'}</td>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: right;">${parseInt(harga).toLocaleString('id-ID')}</td>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: right;">${sub.toLocaleString('id-ID')}</td>
+                </tr>
+            `;
+            });
+        } else {
+            tbody.innerHTML = `<tr><td colspan="5" style="border: 1px solid #000; padding: 5px; text-align: center;">Tidak ada barang di Surat Jalan ini</td></tr>`;
+        }
+
+        // Apply PPN if PO has PPN
+        let grandTotal = total;
+        if (poData && poData.ppn > 0) {
+            const ppnAmount = total * (parseFloat(poData.ppn) / 100);
+            grandTotal += ppnAmount;
+            // Optionally, we could add a PPN row, but for now we just show the final total
+        }
+
+        document.getElementById('print_inv_total').textContent = parseInt(grandTotal).toLocaleString('id-ID');
+        document.getElementById('print_inv_paid').textContent = '0'; // Proforma is usually unpaid
+        document.getElementById('print_inv_balance').textContent = parseInt(grandTotal).toLocaleString('id-ID');
+
+        window.print();
+        
+        // Reset titles after print
+        setTimeout(() => {
+            if(t1) t1.textContent = 'INVOICE';
+            if(t2) t2.textContent = 'INVOICE';
+        }, 500);
     }
 
     function calculateInvoiceTotal() {

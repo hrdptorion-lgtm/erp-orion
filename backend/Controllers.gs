@@ -2162,17 +2162,41 @@ function saveSuratJalan(payload) {
   if (payload.no_sj && sjIdx !== -1) {
     for (let i = 1; i < values.length; i++) {
       if (String(values[i][sjIdx]).trim() === String(payload.no_sj).trim()) {
+        // Flexible header map
         const hMap = {};
-        headers.forEach((h, idx) => hMap[h.toLowerCase().trim()] = idx);
+        headers.forEach((h, idx) => {
+          const hl = h.toLowerCase().trim();
+          if (hl.includes('tanggal')) hMap['tanggal'] = idx;
+          if (hl.includes('penawaran') || hl.includes('po customer')) hMap['penawaran'] = idx;
+          if (hl.includes('customer')) hMap['customer'] = idx;
+          if (hl.includes('supir')) hMap['supir'] = idx;
+          if (hl.includes('plat')) hMap['plat'] = idx;
+          if (hl === 'status') hMap['status'] = idx;
+          if (hl === 'catatan') hMap['catatan'] = idx;
+          if (hl === 'items') hMap['items'] = idx;
+          if (hl === 'qty' || hl === 'total qty') hMap['qty'] = idx;
+          if (hl === 'item') hMap['item'] = idx;
+          if (hl.includes('penerima')) hMap['penerima'] = idx;
+        });
         
-        if (hMap['tanggal'] !== undefined) sheet.getRange(i + 1, hMap['tanggal'] + 1).setValue(payload.tanggal || values[i][hMap['tanggal']]);
-        if (hMap['no penawaran'] !== undefined) sheet.getRange(i + 1, hMap['no penawaran'] + 1).setValue(payload.no_penawaran || values[i][hMap['no penawaran']]);
-        if (hMap['customer'] !== undefined) sheet.getRange(i + 1, hMap['customer'] + 1).setValue(payload.customer || values[i][hMap['customer']]);
-        if (hMap['supir'] !== undefined) sheet.getRange(i + 1, hMap['supir'] + 1).setValue(payload.supir || values[i][hMap['supir']]);
-        if (hMap['plat nomor'] !== undefined) sheet.getRange(i + 1, hMap['plat nomor'] + 1).setValue(payload.plat_nomor || values[i][hMap['plat nomor']]);
-        if (hMap['status'] !== undefined) sheet.getRange(i + 1, hMap['status'] + 1).setValue(payload.status || values[i][hMap['status']]);
-        if (hMap['catatan'] !== undefined) sheet.getRange(i + 1, hMap['catatan'] + 1).setValue(payload.catatan || values[i][hMap['catatan']]);
+        if (hMap['tanggal'] !== undefined && payload.tanggal) sheet.getRange(i + 1, hMap['tanggal'] + 1).setValue(payload.tanggal);
+        if (hMap['penawaran'] !== undefined && payload.no_penawaran !== undefined) sheet.getRange(i + 1, hMap['penawaran'] + 1).setValue(payload.no_penawaran);
+        if (hMap['customer'] !== undefined && payload.customer !== undefined) sheet.getRange(i + 1, hMap['customer'] + 1).setValue(payload.customer);
+        if (hMap['supir'] !== undefined && payload.supir !== undefined) sheet.getRange(i + 1, hMap['supir'] + 1).setValue(payload.supir);
+        if (hMap['plat'] !== undefined && payload.plat_nomor !== undefined) sheet.getRange(i + 1, hMap['plat'] + 1).setValue(payload.plat_nomor);
+        if (hMap['status'] !== undefined && payload.status !== undefined) sheet.getRange(i + 1, hMap['status'] + 1).setValue(payload.status);
+        if (hMap['catatan'] !== undefined && payload.catatan !== undefined) sheet.getRange(i + 1, hMap['catatan'] + 1).setValue(payload.catatan);
         if (hMap['items'] !== undefined) sheet.getRange(i + 1, hMap['items'] + 1).setValue(itemsStr);
+        if (hMap['penerima'] !== undefined && payload.penerima !== undefined) sheet.getRange(i + 1, hMap['penerima'] + 1).setValue(payload.penerima);
+        
+        // Update Total Qty and Item (Name) if they exist
+        try {
+          const itemArr = typeof payload.items === 'string' ? JSON.parse(payload.items) : (payload.items || []);
+          const totalQty = itemArr.reduce((sum, it) => sum + parseInt(it.qty || 0), 0);
+          const itemNames = itemArr.map(it => it.nama).join(', ');
+          if (hMap['qty'] !== undefined && totalQty > 0) sheet.getRange(i + 1, hMap['qty'] + 1).setValue(totalQty);
+          if (hMap['item'] !== undefined && itemNames) sheet.getRange(i + 1, hMap['item'] + 1).setValue(itemNames);
+        } catch(e) {}
         found = true;
         break;
       }
@@ -2182,14 +2206,38 @@ function saveSuratJalan(payload) {
   if (!found) {
     const newRow = headers.map(h => {
       const hl = h.toLowerCase().trim();
-      if (hl.includes('no sj')) return noSJ;
-      if (hl === 'tanggal') return payload.tanggal || Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy');
-      if (hl === 'no penawaran') return payload.no_penawaran || '';
-      if (hl === 'customer') return payload.customer || '';
-      if (hl === 'supir') return payload.supir || '';
-      if (hl === 'plat nomor') return payload.plat_nomor || '';
+      if (hl.includes('no sj') || hl.includes('surat jalan')) return noSJ;
+      if (hl.includes('tanggal')) return payload.tanggal || Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy');
+      if (hl.includes('penawaran') || hl.includes('po customer')) return payload.no_penawaran || '';
+      if (hl.includes('customer')) return payload.customer || '';
+      if (hl.includes('supir')) return payload.supir || '';
+      if (hl.includes('plat')) return payload.plat_nomor || '';
       if (hl === 'status') return payload.status || 'Dikirim';
       if (hl === 'catatan') return payload.catatan || '';
+      
+      // Calculate Total Qty and Total Sisa if needed
+      let totalQty = 0;
+      let totalSisa = 0;
+      try {
+        const itemArr = typeof payload.items === 'string' ? JSON.parse(payload.items) : (payload.items || []);
+        totalQty = itemArr.reduce((sum, it) => sum + parseInt(it.qty || 0), 0);
+        // Sisa Outstanding PO isn't sent directly, but we can leave it empty or 0 if not provided
+      } catch (e) {}
+
+      if (hl === 'qty' || hl === 'total qty') return totalQty;
+      if (hl.includes('outstanding') || hl.includes('sisa')) return totalSisa;
+      
+      // For Item (Singular), maybe they want a list of names?
+      if (hl === 'item') {
+         try {
+            const itemArr = typeof payload.items === 'string' ? JSON.parse(payload.items) : (payload.items || []);
+            return itemArr.map(it => it.nama).join(', ');
+         } catch(e) {}
+      }
+
+      if (hl.includes('penerima')) return payload.penerima || '';
+      if (hl.includes('dibuat oleh') || hl.includes('pembuat') || hl.includes('tim gudang')) return payload.dibuat_oleh || '';
+
       if (hl === 'items') return itemsStr;
       return '';
     });
