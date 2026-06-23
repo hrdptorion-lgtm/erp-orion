@@ -3456,6 +3456,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     document.getElementById('p_no_penawaran').value = newNo;
                     document.getElementById('p_no_penawaran').readOnly = false;
+                    
+                    window._pendingRevisionOf = item.no_penawaran;
+                    
+                    // Attach old reference to a global variable or hidden field
+                    window._pendingRevisionOf = item.no_penawaran;
 
                     const custSelect = document.getElementById('p_customer');
                     if (custSelect && custSelect.tomselect) {
@@ -3748,25 +3753,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     const item = JSON.parse(e.currentTarget.getAttribute('data-item'));
 
                     // Switch view to PO Customer
-                    switchView('pocustomer');
+                    window._pendingAutoFillPO = { customer: item.customer, no_penawaran: item.no_penawaran };
+                    document.querySelector('[data-target="po-customer"]')?.click();
 
-                    // Trigger "Buat PO"
-                    const btnAddPo = document.getElementById('btn-add-po-customer');
-                    if (btnAddPo) btnAddPo.click();
-
-                    // Pre-fill Penawaran
                     setTimeout(() => {
-                        const noPenawaranSelect = document.getElementById('poc_no_penawaran');
-                        if (noPenawaranSelect) {
-                            if (noPenawaranSelect.tomselect) {
-                                noPenawaranSelect.tomselect.addOption({ value: item.no_penawaran, text: item.no_penawaran });
-                                noPenawaranSelect.tomselect.setValue(item.no_penawaran);
-                            } else {
-                                noPenawaranSelect.value = item.no_penawaran;
-                                noPenawaranSelect.dispatchEvent(new Event('change'));
-                            }
-                        }
-                    }, 100);
+                        const btnAddPO = document.getElementById('btn-add-po-customer');
+                        if (btnAddPO) btnAddPO.click();
+
+                        // Lock the inputs after they populate
+                        setTimeout(() => {
+                            const custSelect = document.getElementById('poc_customer');
+                            const penSelect = document.getElementById('poc_no_penawaran');
+                            if (custSelect && custSelect.tomselect) custSelect.tomselect.lock();
+                            if (penSelect && penSelect.tomselect) penSelect.tomselect.lock();
+                        }, 200);
+                    }, 50);
                 });
             });
         }
@@ -4003,7 +4004,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 delivery: document.getElementById('p_delivery').value,
                 payment: document.getElementById('p_payment').value,
                 customer_address: document.getElementById('p_customer_address').value
-            }
+            },
+            revisi_dari: window._pendingRevisionOf || null
         };
 
         const isEdit = !!document.getElementById('penawaran-form').dataset.isEdit || document.getElementById('penawaran-modal-title').textContent === 'Edit Penawaran';
@@ -6726,6 +6728,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     setTimeout(() => {
                         const btnAddPO = document.getElementById('btn-add-po-customer');
                         if (btnAddPO) btnAddPO.click();
+                        
+                        setTimeout(() => {
+                            const custSelect = document.getElementById('poc_customer');
+                            const penSelect = document.getElementById('poc_no_penawaran');
+                            if (custSelect && custSelect.tomselect) custSelect.tomselect.lock();
+                            if (penSelect && penSelect.tomselect) penSelect.tomselect.lock();
+                        }, 200);
                     }, 50);
                 };
             }
@@ -8393,6 +8402,13 @@ window.checkRBACAction = function (action, menuId) {
 
     // Fallback: Admin can do anything
     const isAdmin = ['direktur', 'admin', 'management', 'super admin'].some(r => user.role.toLowerCase().includes(r));
+
+    // Map sub-menus to main menus for permissions
+    if (menuId === 'invoice' || menuId === 'laporan-kas' || menuId === 'coa') {
+        menuId = 'finance';
+    } else if (menuId === 'po-customer' || menuId === 'surat-jalan') {
+        menuId = 'sales';
+    }
 
     if (user.permissions && user.permissions[menuId]) {
         return user.permissions[menuId][action] === true;

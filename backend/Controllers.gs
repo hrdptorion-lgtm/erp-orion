@@ -1123,6 +1123,16 @@ function savePenawaran(payload) {
     payload.narasi || '',
     infoStr
   ]);
+  
+  if (payload.revisi_dari) {
+    for (let i = 1; i < values.length; i++) {
+      if (String(values[i][0]).trim() === String(payload.revisi_dari).trim()) {
+        sheet.getRange(i + 1, 7).setValue('Rejected'); // update status of old to Rejected
+        break;
+      }
+    }
+  }
+  
   handleAutoBOM(payload, noDoc);
   return { status: 'success', message: 'Penawaran berhasil disimpan.', no_doc: noDoc };
 }

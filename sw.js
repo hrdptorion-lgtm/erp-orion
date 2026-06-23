@@ -1,4 +1,4 @@
-const CACHE_NAME = 'erporion-v18';
+const CACHE_NAME = 'erporion-v19';
 const urlsToCache = [
   './',
   './index.html',
