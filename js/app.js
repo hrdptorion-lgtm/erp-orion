@@ -3907,6 +3907,9 @@ window.setupDOMPagination();
             document.getElementById('set_nama').value = cachedSettings['NAMA_PERUSAHAAN'] || '';
             document.getElementById('set_alamat').value = cachedSettings['ALAMAT'] || '';
             document.getElementById('set_telepon').value = cachedSettings['NO_TELP'] || '';
+            document.getElementById('set_bank_name').value = cachedSettings['BANK_NAME'] || '';
+            document.getElementById('set_bank_account').value = cachedSettings['BANK_ACCOUNT'] || '';
+            document.getElementById('set_bank_holder').value = cachedSettings['BANK_HOLDER'] || '';
         }
     }
 
@@ -3915,7 +3918,10 @@ window.setupDOMPagination();
         const payload = {
             'NAMA_PERUSAHAAN': document.getElementById('set_nama').value,
             'ALAMAT': document.getElementById('set_alamat').value,
-            'NO_TELP': document.getElementById('set_telepon').value
+            'NO_TELP': document.getElementById('set_telepon').value,
+            'BANK_NAME': document.getElementById('set_bank_name').value,
+            'BANK_ACCOUNT': document.getElementById('set_bank_account').value,
+            'BANK_HOLDER': document.getElementById('set_bank_holder').value
         };
         const res = await window.ERPAPI.request('save_settings', payload);
         alert(res.message);
@@ -7728,24 +7734,30 @@ window.setupDOMPagination();
         const subtotalRow = document.getElementById('print_inv_subtotal_row');
         const ppnRow = document.getElementById('print_inv_ppn_row');
         
-        if (ppnRate > 0) {
-            if (subtotalRow) subtotalRow.style.display = 'table-row';
-            if (ppnRow) ppnRow.style.display = 'table-row';
-            document.getElementById('print_inv_subtotal').textContent = parseInt(subtotal).toLocaleString('id-ID');
-            document.getElementById('print_inv_ppn_label').textContent = `PPN (${ppnRate}%) :`;
-            document.getElementById('print_inv_ppn_amount').textContent = parseInt(ppnAmount).toLocaleString('id-ID');
-        } else {
-            if (subtotalRow) subtotalRow.style.display = 'none';
-            if (ppnRow) ppnRow.style.display = 'none';
-        }
+        if (subtotalRow) subtotalRow.style.display = 'table-row';
+        if (ppnRow) ppnRow.style.display = 'table-row';
+        document.getElementById('print_inv_subtotal').textContent = parseInt(subtotal).toLocaleString('id-ID');
+        document.getElementById('print_inv_ppn_label').textContent = `PPN (${ppnRate}%) :`;
+        document.getElementById('print_inv_ppn_amount').textContent = parseInt(ppnAmount).toLocaleString('id-ID');
 
         document.getElementById('print_inv_total').textContent = parseInt(item.total_tagihan || 0).toLocaleString('id-ID');
-        document.getElementById('print_inv_paid').textContent = parseInt(item.terbayar || 0).toLocaleString('id-ID');
-        const sisa = parseInt(item.sisa_tagihan || item.total_tagihan || 0);
-        document.getElementById('print_inv_balance').textContent = sisa.toLocaleString('id-ID');
 
         document.body.classList.remove('printing-sj', 'printing-inv', 'printing-po');
         document.body.classList.add('printing-inv');
+
+        const bankName = cachedSettings['BANK_NAME'] || '';
+        const bankAccount = cachedSettings['BANK_ACCOUNT'] || '';
+        const bankHolder = cachedSettings['BANK_HOLDER'] || '';
+        const rekInfoEl = document.getElementById('print_inv_rek_info');
+        if (rekInfoEl) {
+            if (bankName && bankAccount) {
+                rekInfoEl.textContent = `Catatan: Pembayaran dapat ditransfer ke Rekening ${bankName}: ${bankAccount} a/n ${bankHolder}.`;
+                rekInfoEl.style.display = 'block';
+            } else {
+                rekInfoEl.style.display = 'none';
+            }
+        }
+
         window.print();
         
         // Reset titles back to default after printing just in case
@@ -7787,10 +7799,9 @@ window.setupDOMPagination();
         // Fetch PO Customer to get the unit prices and customer name
         let poData = null;
         try {
-            const poRes = await window.ERPAPI.request('get_po_customer');
-            if (poRes.status === 'success' && poRes.data) {
+            if (window.poCustomerData && window.poCustomerData.length > 0) {
                 const searchPenawaran = sjItem.no_penawaran || sjItem.referensi_penawaran || sjItem.id_po_customer;
-                poData = poRes.data.find(p => (p.id_po_customer === searchPenawaran || p.no_po_customer === searchPenawaran || p.no_penawaran === searchPenawaran || p.referensi_penawaran === searchPenawaran));
+                poData = window.poCustomerData.find(p => (p.id_po_customer === searchPenawaran || p.no_po_customer === searchPenawaran || p.no_penawaran === searchPenawaran || p.referensi_penawaran === searchPenawaran));
             }
         } catch (e) {}
 
@@ -7843,22 +7854,31 @@ window.setupDOMPagination();
 
         if (poData && poData.ppn > 0) {
             ppnRate = parseFloat(poData.ppn);
-            const ppnAmount = total * (ppnRate / 100);
-            grandTotal += ppnAmount;
-            
-            if (subtotalRow) subtotalRow.style.display = 'table-row';
-            if (ppnRow) ppnRow.style.display = 'table-row';
-            document.getElementById('print_inv_subtotal').textContent = parseInt(total).toLocaleString('id-ID');
-            document.getElementById('print_inv_ppn_label').textContent = `PPN (${ppnRate}%) :`;
-            document.getElementById('print_inv_ppn_amount').textContent = parseInt(ppnAmount).toLocaleString('id-ID');
-        } else {
-            if (subtotalRow) subtotalRow.style.display = 'none';
-            if (ppnRow) ppnRow.style.display = 'none';
         }
+        
+        const ppnAmount = total * (ppnRate / 100);
+        grandTotal += ppnAmount;
+        
+        if (subtotalRow) subtotalRow.style.display = 'table-row';
+        if (ppnRow) ppnRow.style.display = 'table-row';
+        document.getElementById('print_inv_subtotal').textContent = parseInt(total).toLocaleString('id-ID');
+        document.getElementById('print_inv_ppn_label').textContent = `PPN (${ppnRate}%) :`;
+        document.getElementById('print_inv_ppn_amount').textContent = parseInt(ppnAmount).toLocaleString('id-ID');
 
         document.getElementById('print_inv_total').textContent = parseInt(grandTotal).toLocaleString('id-ID');
-        document.getElementById('print_inv_paid').textContent = '0'; // Proforma is usually unpaid
-        document.getElementById('print_inv_balance').textContent = parseInt(grandTotal).toLocaleString('id-ID');
+
+        const bankName = cachedSettings['BANK_NAME'] || '';
+        const bankAccount = cachedSettings['BANK_ACCOUNT'] || '';
+        const bankHolder = cachedSettings['BANK_HOLDER'] || '';
+        const rekInfoEl = document.getElementById('print_inv_rek_info');
+        if (rekInfoEl) {
+            if (bankName && bankAccount) {
+                rekInfoEl.textContent = `Catatan: Pembayaran dapat ditransfer ke Rekening ${bankName}: ${bankAccount} a/n ${bankHolder}.`;
+                rekInfoEl.style.display = 'block';
+            } else {
+                rekInfoEl.style.display = 'none';
+            }
+        }
 
         window.print();
         
