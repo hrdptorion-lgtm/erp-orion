@@ -103,16 +103,12 @@
             <form id="login-form">
                 <div class="input-group">
                     <label>Username</label>
-                    <input type="text" id="login-username" required placeholder="Masukkan username">
+                    <input type="text" id="login-username" required placeholder="Masukkan username" autocomplete="username">
                 </div>
-                <div class="input-group">
+                <div class="input-group" style="position: relative;">
                     <label>Password</label>
-                    <div style="position: relative; display: flex; align-items: center;">
-                        <input type="password" id="login-password" required placeholder="Masukkan password"
-                            style="width: 100%; padding-right: 40px;">
-                        <i class="fa-solid fa-eye" id="toggle-password"
-                            style="position: absolute; right: 15px; cursor: pointer; color: var(--text-muted);"></i>
-                    </div>
+                    <input type="password" id="login-password" required placeholder="Masukkan password" autocomplete="current-password" style="width: 100%; padding-right: 40px;">
+                    <i class="fa-solid fa-eye-slash" id="toggle-password" style="position: absolute; right: 15px; top: 40px; cursor: pointer; color: var(--text-muted);"></i>
                 </div>
                 <button type="submit" class="btn" style="width: 100%; justify-content: center; margin-top: 1rem;">Masuk
                     <i class="fa-solid fa-arrow-right-to-bracket"></i></button>
@@ -1391,7 +1387,7 @@
                     </div>
                     <div class="input-group">
                         <label>Password</label>
-                        <input type="password" id="u_password" placeholder="Kosongkan jika tidak ingin ubah">
+                        <input type="password" id="u_password" autocomplete="new-password" placeholder="Kosongkan jika tidak ingin ubah">
                     </div>
                     <div class="input-group">
                         <label>Nama Lengkap</label>

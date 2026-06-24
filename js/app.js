@@ -103,10 +103,15 @@ window.setupDOMPagination();
 
     // --- SHA-256 Hashing Utility (untuk hash password di browser) ---
     async function sha256(message) {
-        const msgBuffer = new TextEncoder().encode(message);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        try {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        } catch (e) {
+            console.warn('crypto.subtle.digest failed (likely non-HTTPS or localhost). Falling back to plain text for backend to hash.');
+            return message;
+        }
     }
     window.sha256 = sha256;
 
@@ -316,6 +321,7 @@ window.setupDOMPagination();
             const passwordInput = document.getElementById('login-password');
             const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
             passwordInput.setAttribute('type', type);
+            this.classList.toggle('fa-eye');
             this.classList.toggle('fa-eye-slash');
         });
     }

@@ -554,7 +554,14 @@ function saveUser(payload) {
     if (String(values[i][userIdx]).trim() === String(payload.username).trim()) {
       const rowData = headers.map((h, idx) => {
         const key = String(h).toLowerCase().replace(/ /g, '_');
-        if (/password/i.test(h) && !payload.password) return values[i][idx];
+        if (/password/i.test(h)) {
+          if (!payload.password) return values[i][idx];
+          let pwd = payload.password;
+          if (!(pwd && pwd.length === 64 && /^[a-f0-9]+$/.test(pwd))) {
+            pwd = hashPassword(pwd);
+          }
+          return pwd;
+        }
         return payload[key] !== undefined ? payload[key] : values[i][idx];
       });
       sheet.getRange(i + 1, 1, 1, rowData.length).setValues([rowData]);
@@ -563,6 +570,13 @@ function saveUser(payload) {
   }
   const rowData = headers.map(h => {
     const key = String(h).toLowerCase().replace(/ /g, '_');
+    if (/password/i.test(h)) {
+      let pwd = payload[key] !== undefined ? payload[key] : '';
+      if (pwd && !(pwd.length === 64 && /^[a-f0-9]+$/.test(pwd))) {
+        pwd = hashPassword(pwd);
+      }
+      return pwd;
+    }
     return payload[key] !== undefined ? payload[key] : '';
   });
   sheet.appendRow(rowData);
@@ -2193,7 +2207,7 @@ function saveSuratJalan(payload) {
   
   const values = sheet.getDataRange().getDisplayValues();
   const headers = values[0];
-  const sjIdx = headers.findIndex(h => /no.*sj/i.test(h));
+  const sjIdx = headers.findIndex(h => /no.*surat.*jalan/i.test(h) || /no.*sj/i.test(h));
   
   const noSJ = payload.no_sj || ('SJ-' + Date.now());
   const itemsStr = typeof payload.items === 'string' ? payload.items : JSON.stringify(payload.items || []);
