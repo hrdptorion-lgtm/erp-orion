@@ -1,14 +1,11 @@
-const CACHE_NAME = 'erporion-v19';
+const CACHE_NAME = 'erporion-v20';
 const urlsToCache = [
   './',
   './index.html',
   './manifest.json',
   './logo.png'
-  // Note: Add other local assets here if needed.
-  // External CDNs are usually cached automatically by the browser, but can be added here.
 ];
 
-// Install event: cache basic assets
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -19,39 +16,22 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
-// Fetch event: serve from cache or network
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then(response => {
-        // Cache hit - return response
-        if (response) {
-          return response;
+        // If we get a valid response from network, clone it and update cache
+        if (response && response.status === 200 && response.type === 'basic') {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+             cache.put(event.request, responseToCache);
+          });
         }
-        
-        // Clone the request
-        const fetchRequest = event.request.clone();
-
-        return fetch(fetchRequest).then(
-          response => {
-            // Check if valid response
-            if(!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-
-            // Clone the response
-            const responseToCache = response.clone();
-
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                if(event.request.url.startsWith(self.location.origin)) {
-                   cache.put(event.request, responseToCache);
-                }
-              });
-
-            return response;
-          }
-        );
+        return response;
+      })
+      .catch(() => {
+        // If network fails (offline), fallback to cache
+        return caches.match(event.request);
       })
   );
 });

@@ -18,7 +18,7 @@
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Tom Select for Smart Dropdowns -->
-    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <link href="css/tom-select.css" rel="stylesheet">
     <style>
         .ts-wrapper.single .ts-control,
         .ts-control {
@@ -436,6 +436,13 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-top: 1px solid var(--glass-border); background: var(--bg-glass);">
+                    <div style="font-size: 0.9rem; color: var(--text-muted);" id="pagination-info-table-penawaran">Menampilkan 0-0 dari 0 data</div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn btn-secondary" id="pagination-prev-table-penawaran" style="padding: 5px 15px;">&laquo; Prev</button>
+                        <button class="btn btn-secondary" id="pagination-next-table-penawaran" style="padding: 5px 15px;">Next &raquo;</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -469,6 +476,13 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-top: 1px solid var(--glass-border); background: var(--bg-glass);">
+                    <div style="font-size: 0.9rem; color: var(--text-muted);" id="pagination-info-table-po-customer">Menampilkan 0-0 dari 0 data</div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn btn-secondary" id="pagination-prev-table-po-customer" style="padding: 5px 15px;">&laquo; Prev</button>
+                        <button class="btn btn-secondary" id="pagination-next-table-po-customer" style="padding: 5px 15px;">Next &raquo;</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -560,6 +574,13 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-top: 1px solid var(--glass-border); background: var(--bg-glass);">
+                    <div style="font-size: 0.9rem; color: var(--text-muted);" id="pagination-info-table-po-internal">Menampilkan 0-0 dari 0 data</div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn btn-secondary" id="pagination-prev-table-po-internal" style="padding: 5px 15px;">&laquo; Prev</button>
+                        <button class="btn btn-secondary" id="pagination-next-table-po-internal" style="padding: 5px 15px;">Next &raquo;</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -589,6 +610,13 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-top: 1px solid var(--glass-border); background: var(--bg-glass);">
+                    <div style="font-size: 0.9rem; color: var(--text-muted);" id="pagination-info-table-grn">Menampilkan 0-0 dari 0 data</div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn btn-secondary" id="pagination-prev-table-grn" style="padding: 5px 15px;">&laquo; Prev</button>
+                        <button class="btn btn-secondary" id="pagination-next-table-grn" style="padding: 5px 15px;">Next &raquo;</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -620,6 +648,13 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-top: 1px solid var(--glass-border); background: var(--bg-glass);">
+                    <div style="font-size: 0.9rem; color: var(--text-muted);" id="pagination-info-table-barang-jadi">Menampilkan 0-0 dari 0 data</div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn btn-secondary" id="pagination-prev-table-barang-jadi" style="padding: 5px 15px;">&laquo; Prev</button>
+                        <button class="btn btn-secondary" id="pagination-next-table-barang-jadi" style="padding: 5px 15px;">Next &raquo;</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -653,6 +688,13 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-top: 1px solid var(--glass-border); background: var(--bg-glass);">
+                    <div style="font-size: 0.9rem; color: var(--text-muted);" id="pagination-info-table-bom">Menampilkan 0-0 dari 0 data</div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn btn-secondary" id="pagination-prev-table-bom" style="padding: 5px 15px;">&laquo; Prev</button>
+                        <button class="btn btn-secondary" id="pagination-next-table-bom" style="padding: 5px 15px;">Next &raquo;</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -694,6 +736,13 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-top: 1px solid var(--glass-border); background: var(--bg-glass);">
+                    <div style="font-size: 0.9rem; color: var(--text-muted);" id="pagination-info-transaksi-tbody">Menampilkan 0-0 dari 0 data</div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn btn-secondary" id="pagination-prev-transaksi-tbody" style="padding: 5px 15px;">&laquo; Prev</button>
+                        <button class="btn btn-secondary" id="pagination-next-transaksi-tbody" style="padding: 5px 15px;">Next &raquo;</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -728,6 +777,13 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-top: 1px solid var(--glass-border); background: var(--bg-glass);">
+                    <div style="font-size: 0.9rem; color: var(--text-muted);" id="pagination-info-table-produksi">Menampilkan 0-0 dari 0 data</div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn btn-secondary" id="pagination-prev-table-produksi" style="padding: 5px 15px;">&laquo; Prev</button>
+                        <button class="btn btn-secondary" id="pagination-next-table-produksi" style="padding: 5px 15px;">Next &raquo;</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -879,6 +935,13 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-top: 1px solid var(--glass-border); background: var(--bg-glass);">
+                    <div style="font-size: 0.9rem; color: var(--text-muted);" id="pagination-info-table-surat-jalan">Menampilkan 0-0 dari 0 data</div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn btn-secondary" id="pagination-prev-table-surat-jalan" style="padding: 5px 15px;">&laquo; Prev</button>
+                        <button class="btn btn-secondary" id="pagination-next-table-surat-jalan" style="padding: 5px 15px;">Next &raquo;</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -912,6 +975,13 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-top: 1px solid var(--glass-border); background: var(--bg-glass);">
+                    <div style="font-size: 0.9rem; color: var(--text-muted);" id="pagination-info-table-invoice">Menampilkan 0-0 dari 0 data</div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn btn-secondary" id="pagination-prev-table-invoice" style="padding: 5px 15px;">&laquo; Prev</button>
+                        <button class="btn btn-secondary" id="pagination-next-table-invoice" style="padding: 5px 15px;">Next &raquo;</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1561,6 +1631,13 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-top: 1px solid var(--glass-border); background: var(--bg-glass);">
+                    <div style="font-size: 0.9rem; color: var(--text-muted);" id="pagination-info-table-customer">Menampilkan 0-0 dari 0 data</div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn btn-secondary" id="pagination-prev-table-customer" style="padding: 5px 15px;">&laquo; Prev</button>
+                        <button class="btn btn-secondary" id="pagination-next-table-customer" style="padding: 5px 15px;">Next &raquo;</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1593,6 +1670,13 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-top: 1px solid var(--glass-border); background: var(--bg-glass);">
+                    <div style="font-size: 0.9rem; color: var(--text-muted);" id="pagination-info-table-supplier">Menampilkan 0-0 dari 0 data</div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn btn-secondary" id="pagination-prev-table-supplier" style="padding: 5px 15px;">&laquo; Prev</button>
+                        <button class="btn btn-secondary" id="pagination-next-table-supplier" style="padding: 5px 15px;">Next &raquo;</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1818,11 +1902,17 @@
                         <div id="poc-items-container">
                             <!-- Items will be injected here -->
                         </div>
+                        <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 15px; gap: 10px;">
+                            <label style="margin: 0; font-weight: bold;">PPN (%):</label>
+                            <input type="number" id="poc_ppn" min="0" max="100" value="0" oninput="if(typeof calculatePOCTotal === 'function') calculatePOCTotal()" style="width: 80px; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main); text-align: right;">
+                        </div>
                         <div
                             style="text-align: right; margin-top: 10px; font-weight: bold; color: var(--text-main); font-size: 1.1rem;">
-                            Total Harga PO: <span id="poc_total_harga_display">0</span>
+                            Subtotal Harga: <span id="poc_subtotal_harga_display">0</span><br>
+                            Total Harga Akhir (+PPN): <span id="poc_total_harga_display" style="color: var(--success); font-size: 1.3rem;">0</span>
                         </div>
                         <input type="hidden" id="poc_total_harga" value="0">
+                        <input type="hidden" id="poc_subtotal_harga" value="0">
                     </div>
                     <div class="input-group">
                         <label>Status PO</label>
@@ -2114,7 +2204,7 @@
                         </div>
                         <div class="input-group" style="flex: 1;">
                             <label>Jumlah Batch</label>
-                            <input type="number" id="spk_batch_count" min="1" required placeholder="1" value="1"
+                            <input type="number" id="spk_batch_count" min="1" max="50" required placeholder="1" value="1"
                                 style="width: 100%; padding: 0.8rem; border-radius: 10px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main);">
                         </div>
                     </div>
@@ -3227,9 +3317,18 @@
                         <input type="text" id="inv_customer" required list="customer-list">
                     </div>
                     <div class="input-group" style="margin-bottom:0;">
+                        <label>Subtotal (Rp)</label>
+                        <input type="number" id="inv_subtotal" required readonly
+                            style="background: rgba(255,255,255,0.05); color: #aaa;">
+                    </div>
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>PPN (%)</label>
+                        <input type="number" id="inv_ppn" value="0" min="0" max="100" oninput="if(typeof calculateInvoiceTotal === 'function') calculateInvoiceTotal()">
+                    </div>
+                    <div class="input-group" style="margin-bottom:0;">
                         <label>Total Tagihan (Rp)</label>
                         <input type="number" id="inv_total" required readonly
-                            style="background: rgba(255,255,255,0.05); color: #aaa;">
+                            style="background: rgba(255,255,255,0.05); color: #aaa; font-weight: bold;">
                     </div>
                     <div class="input-group" style="margin-bottom:0;">
                         <label>Terbayar (Rp)</label>
@@ -3444,6 +3543,16 @@
 
         <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
             <table style="width: 40%; border-collapse: collapse;">
+                <tr id="print_inv_subtotal_row" style="display: none;">
+                    <td style="padding: 5px; font-weight: bold; text-align: right;">Subtotal :</td>
+                    <td style="padding: 5px; font-weight: bold; text-align: right;">
+                        Rp <span id="print_inv_subtotal">0</span></td>
+                </tr>
+                <tr id="print_inv_ppn_row" style="display: none;">
+                    <td style="padding: 5px; font-weight: bold; text-align: right;" id="print_inv_ppn_label">PPN :</td>
+                    <td style="padding: 5px; font-weight: bold; text-align: right;">
+                        Rp <span id="print_inv_ppn_amount">0</span></td>
+                </tr>
                 <tr>
                     <td style="padding: 5px; font-weight: bold; text-align: right;">Grand Total :</td>
                     <td
@@ -3532,7 +3641,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <script src="js/tom-select.complete.min.js"></script>
     <!-- BOM Datalist for Autocomplete -->
     <datalist id="bom-items-list"></datalist>
     <datalist id="customer-list"></datalist>

@@ -1292,6 +1292,9 @@ function savePOCustomer(payload) {
     }
   }
 
+  const headers = values[0];
+  const ppnIdx = headers.findIndex(h => String(h).toLowerCase().trim() === 'ppn');
+
   for (let i = 1; i < values.length; i++) {
     if (String(values[i][0]).trim() === String(payload.id_po_customer).trim()) {
       sheet.getRange(i + 1, 2).setValue(payload.no_penawaran || '');
@@ -1302,11 +1305,14 @@ function savePOCustomer(payload) {
       sheet.getRange(i + 1, 7).setValue(payload.status || 'Pending');
       sheet.getRange(i + 1, 8).setValue(fileUrl);
       sheet.getRange(i + 1, 9).setValue(payload.tanggal_selesai || '');
+      if (ppnIdx !== -1) {
+        sheet.getRange(i + 1, ppnIdx + 1).setValue(payload.ppn || 0);
+      }
       return { status: 'success', message: 'PO Customer berhasil diupdate.' };
     }
   }
   
-  sheet.appendRow([
+  const newRow = [
     idPO,
     payload.no_penawaran || '',
     payload.nama_customer || '',
@@ -1316,7 +1322,14 @@ function savePOCustomer(payload) {
     payload.status || 'Pending',
     fileUrl,
     payload.tanggal_selesai || ''
-  ]);
+  ];
+  
+  if (ppnIdx !== -1) {
+    while (newRow.length <= ppnIdx) newRow.push('');
+    newRow[ppnIdx] = payload.ppn || 0;
+  }
+  
+  sheet.appendRow(newRow);
   return { status: 'success', message: 'PO Customer berhasil disimpan.' };
 }
 
@@ -1331,6 +1344,19 @@ function deletePOCustomer(payload) {
     }
   }
   return { status: 'error', message: 'PO Customer tidak ditemukan.' };
+}
+
+function updatePOCustomerStatusByPOId(poId, newStatus) {
+  if (!poId || !newStatus) return;
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB PO Customer');
+  if (!sheet) return;
+  const values = sheet.getDataRange().getDisplayValues();
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][0]).trim() === String(poId).trim() || String(values[i][1]).trim() === String(poId).trim()) {
+      sheet.getRange(i + 1, 7).setValue(newStatus);
+      break;
+    }
+  }
 }
 
 // ==========================================
@@ -1424,6 +1450,10 @@ function saveSPK(payload) {
       JSON.stringify(currentBahanBaku),
       poId
     ]);
+  }
+
+  if (poId) {
+    updatePOCustomerStatusByPOId(poId, 'Proses');
   }
 
   let msg = batchCount > 1 ? `SPK berhasil diterbitkan dalam ${batchCount} Batch.` : 'SPK berhasil diterbitkan (Menunggu Pengambilan).';
@@ -2322,6 +2352,7 @@ function saveInvoice(payload) {
         if (hMap['status pembayaran'] !== undefined) sheet.getRange(i + 1, hMap['status pembayaran'] + 1).setValue(payload.status_pembayaran || values[i][hMap['status pembayaran']]);
         if (hMap['items'] !== undefined) sheet.getRange(i + 1, hMap['items'] + 1).setValue(itemsStr);
         if (hMap['catatan'] !== undefined) sheet.getRange(i + 1, hMap['catatan'] + 1).setValue(payload.catatan || values[i][hMap['catatan']]);
+        if (hMap['ppn'] !== undefined) sheet.getRange(i + 1, hMap['ppn'] + 1).setValue(payload.ppn || values[i][hMap['ppn']] || 0);
         found = true;
         break;
       }
@@ -2342,9 +2373,13 @@ function saveInvoice(payload) {
       if (hl === 'status pembayaran') return payload.status_pembayaran || 'Belum Lunas';
       if (hl === 'items') return itemsStr;
       if (hl === 'catatan') return payload.catatan || '';
+      if (hl === 'ppn') return payload.ppn || 0;
       return '';
     });
     sheet.appendRow(newRow);
+  }
+  if (payload.status_pembayaran === 'Lunas' && payload.no_penawaran) {
+    updatePOCustomerStatusByPOId(payload.no_penawaran, 'Selesai');
   }
   
   return { status: 'success', message: 'Invoice berhasil disimpan.', no_invoice: noInv };

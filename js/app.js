@@ -1,5 +1,106 @@
 document.addEventListener('DOMContentLoaded', () => {
 
+window.paginationStates = {};
+
+window.setupDOMPagination = function() {
+    const tableIds = [
+        "table-penawaran", "table-po-customer", "table-produksi", "table-bom",
+        "table-barang-jadi", "table-customer", "table-supplier", "table-surat-jalan",
+        "table-invoice", "table-po-internal", "table-grn", "transaksi-tbody"
+    ];
+
+    tableIds.forEach(tableId => {
+        const tbody = document.getElementById(tableId);
+        if (!tbody) return;
+
+        window.paginationStates[tableId] = { page: 1, rowsPerPage: 10 };
+
+        const observer = new MutationObserver((mutations) => {
+            let shouldRender = false;
+            for (let mutation of mutations) {
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                    shouldRender = true;
+                    break;
+                }
+            }
+            if (shouldRender) {
+                window.paginationStates[tableId].page = 1;
+                window.renderDOMPagination(tableId, false);
+            }
+        });
+
+        observer.observe(tbody, { childList: true });
+    });
+
+    document.addEventListener("click", function(e) {
+        const target = e.target.closest("button[id^=\"pagination-prev-\"], button[id^=\"pagination-next-\"]");
+        if (!target) return;
+        
+        const isPrev = target.id.startsWith("pagination-prev-");
+        const tableId = target.id.replace("pagination-prev-", "").replace("pagination-next-", "");
+        if (!window.paginationStates[tableId]) return;
+        
+        const st = window.paginationStates[tableId];
+        const tbody = document.getElementById(tableId);
+        if (!tbody) return;
+        
+        const rows = Array.from(tbody.querySelectorAll('tr')).filter(tr => !tr.innerHTML.includes('Memuat data') && !tr.innerHTML.includes('Belum ada') && !tr.innerHTML.includes('Gagal') && !tr.innerHTML.includes('Tidak ada'));
+        const totalPages = Math.max(1, Math.ceil(rows.length / st.rowsPerPage));
+        
+        if (isPrev && st.page > 1) st.page--;
+        if (!isPrev && st.page < totalPages) st.page++;
+        
+        window.renderDOMPagination(tableId, true);
+    });
+};
+
+window.renderDOMPagination = function(tableId, isPageChange = false) {
+    const tbody = document.getElementById(tableId);
+    if (!tbody) return;
+    
+    if (!window.paginationStates[tableId]) window.paginationStates[tableId] = { page: 1, rowsPerPage: 10 };
+    const st = window.paginationStates[tableId];
+    
+    const rows = Array.from(tbody.querySelectorAll('tr')).filter(tr => !tr.innerHTML.includes('Memuat data') && !tr.innerHTML.includes('Belum ada') && !tr.innerHTML.includes('Gagal') && !tr.innerHTML.includes('Tidak ada'));
+    const totalRows = rows.length;
+    
+    if (!isPageChange) st.page = 1;
+    
+    const totalPages = Math.max(1, Math.ceil(totalRows / st.rowsPerPage));
+    if (st.page > totalPages) st.page = totalPages;
+    if (st.page < 1) st.page = 1;
+    
+    const startIndex = (st.page - 1) * st.rowsPerPage;
+    const endIndex = startIndex + st.rowsPerPage;
+    
+    rows.forEach((tr, index) => {
+        if (index >= startIndex && index < endIndex) {
+            tr.style.display = '';
+        } else {
+            tr.style.display = 'none';
+        }
+    });
+    
+    const info = document.getElementById(`pagination-info-${tableId}`);
+    const btnPrev = document.getElementById(`pagination-prev-${tableId}`);
+    const btnNext = document.getElementById(`pagination-next-${tableId}`);
+    
+    if (info) {
+        if (totalRows === 0) {
+            info.textContent = `Tidak ada data`;
+        } else {
+            info.textContent = `Menampilkan ${startIndex + 1}-${Math.min(endIndex, totalRows)} dari ${totalRows} data (Hal ${st.page}/${totalPages})`;
+        }
+    }
+    if (btnPrev) btnPrev.disabled = st.page <= 1;
+    if (btnNext) btnNext.disabled = st.page >= totalPages;
+};
+
+window.setupDOMPagination();
+
+
+
+
     // --- SHA-256 Hashing Utility (untuk hash password di browser) ---
     async function sha256(message) {
         const msgBuffer = new TextEncoder().encode(message);
@@ -2068,6 +2169,9 @@ document.addEventListener('DOMContentLoaded', () => {
             pocTanggal.value = new Date().toISOString().split('T')[0];
         }
         document.getElementById('poc-items-container').innerHTML = '';
+        document.getElementById('poc_ppn').value = '0';
+        document.getElementById('poc_subtotal_harga_display').innerText = '0';
+        document.getElementById('poc_subtotal_harga').value = '0';
         document.getElementById('poc_total_harga_display').innerText = '0';
         document.getElementById('poc_total_harga').value = '0';
         document.getElementById('po-customer-modal-title').innerText = 'Buat PO dari Penawaran';
@@ -2213,17 +2317,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.calculatePOCTotal = function () {
-        let total = 0;
+        let subtotal = 0;
         const rows = document.querySelectorAll('.poc-item-row');
         rows.forEach(row => {
             const harga = window.parseRupiah(row.querySelector('.poc-item-harga').value);
             const qty = parseFloat(row.querySelector('.poc-item-qty').value) || 0;
-            const subtotal = harga * qty;
-            row.querySelector('.poc-item-subtotal').value = window.formatRupiah(subtotal);
-            total += subtotal;
+            const lineSubtotal = harga * qty;
+            row.querySelector('.poc-item-subtotal').value = window.formatRupiah(lineSubtotal);
+            subtotal += lineSubtotal;
         });
-        document.getElementById('poc_total_harga').value = total;
-        document.getElementById('poc_total_harga_display').innerText = window.formatRupiah(total);
+        
+        const ppnPercent = parseFloat(document.getElementById('poc_ppn').value) || 0;
+        const ppnAmount = subtotal * (ppnPercent / 100);
+        const totalHarga = subtotal + ppnAmount;
+        
+        document.getElementById('poc_subtotal_harga').value = subtotal;
+        document.getElementById('poc_subtotal_harga_display').innerText = window.formatRupiah(subtotal);
+        document.getElementById('poc_total_harga').value = totalHarga;
+        document.getElementById('poc_total_harga_display').innerText = window.formatRupiah(totalHarga);
     };
 
     document.getElementById('btn-close-po-customer')?.addEventListener('click', () => {
@@ -2252,6 +2363,7 @@ document.addEventListener('DOMContentLoaded', () => {
             nama_customer: document.getElementById('poc_customer').value,
             tanggal_po: document.getElementById('poc_tanggal').value,
             item_po: items,
+            ppn: document.getElementById('poc_ppn').value,
             total_harga: document.getElementById('poc_total_harga').value,
             status: document.getElementById('poc_status').value
         };
@@ -2851,7 +2963,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('invoice-form').reset();
             document.getElementById('inv_no_penawaran').value = window.currentDetailPOC.no_penawaran || window.currentDetailPOC.id_po_customer || '';
             document.getElementById('inv_customer').value = window.currentDetailPOC.nama_customer || window.currentDetailPOC.customer || '';
-            document.getElementById('inv_jumlah').value = window.currentDetailPOC.total_harga || 0;
+            const ppnInput = document.getElementById('inv_ppn');
+            if (ppnInput) ppnInput.value = window.currentDetailPOC.ppn || 0;
+            if (typeof calculateInvoiceTotal === 'function') calculateInvoiceTotal();
             document.getElementById('invoice-modal').classList.add('active');
         }, 500);
     });
@@ -2889,6 +3003,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         document.getElementById('poc_tanggal').value = tgl;
         document.getElementById('poc_status').value = item.status;
+        document.getElementById('poc_ppn').value = item.ppn || 0;
 
         let items = [];
         try {
@@ -3170,8 +3285,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Gagal memuat item</td></tr>';
                 }
             }
-            if (typeof calculateInvoiceTotals === 'function') calculateInvoiceTotals();
-
+            const ppnInput = document.getElementById('inv_ppn');
+            if (ppnInput) ppnInput.value = item.ppn || 0;
+            if (typeof calculateInvoiceTotal === 'function') calculateInvoiceTotal();
             document.getElementById('invoice-modal').classList.add('active');
         }
     });
@@ -5332,8 +5448,20 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
 
         const kode = document.getElementById('spk_kode_jadi').value;
-        const qty = parseInt(String(document.getElementById('spk_qty_jadi').value).replace(/\D/g, '')) || 0;
+        const qtyInput = document.getElementById('spk_qty_jadi');
+        const qty = parseInt(String(qtyInput.value).replace(/\D/g, '')) || 0;
         const batch_count = parseInt(document.getElementById('spk_batch_count').value) || 1;
+
+        const maxQty = qtyInput.getAttribute('max');
+        if (maxQty !== null && parseInt(maxQty) > 0 && qty > parseInt(maxQty)) {
+            window.showNotification(`Kuantitas tidak boleh melebihi Sisa Qty Belum SPK (${maxQty})!`, 'error');
+            return;
+        }
+
+        if (batch_count > 50) {
+            window.showNotification(`Jumlah Batch tidak masuk akal (maksimal 50 batch). Mohon periksa kembali!`, 'error');
+            return;
+        }
 
         const bom = cachedBOMData.find(b => b.kode_barang === kode);
         let calculatedBahan = [];
@@ -6383,7 +6511,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    document.getElementById('search-customer')?.addEventListener('input', renderCustomerTable);
+    document.getElementById('search-customer')?.addEventListener('input', () => { if(!window.paginationStates['table-customer']) window.paginationStates['table-customer']={page:1}; window.paginationStates['table-customer'].page = 1; renderCustomerTable(); });
 
     document.getElementById('btn-add-customer')?.addEventListener('click', () => {
         document.getElementById('customer-modal-title').textContent = 'Tambah Customer Baru';
@@ -6573,7 +6701,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    document.getElementById('search-supplier')?.addEventListener('input', renderSupplierTable);
+    document.getElementById('search-supplier')?.addEventListener('input', () => { if(!window.paginationStates['table-supplier']) window.paginationStates['table-supplier']={page:1}; window.paginationStates['table-supplier'].page = 1; renderSupplierTable(); });
 
     document.getElementById('btn-add-supplier')?.addEventListener('click', () => {
         document.getElementById('supplier-modal-title').textContent = 'Tambah Supplier Baru';
@@ -7525,7 +7653,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                     }
                 }
-
+                const ppnInput = document.getElementById('inv_ppn');
+                if (ppnInput) ppnInput.value = item.ppn || 0;
+                if (typeof calculateInvoiceTotal === 'function') calculateInvoiceTotal();
+                
                 document.getElementById('invoice-modal').classList.add('active');
             });
         });
@@ -7559,9 +7690,11 @@ document.addEventListener('DOMContentLoaded', () => {
         let items = [];
         try { items = typeof item.items === 'string' ? JSON.parse(item.items) : (item.items || []); } catch (e) { }
 
+        let subtotal = 0;
         if (items && items.length > 0) {
             items.forEach((it, i) => {
                 const sub = (it.qty || 0) * (it.harga || 0);
+                subtotal += sub;
                 tbody.innerHTML += `
                 <tr>
                     <td style="border: 1px solid #000; padding: 5px; text-align: center;">${i + 1}</td>
@@ -7574,6 +7707,30 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } else {
             tbody.innerHTML = `<tr><td colspan="5" style="border: 1px solid #000; padding: 5px; text-align: center;">Tidak ada barang</td></tr>`;
+        }
+        
+        let ppnRate = 0;
+        if (item.ppn !== undefined && item.ppn !== null && parseFloat(item.ppn) > 0) {
+            ppnRate = parseFloat(item.ppn);
+        } else if (window.poCustomerData && window.poCustomerData.length > 0) {
+            const poData = window.poCustomerData.find(p => p.id_po_customer === item.no_penawaran || p.no_penawaran === item.no_penawaran);
+            if (poData && poData.ppn > 0) ppnRate = parseFloat(poData.ppn);
+        }
+        
+        const ppnAmount = subtotal * (ppnRate / 100);
+        
+        const subtotalRow = document.getElementById('print_inv_subtotal_row');
+        const ppnRow = document.getElementById('print_inv_ppn_row');
+        
+        if (ppnRate > 0) {
+            if (subtotalRow) subtotalRow.style.display = 'table-row';
+            if (ppnRow) ppnRow.style.display = 'table-row';
+            document.getElementById('print_inv_subtotal').textContent = parseInt(subtotal).toLocaleString('id-ID');
+            document.getElementById('print_inv_ppn_label').textContent = `PPN (${ppnRate}%) :`;
+            document.getElementById('print_inv_ppn_amount').textContent = parseInt(ppnAmount).toLocaleString('id-ID');
+        } else {
+            if (subtotalRow) subtotalRow.style.display = 'none';
+            if (ppnRow) ppnRow.style.display = 'none';
         }
 
         document.getElementById('print_inv_total').textContent = parseInt(item.total_tagihan || 0).toLocaleString('id-ID');
@@ -7673,10 +7830,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Apply PPN if PO has PPN
         let grandTotal = total;
+        let ppnRate = 0;
+        
+        const subtotalRow = document.getElementById('print_inv_subtotal_row');
+        const ppnRow = document.getElementById('print_inv_ppn_row');
+
         if (poData && poData.ppn > 0) {
-            const ppnAmount = total * (parseFloat(poData.ppn) / 100);
+            ppnRate = parseFloat(poData.ppn);
+            const ppnAmount = total * (ppnRate / 100);
             grandTotal += ppnAmount;
-            // Optionally, we could add a PPN row, but for now we just show the final total
+            
+            if (subtotalRow) subtotalRow.style.display = 'table-row';
+            if (ppnRow) ppnRow.style.display = 'table-row';
+            document.getElementById('print_inv_subtotal').textContent = parseInt(total).toLocaleString('id-ID');
+            document.getElementById('print_inv_ppn_label').textContent = `PPN (${ppnRate}%) :`;
+            document.getElementById('print_inv_ppn_amount').textContent = parseInt(ppnAmount).toLocaleString('id-ID');
+        } else {
+            if (subtotalRow) subtotalRow.style.display = 'none';
+            if (ppnRow) ppnRow.style.display = 'none';
         }
 
         document.getElementById('print_inv_total').textContent = parseInt(grandTotal).toLocaleString('id-ID');
@@ -7693,7 +7864,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function calculateInvoiceTotal() {
-        let total = 0;
+        let subtotal = 0;
         document.querySelectorAll('#inv-items-tbody tr').forEach(tr => {
             const qtyInput = tr.querySelector('.inv-item-qty');
             const priceInput = tr.querySelector('.inv-item-price');
@@ -7701,12 +7872,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (qtyInput && priceInput && subtotalTd) {
                 const qty = parseFloat(qtyInput.value || 0);
                 const price = parseFloat(priceInput.value || 0);
-                const subtotal = qty * price;
-                subtotalTd.textContent = window.formatRupiah(subtotal);
-                total += subtotal;
+                const lineSub = qty * price;
+                subtotalTd.textContent = window.formatRupiah(lineSub);
+                subtotal += lineSub;
             }
         });
-        document.getElementById('inv_total').value = total;
+        
+        const ppnInput = document.getElementById('inv_ppn');
+        const ppnRate = ppnInput ? (parseFloat(ppnInput.value) || 0) : 0;
+        const ppnAmount = subtotal * (ppnRate / 100);
+        const grandTotal = subtotal + ppnAmount;
+        
+        if (document.getElementById('inv_subtotal')) {
+            document.getElementById('inv_subtotal').value = subtotal;
+        }
+        document.getElementById('inv_total').value = grandTotal;
     }
 
     function addInvoiceItemRow(item = {}) {
@@ -7804,6 +7984,7 @@ document.addEventListener('DOMContentLoaded', () => {
             terbayar: document.getElementById('inv_terbayar').value,
             status_pembayaran: document.getElementById('inv_status').value,
             catatan: document.getElementById('inv_catatan').value,
+            ppn: document.getElementById('inv_ppn') ? document.getElementById('inv_ppn').value : 0,
             items: items
         };
 
