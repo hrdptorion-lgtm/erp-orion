@@ -363,6 +363,36 @@ window.setupDOMPagination();
     }
     window.checkSession = checkSession;
 
+    // --- RBAC Permission Helper ---
+    window.checkPermission = function(menuTarget, action) {
+        try {
+            const session = localStorage.getItem('erp_session');
+            if (!session) return false;
+            const user = JSON.parse(session);
+            
+            // Super Admin always has full access
+            const isSuperAdmin = ['super admin'].some(r => (user.role || '').toLowerCase().includes(r));
+            if (isSuperAdmin) return true;
+            
+            // If permissions not set for this menu, fallback to Admin-only for safety
+            if (!user.permissions || !user.permissions[menuTarget]) {
+                const isAdmin = ['direktur', 'admin', 'management'].some(r => (user.role || '').toLowerCase().includes(r));
+                return isAdmin;
+            }
+            
+            const perm = user.permissions[menuTarget];
+            if (action === 'view') return perm.can_view === true;
+            if (action === 'add') return perm.can_add === true;
+            if (action === 'edit') return perm.can_edit === true;
+            if (action === 'delete') return perm.can_delete === true;
+            
+            return false;
+        } catch (e) {
+            console.error('RBAC Check Error:', e);
+            return false;
+        }
+    };
+
     // Background interval to sync RBAC across devices without overloading server (every 2 minutes)
     setInterval(async () => {
         // Only sync if tab is active/visible
@@ -410,42 +440,20 @@ window.setupDOMPagination();
             // Selalu tampilkan dashboard dan profil untuk semua user
             if (target === 'dashboard' || target === 'profil') return;
 
-            if (hasPermissions) {
-                // Menu khusus super admin
-                if (item.classList.contains('super-admin-only')) {
-                    item.style.display = isSuperAdmin ? 'flex' : 'none';
-                    return;
-                }
-
-                // Menu pengaturan (admin-only class)
-                if (item.classList.contains('admin-only')) {
-                    item.style.display = isAdmin ? 'flex' : 'none';
-                    return;
-                }
-
-                // Gunakan RBAC dari database
-                if (user.permissions[target] && user.permissions[target].can_view === false) {
-                    item.style.display = 'none';
-                } else if (!user.permissions[target]) {
-                    // Jika tidak ada di DB Hak Akses, default hidden (kecuali admin)
-                    item.style.display = isAdmin ? 'flex' : 'none';
-                }
-            } else {
-                // Fallback jika DB Hak Akses kosong
-                if (!isAdmin) {
-                    if (isPurchasing && !['dashboard', 'purchasing', 'po-internal', 'supplier'].includes(target)) item.style.display = 'none';
-                    if (isProduksi && !['dashboard', 'produksi', 'bom', 'grn', 'surat-jalan', 'barang-jadi'].includes(target)) item.style.display = 'none';
-                    if (isFinance && !['dashboard', 'finance', 'invoice', 'laporan-kas', 'coa'].includes(target)) item.style.display = 'none';
-                    if (isSales && !['dashboard', 'sales', 'po-customer', 'customer'].includes(target)) item.style.display = 'none';
-                    if (item.classList.contains('admin-only')) item.style.display = 'none';
-                } else {
-                    if (item.classList.contains('admin-only')) item.style.display = 'flex';
-                }
-
-                if (item.classList.contains('super-admin-only')) {
-                    item.style.display = isSuperAdmin ? 'flex' : 'none';
-                }
+            // Tampilkan pengaturan wrapper jika isinya ada yang visible (diatur oleh CSS/submenu, tapi secara default kita tampilkan saja kalau admin/punya akses salah satu).
+            // Tapi untuk amannya, biarkan checkPermission menangani semuanya kecuali special cases.
+            if (target === 'pengaturan') {
+                item.style.display = window.checkPermission('profil', 'view') || window.checkPermission('coa', 'view') || window.checkPermission('customer', 'view') || window.checkPermission('supplier', 'view') || isSuperAdmin ? 'flex' : 'none';
+                return;
             }
+
+            if (item.classList.contains('super-admin-only')) {
+                item.style.display = isSuperAdmin ? 'flex' : 'none';
+                return;
+            }
+
+            // Gunakan RBAC helper
+            item.style.display = window.checkPermission(target, 'view') ? 'flex' : 'none';
         });
 
         // Apply RBAC to Bottom Nav Items on Mobile
@@ -458,28 +466,12 @@ window.setupDOMPagination();
                 return;
             }
 
-            if (hasPermissions) {
-                if (target === 'menu-finance') {
-                    // Check if they have access to any finance child
-                    const hasFinanceAccess = ['finance', 'invoice', 'laporan-kas'].some(k => user.permissions[k] && user.permissions[k].can_view !== false);
-                    item.style.display = hasFinanceAccess ? 'flex' : 'none';
-                } else {
-                    if (user.permissions[target] && user.permissions[target].can_view === false) {
-                        item.style.display = 'none';
-                    } else if (!user.permissions[target]) {
-                        item.style.display = isAdmin ? 'flex' : 'none';
-                    } else {
-                        item.style.display = 'flex';
-                    }
-                }
+            if (target === 'menu-finance') {
+                // Check if they have access to any finance child
+                const hasFinanceAccess = window.checkPermission('finance', 'view') || window.checkPermission('invoice', 'view') || window.checkPermission('laporan-kas', 'view');
+                item.style.display = hasFinanceAccess ? 'flex' : 'none';
             } else {
-                // Fallback logic
-                if (!isAdmin) {
-                    if (target === 'menu-finance' && !isFinance) item.style.display = 'none';
-                    if (target === 'sales' && !isSales) item.style.display = 'none';
-                } else {
-                    item.style.display = 'flex';
-                }
+                item.style.display = window.checkPermission(target, 'view') ? 'flex' : 'none';
             }
         });
 
@@ -487,6 +479,34 @@ window.setupDOMPagination();
         // save=false to avoid re-writing history on initial restore
         const hashView = location.hash.replace('#', '').trim();
         const savedView = hashView || localStorage.getItem('erp_active_view') || 'dashboard';
+
+        // Terapkan RBAC pada tombol Tambah (Add)
+        const actionButtons = {
+            'sales': ['btn-add-penawaran'],
+            'po-customer': ['btn-add-po-customer'],
+            'surat-jalan': ['btn-add-surat-jalan'],
+            'purchasing': ['btn-add-p-item'], // This is likely used inside the modal or for the main view
+            'po-internal': ['btn-add-po-internal'],
+            'transaksi-gudang': ['btn-add-transaksi'],
+            'bom': ['btn-add-bom'],
+            'invoice': ['btn-add-invoice'],
+            'laporan-kas': ['btn-add-cash'],
+            'coa': ['btn-add-coa'],
+            'customer': ['btn-add-customer'],
+            'supplier': ['btn-add-supplier'],
+            'admin': ['btn-add-user']
+        };
+
+        for (const [menuId, btnIds] of Object.entries(actionButtons)) {
+            const canAdd = window.checkPermission(menuId, 'add');
+            btnIds.forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    // Set display ke default (kosongkan inline style display jika diizinkan, atau set none)
+                    btn.style.display = canAdd ? '' : 'none';
+                }
+            });
+        }
 
         // Check if the target nav is visible for this user
         const targetNav = document.querySelector(`.nav-item[data-target="${savedView}"]`);
@@ -715,15 +735,52 @@ window.setupDOMPagination();
     async function loadDashboardData() {
         try {
             // Jalankan request secara paralel untuk mempercepat loading
-            const [poReq, rmReq, pnwReq, bomReq] = await Promise.allSettled([
-                window.ERPAPI.request('get_po_internal'),
+            const [poReq, rmReq, pnwReq, bomReq, spkReq, sjReq, invReq] = await Promise.allSettled([
+                window.ERPAPI.request('get_po_customer'),
                 window.ERPAPI.request('get_stock'),
                 window.ERPAPI.request('get_penawaran'),
-                window.ERPAPI.request('get_bom')
+                window.ERPAPI.request('get_bom'),
+                window.ERPAPI.request('get_produksi'),
+                window.ERPAPI.request('get_surat_jalan'),
+                window.ERPAPI.request('get_invoices')
             ]);
 
             if (poReq.status === 'fulfilled' && poReq.value.status === 'success' && poReq.value.data) {
-                const poOut = poReq.value.data.filter(p => String(p.status).toUpperCase() !== 'SELESAI').length;
+                const spkList = spkReq.status === 'fulfilled' ? (spkReq.value.data || []) : [];
+                const sjList = sjReq.status === 'fulfilled' ? (sjReq.value.data || []) : [];
+                const invList = invReq.status === 'fulfilled' ? (invReq.value.data || []) : [];
+
+                const poOut = poReq.value.data.filter(item => {
+                    if (String(item.status).toUpperCase() === 'BATAL' || String(item.status).toUpperCase() === 'DITOLAK') return false;
+                    
+                    const relatedSPK = spkList.filter(s => s.referensi_po === item.no_penawaran || s.referensi_po === item.id_po_customer || s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer || s.kode_po_customer === item.id_po_customer);
+                    const relatedSJ = sjList.filter(s => s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer);
+                    const relatedInv = invList.filter(s => s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer);
+                    
+                    let progress = 0;
+                    if (relatedInv.length > 0) {
+                        if (relatedInv.every(i => i.status_pembayaran === 'Lunas')) {
+                            progress = 100;
+                        } else {
+                            progress = 85;
+                        }
+                    } else if (relatedSJ.length > 0) {
+                        if (relatedSJ.every(s => s.status === 'Selesai (Diterima)')) {
+                            progress = 70;
+                        } else {
+                            progress = 50;
+                        }
+                    } else if (relatedSPK.length > 0) {
+                        if (relatedSPK.every(s => s.status === 'Selesai')) {
+                            progress = 30;
+                        } else {
+                            progress = 15;
+                        }
+                    }
+                    
+                    return progress < 100;
+                }).length;
+
                 const poEl = document.getElementById('dashboard-po');
                 if (poEl) poEl.textContent = poOut;
             }
@@ -1138,9 +1195,9 @@ window.setupDOMPagination();
 
                 const session = localStorage.getItem('erp_session');
                 const user = session ? JSON.parse(session) : {};
-                const isAdmin = ['Admin', 'Super Admin', 'Management', 'Direktur'].some(r => (user.role || '').toLowerCase().includes(r.toLowerCase()));
+                const canDelete = window.checkPermission('purchasing', 'delete');
 
-                if (isAdmin) {
+                if (canDelete) {
                     actionBtns += `<button class="btn btn-delete-stock" data-kode="${item.kode}" data-nama="${item.nama}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger); display: inline-flex;" title="Hapus Bahan Baku"><i class="fa-solid fa-trash"></i></button>`;
                 }
 
@@ -1416,9 +1473,12 @@ window.setupDOMPagination();
 
             const session = localStorage.getItem('erp_session');
             const user = session ? JSON.parse(session) : {};
-            const isAtasan = ['Admin', 'Management', 'Super Admin', 'Super', 'super'].includes(user.role);
-            const isPurchasing = ['Admin', 'Purchasing', 'Super Admin', 'Super', 'super'].includes(user.role);
-            const isAdmin = ['Admin', 'Super Admin', 'Super', 'super'].includes(user.role);
+            const canEdit = window.checkPermission('po-internal', 'edit');
+            const canDelete = window.checkPermission('po-internal', 'delete');
+            const canAddGRN = window.checkPermission('grn', 'add');
+            const isAtasan = canEdit;
+            const isPurchasing = canAddGRN;
+            const isAdmin = canDelete;
 
             // Sort newest first
             const sorted = [...response.data].reverse();
@@ -4263,9 +4323,8 @@ window.setupDOMPagination();
 
                 const session = localStorage.getItem('erp_session');
                 const user = session ? JSON.parse(session) : {};
-                const canEdit = ['Admin', 'Management', 'Produksi', 'Super', 'Super Admin'].some(r => (user.role || '').includes(r));
-
-                const isAdmin = ['Admin', 'Super Admin', 'Management', 'Direktur'].some(r => (user.role || '').toLowerCase().includes(r.toLowerCase()));
+                const canEdit = window.checkPermission('produksi', 'edit');
+                const isAdmin = window.checkPermission('produksi', 'delete');
 
                 response.data.forEach((item, itemIdx) => {
                     const tr = document.createElement('tr');
@@ -6453,13 +6512,11 @@ window.setupDOMPagination();
 
         filtered.forEach(c => {
             const tr = document.createElement('tr');
-            let actionBtns = `<button class="btn btn-edit-customer" data-id="${c.id_customer}" data-nama="${c.nama_customer}" data-kontak="${c.kontak_telepon || c['kontak_/_telepon'] || ''}" data-alamat="${c.alamat_keterangan || c['alamat_/_keterangan'] || ''}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>`;
-
-            const session = localStorage.getItem('erp_session');
-            const user = session ? JSON.parse(session) : {};
-            const isAdmin = ['Admin', 'Super Admin', 'Management', 'Direktur'].some(r => (user.role || '').toLowerCase().includes(r.toLowerCase()));
-
-            if (isAdmin) {
+            const canEdit = window.checkPermission('customer', 'edit');
+            const canDelete = window.checkPermission('customer', 'delete');
+            let actionBtns = '';
+            if (canEdit) actionBtns += `<button class="btn btn-edit-customer" data-id="${c.id_customer}" data-nama="${c.nama_customer}" data-kontak="${c.kontak_telepon || c['kontak_/_telepon'] || ''}" data-alamat="${c.alamat_keterangan || c['alamat_/_keterangan'] || ''}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>`;
+            if (canDelete) {
                 actionBtns += `<button class="btn btn-delete-customer" data-id="${c.id_customer}" data-nama="${c.nama_customer}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger); display: inline-flex;"><i class="fa-solid fa-trash"></i></button>`;
             }
 
@@ -6629,10 +6686,11 @@ window.setupDOMPagination();
 
         filtered.forEach(s => {
             const tr = document.createElement('tr');
-            let actionBtns = `<button class="btn btn-edit-supplier" data-id="${s.id_supplier}" data-nama="${s.nama_supplier}" data-kontak="${s.kontak___telepon || s['kontak_/_telepon'] || ''}" data-alamat="${s.alamat || ''}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>`;
-
-            const session = localStorage.getItem('erp_session');
-            if (session) {
+            const canDelete = window.checkPermission('supplier', 'delete');
+            const canEdit = window.checkPermission('supplier', 'edit');
+            let actionBtns = '';
+            if (canEdit) actionBtns += `<button class=\"btn btn-edit-supplier\" data-id=\"${s.id_supplier}\" data-nama=\"${s.nama_supplier}\" data-kontak=\"${s.kontak___telepon || s['kontak_/_telepon'] || ''}\" data-alamat=\"${s.alamat || ''}\" style=\"padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: rgba(99, 102, 241, 0.1); color: var(--primary);\"><i class=\"fa-solid fa-pen\"></i></button>`;
+            if (canDelete) {
                 actionBtns += `<button class="btn btn-delete-supplier btn-del" data-id="${s.id_supplier}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i class="fa-solid fa-trash"></i></button>`;
             }
 
@@ -7252,30 +7310,15 @@ window.setupDOMPagination();
                     return;
                 }
                 
-                // Better Custom Confirm Modal
-                const overlay = document.createElement('div');
-                overlay.className = 'login-overlay active';
-                overlay.style.zIndex = '9999';
-                overlay.innerHTML = `
-                    <div class="login-box" style="max-width: 400px; text-align: center;">
-                        <i class="fa-solid fa-triangle-exclamation" style="font-size: 3rem; color: var(--danger); margin-bottom: 1rem;"></i>
-                        <h3 style="margin-bottom: 0.5rem;">Hapus Surat Jalan?</h3>
-                        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Tindakan ini akan menghapus <strong>${no}</strong> permanen dari database.</p>
-                        <div style="display: flex; gap: 10px;">
-                            <button class="btn btn-cancel-del" style="flex:1; background: var(--bg-glass); justify-content: center;">Batal</button>
-                            <button class="btn btn-confirm-del" style="flex:1; background: var(--danger); justify-content: center;">Ya, Hapus!</button>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(overlay);
-
-                overlay.querySelector('.btn-cancel-del').onclick = () => overlay.remove();
-                overlay.querySelector('.btn-confirm-del').onclick = async () => {
-                    overlay.querySelector('.btn-confirm-del').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghapus...';
-                    overlay.querySelector('.btn-confirm-del').disabled = true;
-                    
+                if (await showConfirm({
+                    title: 'Hapus Surat Jalan',
+                    message: `Yakin ingin menghapus surat jalan <strong style="color:#fff">${no}</strong>?<br><span style="font-size:0.82rem;color:rgba(255,255,255,0.4);">Data akan dihapus permanen.</span>`,
+                    icon: '📄',
+                    confirmText: 'Ya, Hapus',
+                    cancelText: 'Batal',
+                    type: 'danger'
+                })) {
                     const res = await window.ERPAPI.request('delete_surat_jalan', { no_sj: no });
-                    overlay.remove();
                     
                     if (res.status === 'success') {
                         showToast?.('Surat Jalan berhasil dihapus.', 'success');
@@ -7284,7 +7327,7 @@ window.setupDOMPagination();
                         showToast?.(res.message || 'Gagal menghapus', 'error');
                         loadSuratJalanData(true);
                     }
-                };
+                }
             });
         });
 
@@ -9186,7 +9229,14 @@ async function loadTransaksiGudangData(isBackgroundSync = false) {
             document.querySelectorAll('.btn-del-transaksi').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const id = e.currentTarget.getAttribute('data-id');
-                    if (confirm('Yakin ingin menghapus transaksi ini? Stok bahan baku akan dikembalikan/disesuaikan secara otomatis.')) {
+                    if (await showConfirm({
+                        title: 'Hapus Transaksi',
+                        message: `Yakin ingin menghapus transaksi <strong style="color:#fff">${id}</strong>?<br><span style="font-size:0.82rem;color:rgba(255,255,255,0.4);">Stok bahan baku akan dikembalikan/disesuaikan secara otomatis.</span>`,
+                        icon: '📄',
+                        confirmText: 'Ya, Hapus',
+                        cancelText: 'Batal',
+                        type: 'danger'
+                    })) {
                         e.currentTarget.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
                         const res = await window.ERPAPI.request('delete_transaksi_gudang', { id });
                         if (res.status === 'success') {
