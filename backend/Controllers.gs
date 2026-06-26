@@ -2240,7 +2240,7 @@ function saveSuratJalan(payload) {
         if (hMap['plat'] !== undefined && payload.plat_nomor !== undefined) sheet.getRange(i + 1, hMap['plat'] + 1).setValue(payload.plat_nomor);
         if (hMap['status'] !== undefined && payload.status !== undefined) sheet.getRange(i + 1, hMap['status'] + 1).setValue(payload.status);
         if (hMap['catatan'] !== undefined && payload.catatan !== undefined) sheet.getRange(i + 1, hMap['catatan'] + 1).setValue(payload.catatan);
-        if (hMap['items'] !== undefined) sheet.getRange(i + 1, hMap['items'] + 1).setValue(itemsStr);
+        if (hMap['items'] !== undefined && payload.items !== undefined) sheet.getRange(i + 1, hMap['items'] + 1).setValue(itemsStr);
         if (hMap['penerima'] !== undefined && payload.penerima !== undefined) sheet.getRange(i + 1, hMap['penerima'] + 1).setValue(payload.penerima);
         
         // Update Total Qty and Item (Name) if they exist
@@ -2361,12 +2361,14 @@ function saveInvoice(payload) {
         if (hMap['no penawaran'] !== undefined) sheet.getRange(i + 1, hMap['no penawaran'] + 1).setValue(payload.no_penawaran || values[i][hMap['no penawaran']]);
         if (hMap['customer'] !== undefined) sheet.getRange(i + 1, hMap['customer'] + 1).setValue(payload.customer || values[i][hMap['customer']]);
         if (hMap['total tagihan'] !== undefined) sheet.getRange(i + 1, hMap['total tagihan'] + 1).setValue(payload.total_tagihan || values[i][hMap['total tagihan']]);
-        if (hMap['terbayar'] !== undefined) sheet.getRange(i + 1, hMap['terbayar'] + 1).setValue(payload.terbayar || values[i][hMap['terbayar']] || 0);
-        if (hMap['sisa tagihan'] !== undefined) sheet.getRange(i + 1, hMap['sisa tagihan'] + 1).setValue(payload.sisa_tagihan || values[i][hMap['sisa tagihan']] || 0);
+        if (hMap['potongan dp'] !== undefined) sheet.getRange(i + 1, hMap['potongan dp'] + 1).setValue(payload.potongan_dp !== undefined ? payload.potongan_dp : (values[i][hMap['potongan dp']] || 0));
+        if (hMap['grand total'] !== undefined) sheet.getRange(i + 1, hMap['grand total'] + 1).setValue(payload.grand_total !== undefined ? payload.grand_total : (values[i][hMap['grand total']] || 0));
+        if (hMap['terbayar'] !== undefined) sheet.getRange(i + 1, hMap['terbayar'] + 1).setValue(payload.terbayar !== undefined ? payload.terbayar : (values[i][hMap['terbayar']] || 0));
+        if (hMap['sisa tagihan'] !== undefined) sheet.getRange(i + 1, hMap['sisa tagihan'] + 1).setValue(payload.sisa_tagihan !== undefined ? payload.sisa_tagihan : (values[i][hMap['sisa tagihan']] || 0));
         if (hMap['status pembayaran'] !== undefined) sheet.getRange(i + 1, hMap['status pembayaran'] + 1).setValue(payload.status_pembayaran || values[i][hMap['status pembayaran']]);
         if (hMap['items'] !== undefined) sheet.getRange(i + 1, hMap['items'] + 1).setValue(itemsStr);
         if (hMap['catatan'] !== undefined) sheet.getRange(i + 1, hMap['catatan'] + 1).setValue(payload.catatan || values[i][hMap['catatan']]);
-        if (hMap['ppn'] !== undefined) sheet.getRange(i + 1, hMap['ppn'] + 1).setValue(payload.ppn || values[i][hMap['ppn']] || 0);
+        if (hMap['ppn'] !== undefined) sheet.getRange(i + 1, hMap['ppn'] + 1).setValue(payload.ppn !== undefined ? payload.ppn : (values[i][hMap['ppn']] || 0));
         found = true;
         break;
       }
@@ -2379,11 +2381,14 @@ function saveInvoice(payload) {
       if (hl.includes('no invoice')) return noInv;
       if (hl === 'tanggal') return payload.tanggal || Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy');
       if (hl === 'jatuh tempo') return payload.jatuh_tempo || '';
-      if (hl === 'no penawaran') return payload.no_penawaran || '';
+      if (hl === 'no penawaran' || hl.includes('referensi po') || hl.includes('po customer')) return payload.no_penawaran || '';
+      if (hl === 'no sj' || hl === 'referensi surat jalan' || hl.includes('surat jalan')) return payload.no_sj || '';
       if (hl === 'customer') return payload.customer || '';
-      if (hl === 'total tagihan') return payload.total_tagihan || 0;
-      if (hl === 'terbayar') return payload.terbayar || 0;
-      if (hl === 'sisa tagihan') return payload.sisa_tagihan || payload.total_tagihan || 0;
+      if (hl.includes('total tagihan')) return payload.total_tagihan !== undefined ? payload.total_tagihan : 0;
+      if (hl.includes('potongan dp') || hl.includes('diskon')) return payload.potongan_dp !== undefined ? payload.potongan_dp : 0;
+      if (hl.includes('grand total') || hl.includes('total akhir')) return payload.grand_total !== undefined ? payload.grand_total : (payload.total_tagihan || 0);
+      if (hl.includes('terbayar')) return payload.terbayar !== undefined ? payload.terbayar : 0;
+      if (hl.includes('sisa tagihan')) return payload.sisa_tagihan !== undefined ? payload.sisa_tagihan : (payload.grand_total || payload.total_tagihan || 0);
       if (hl === 'status pembayaran') return payload.status_pembayaran || 'Belum Lunas';
       if (hl === 'items') return itemsStr;
       if (hl === 'catatan') return payload.catatan || '';

@@ -1639,8 +1639,8 @@
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                         <h3>Daftar Jabatan Perusahaan</h3>
-                        <button class="btn" id="btn-add-jabatan" style="display: none;"><i
-                                class="fa-solid fa-plus"></i> Tambah Jabatan</button>
+                        <button class="btn" id="btn-add-jabatan" style="display: none;"><i class="fa-solid fa-plus"></i>
+                            Tambah Jabatan</button>
                     </div>
                     <div
                         style="background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px;">
@@ -3375,7 +3375,18 @@
                     </div>
                     <div class="input-group" style="margin-bottom:0;">
                         <label>ID PO Customer Ref.</label>
-                        <input type="text" id="inv_no_penawaran">
+                        <select id="inv_no_penawaran">
+                            <option value="">-- Pilih PO Customer --</option>
+                        </select>
+                    </div>
+                    <div class="input-group" style="margin-bottom:0; display:flex; flex-direction:column;">
+                        <label>Pilih Surat Jalan (Bisa Multi)</label>
+                        <div style="display: flex; gap: 5px; width: 100%;">
+                            <select id="inv_no_sj" multiple style="flex: 1;" placeholder="Pilih Surat Jalan..."></select>
+                            <button type="button" class="btn" id="btn-tarik-multi-sj" style="background: var(--secondary); padding: 0 15px;" title="Tarik Data dari SJ Terpilih">
+                                <i class="fa-solid fa-download"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="input-group" style="margin-bottom:0;">
                         <label>Customer</label>
@@ -3383,7 +3394,7 @@
                     </div>
                     <div class="input-group" style="margin-bottom:0;">
                         <label>Subtotal (Rp)</label>
-                        <input type="number" id="inv_subtotal" required readonly
+                        <input type="text" id="inv_subtotal" required readonly
                             style="background: rgba(255,255,255,0.05); color: #aaa;">
                     </div>
                     <div class="input-group" style="margin-bottom:0;">
@@ -3393,12 +3404,18 @@
                     </div>
                     <div class="input-group" style="margin-bottom:0;">
                         <label>Total Tagihan (Rp)</label>
-                        <input type="number" id="inv_total" required readonly
+                        <input type="text" id="inv_total" required readonly
                             style="background: rgba(255,255,255,0.05); color: #aaa; font-weight: bold;">
                     </div>
                     <div class="input-group" style="margin-bottom:0;">
-                        <label>Terbayar (Rp)</label>
-                        <input type="number" id="inv_terbayar" value="0">
+                        <label>Potongan DP (Rp)</label>
+                        <input type="text" id="inv_potongan_dp" value="0"
+                            oninput="window.formatCurrencyInput(this); calculateInvoiceTotal()">
+                    </div>
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>Grand Total (Rp)</label>
+                        <input type="text" id="inv_grand_total" required readonly
+                            style="background: rgba(255,255,255,0.05); color: #aaa; font-weight: bold;">
                     </div>
                     <div class="input-group" style="margin-bottom:0;">
                         <label>Status Pembayaran</label>
@@ -3477,7 +3494,7 @@
                     style="width: 50%; padding: 10px; vertical-align: top; border-top: 1px solid #000; border-bottom: 1px solid #000; border-right: 1px solid #000;">
                     <table style="width: 100%; border: none;">
                         <tr>
-                            <td style="width: 150px; border:none; padding: 2px;">Nomor Surat Jalan</td>
+                            <td style="width: 150px; border:none; padding: 2px;">Nomor</td>
                             <td style="border:none; padding: 2px;">: <span id="print_sj_no"></span></td>
                         </tr>
                         <tr>
@@ -3546,60 +3563,36 @@
 
     <!-- Print Container for Invoice -->
     <div id="print-inv-container" class="print-only"
-        style="font-family: 'Times New Roman', serif; font-size: 14px; color: #000; padding: 20px;">
-        <h2 id="print_inv_title_1"
-            style="text-align: center; margin-bottom: 20px; font-weight: bold; letter-spacing: 1px;">INVOICE</h2>
-
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
-            <div style="width: 60%; display: flex; align-items: flex-start;">
-                <img src="logo.png" style="width: 80px; height: 80px; object-fit: contain; margin-right: 15px;">
-                <div>
-                    <h3 id="print_inv_company_name" style="margin: 0; font-size: 16px; font-weight: bold;">PT. Orion
-                        Karya Sejahtera</h3>
-                    <p id="print_inv_company_address" style="margin: 2px 0; font-size: 14px;"></p>
-                </div>
+        style="font-family: 'Arial', sans-serif; font-size: 14px; color: #000; padding: 20px;">
+        <!-- Header -->
+        <div style="display: flex; justify-content: flex-start; gap: 5%; align-items: flex-start; margin-bottom: 30px;">
+            <div style="width: 45%;">
+                <img src="logo.png" style="width: 100px; object-fit: contain; margin-bottom: 15px;">
+                <p id="print_inv_company_name" style="margin: 0; font-size: 14px;">PT. Orion Karya Sejahtera</p>
+                <p id="print_inv_company_address" style="margin: 2px 0; font-size: 14px;">Jl. Kopo Bihbul No.45, Sayati, Kec.<br>Margahayu, Kabupaten Bandung,<br>Jawa Barat Kode pos : 40228</p>
             </div>
-            <div style="width: 40%; text-align: right;">
-                <h2 id="print_inv_title_2" style="margin: 0; color: #333; font-size: 24px;">INVOICE</h2>
-                <p style="margin: 5px 0 0 0;">No: <strong id="print_inv_no"></strong></p>
+            <div style="width: 50%; padding-top: 20px;">
+                <table style="width: 100%; border: none; font-size: 14px; line-height: 1.3;">
+                    <tr><td style="width: 130px; padding: 0;">No Invoice</td><td style="padding: 0;">: <span id="print_inv_no"></span></td></tr>
+                    <tr><td style="padding: 0;">Customer</td><td style="padding: 0;">: <span id="print_inv_customer"></span></td></tr>
+                    <tr><td style="padding: 0;">Alamat</td><td style="padding: 0;">: <span id="print_inv_alamat"></span></td></tr>
+                    <tr><td style="padding: 0;">No.PO</td><td style="padding: 0;">: <span id="print_inv_po"></span></td></tr>
+                    <tr><td colspan="2" style="padding: 10px 0;"></td></tr>
+                    <tr><td style="padding: 0;">Tanggal Invoice</td><td style="padding: 0;">: <span id="print_inv_date"></span></td></tr>
+                    <tr><td style="padding: 0;">Due Date</td><td style="padding: 0;">: <span id="print_inv_due"></span></td></tr>
+                </table>
             </div>
         </div>
 
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #000;">
-            <tr>
-                <td
-                    style="width: 50%; padding: 10px; vertical-align: top; border-right: 1px solid #000; border-top: 1px solid #000; border-bottom: 1px solid #000; border-left: 1px solid #000;">
-                    Tagihan Kepada:<br>
-                    <strong id="print_inv_customer" style="font-size: 16px;"></strong>
-                </td>
-                <td
-                    style="width: 50%; padding: 10px; vertical-align: top; border-top: 1px solid #000; border-bottom: 1px solid #000; border-right: 1px solid #000;">
-                    <table style="width: 100%; border: none;">
-                        <tr>
-                            <td style="width: 120px; border:none; padding: 2px;">Tanggal Invoice</td>
-                            <td style="border:none; padding: 2px;">: <span id="print_inv_date"></span></td>
-                        </tr>
-                        <tr>
-                            <td style="border:none; padding: 2px;">Jatuh Tempo</td>
-                            <td style="border:none; padding: 2px;">: <strong id="print_inv_due"></strong></td>
-                        </tr>
-                        <tr>
-                            <td style="border:none; padding: 2px;">Nomor PO/Ref</td>
-                            <td style="border:none; padding: 2px;">: <span id="print_inv_po"></span></td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </table>
-
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <!-- Table -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; border: 2px solid #000;">
             <thead>
-                <tr style="background-color: #f2f2f2;">
-                    <th style="border: 1px solid #000; padding: 8px; text-align: center;">No</th>
-                    <th style="border: 1px solid #000; padding: 8px; text-align: left;">Deskripsi / Nama Barang</th>
-                    <th style="border: 1px solid #000; padding: 8px; text-align: center;">Qty</th>
-                    <th style="border: 1px solid #000; padding: 8px; text-align: right;">Harga Satuan (Rp)</th>
-                    <th style="border: 1px solid #000; padding: 8px; text-align: right;">Total Harga (Rp)</th>
+                <tr style="background-color: #fce49c; border-bottom: 2px solid #000;">
+                    <th style="border-right: 1px solid #000; padding: 8px; text-align: center;">Nama Barang</th>
+                    <th style="border-right: 1px solid #000; padding: 8px; text-align: center;">Jumlah</th>
+                    <th style="border-right: 1px solid #000; padding: 8px; text-align: center;">Harga Satuan</th>
+                    <th style="border-right: 1px solid #000; padding: 8px; text-align: center;">Subtotal</th>
+                    <th style="padding: 8px; text-align: center;">PPN</th>
                 </tr>
             </thead>
             <tbody id="print-inv-items">
@@ -3607,38 +3600,145 @@
             </tbody>
         </table>
 
+        <!-- Totals -->
         <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
-            <table style="width: 40%; border-collapse: collapse;">
+            <table style="width: 40%; font-size: 14px; border: none;">
                 <tr id="print_inv_subtotal_row">
-                    <td style="padding: 5px; font-weight: bold; text-align: right;">Subtotal :</td>
-                    <td style="padding: 5px; font-weight: bold; text-align: right;">
-                        Rp <span id="print_inv_subtotal">0</span></td>
+                    <td style="padding: 5px; text-align: left;">Subtotal</td>
+                    <td style="padding: 5px; text-align: left;">Rp</td>
+                    <td style="padding: 5px; text-align: right;" id="print_inv_subtotal">0</td>
+                </tr>
+                <tr id="print_inv_dp_row">
+                    <td style="padding: 5px; text-align: left;" id="print_inv_dp_label">DP 50%</td>
+                    <td style="padding: 5px; text-align: left;">Rp</td>
+                    <td style="padding: 5px; text-align: right;" id="print_inv_dp_amount">0</td>
                 </tr>
                 <tr id="print_inv_ppn_row">
-                    <td style="padding: 5px; font-weight: bold; text-align: right;" id="print_inv_ppn_label">PPN :</td>
-                    <td style="padding: 5px; font-weight: bold; text-align: right;">
-                        Rp <span id="print_inv_ppn_amount">0</span></td>
+                    <td style="padding: 5px; text-align: left;" id="print_inv_ppn_label">PPN 11%</td>
+                    <td style="padding: 5px; text-align: left;">Rp</td>
+                    <td style="padding: 5px; text-align: right;" id="print_inv_ppn_amount">0</td>
                 </tr>
                 <tr>
-                    <td style="padding: 5px; font-weight: bold; text-align: right;">Grand Total :</td>
-                    <td
-                        style="padding: 5px; font-weight: bold; text-align: right; border-bottom: 2px solid #000; font-size: 16px;">
-                        Rp <span id="print_inv_total">0</span></td>
+                    <td style="padding: 5px; text-align: left;">Total</td>
+                    <td style="padding: 5px; text-align: left;">Rp</td>
+                    <td style="padding: 5px; text-align: right;" id="print_inv_total">0</td>
                 </tr>
             </table>
         </div>
 
-        <div style="margin-top: 20px;">
-            <div style="float: right; text-align: center; width: 250px;">
-                <p style="margin-bottom: 60px;">Hormat Kami,</p>
-                <p style="margin: 0; border-bottom: 1px solid #000; font-weight: bold;">( Bag. Finance / Akuntansi )</p>
-                <p style="margin: 0;">PT. Orion Karya Sejahtera</p>
+        <!-- Footer -->
+        <div style="display: flex; justify-content: space-between; margin-top: 50px;">
+            <div style="width: 50%;">
+                <div style="border: 2px solid #000; padding: 10px; width: 300px; max-width: 100%;">
+                    <p style="margin: 0; font-weight: bold;" id="print_inv_bank_name">Bank Central Asia</p>
+                    <p style="margin: 5px 0 0 0;">No. Rekening :<span id="print_inv_bank_acc">8106.222.423</span></p>
+                    <p style="margin: 5px 0 0 0;">Atas Nama : <span id="print_inv_bank_holder">Orion Karya Sejahtera, PT</span></p>
+                </div>
             </div>
-            <div style="clear: both;"></div>
+            <div style="width: 30%; text-align: center;">
+                <p style="margin-bottom: 70px;">Hormat Kami,</p>
+                <div style="border-bottom: 1px solid #ccc; width: 100%; height: 1px; margin-bottom: 5px;"></div>
+                <p style="margin: 0;">Direktur</p>
+                <p style="margin: 0; font-weight: bold;">Von Von</p>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Print Container for Proforma Invoice -->
+    <div id="print-proforma-container" class="print-only"
+        style="font-family: 'Arial', sans-serif; font-size: 14px; color: #000; padding: 20px;">
+        <!-- Header -->
+        <div style="display: flex; justify-content: flex-start; gap: 5%; align-items: flex-start; margin-bottom: 30px;">
+            <div style="width: 45%;">
+                <img src="logo.png" style="width: 100px; object-fit: contain; margin-bottom: 15px;">
+                <p id="print_prof_company_name" style="margin: 0; font-size: 14px;">PT. Orion Karya Sejahtera</p>
+                <p id="print_prof_company_address" style="margin: 2px 0; font-size: 14px;">Jl. Kopo Bihbul No.45,
+                    Sayati, Kec.<br>Margahayu, Kabupaten Bandung,<br>Jawa Barat Kode pos : 40228</p>
+            </div>
+            <div style="width: 50%;">
+                <h2 style="margin: 0 0 10px 0; font-size: 18px; font-weight: normal;">PROFORMA INVOICE</h2>
+                <table style="width: 100%; border: none; font-size: 14px; line-height: 1;">
+                    <tr>
+                        <td style="width: 130px; padding: 0;">No Proforma</td>
+                        <td style="padding: 0;">: <span id="print_prof_no"></span></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0;">Customer</td>
+                        <td style="padding: 0;">: <span id="print_prof_customer"></span></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0;">Alamat</td>
+                        <td style="padding: 0;">: <span id="print_prof_alamat"></span></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0;">No.PO</td>
+                        <td style="padding: 0;">: <span id="print_prof_po"></span></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0;">Tanggal Proforma</td>
+                        <td style="padding: 0;">: <span id="print_prof_date"></span></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0;">Due Date</td>
+                        <td style="padding: 0;">: <span id="print_prof_due"></span></td>
+                    </tr>
+                </table>
+            </div>
         </div>
 
-        <div style="margin-top: 30px; font-size: 12px; font-style: italic;" id="print_inv_rek_info">
-            Catatan: Pembayaran dapat ditransfer ke Rekening BCA: 1234567890 a/n PT. Orion Karya Sejahtera.
+        <!-- Table -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; border: 2px solid #000;">
+            <thead>
+                <tr style="background-color: #fce49c; border-bottom: 2px solid #000;">
+                    <th style="border-right: 1px solid #000; padding: 8px; text-align: center;">Nama Barang</th>
+                    <th style="border-right: 1px solid #000; padding: 8px; text-align: center;">Jumlah</th>
+                    <th style="border-right: 1px solid #000; padding: 8px; text-align: center;">Harga Satuan</th>
+                    <th style="border-right: 1px solid #000; padding: 8px; text-align: center;">Subtotal</th>
+                    <th style="padding: 8px; text-align: center;">PPN</th>
+                </tr>
+            </thead>
+            <tbody id="print-prof-items">
+                <!-- Items -->
+            </tbody>
+        </table>
+
+        <!-- Totals -->
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
+            <table style="width: 40%; font-size: 14px; border: none;">
+                <tr id="print_prof_subtotal_row">
+                    <td style="padding: 5px; text-align: left;">Subtotal</td>
+                    <td style="padding: 5px; text-align: left;">Rp</td>
+                    <td style="padding: 5px; text-align: right;"><span id="print_prof_subtotal">0</span></td>
+                </tr>
+                <tr id="print_prof_ppn_row">
+                    <td style="padding: 5px; text-align: left;" id="print_prof_ppn_label">PPN 11%</td>
+                    <td style="padding: 5px; text-align: left;">Rp</td>
+                    <td style="padding: 5px; text-align: right;"><span id="print_prof_ppn_amount">0</span></td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px; text-align: left;">Total</td>
+                    <td style="padding: 5px; text-align: left;">Rp</td>
+                    <td style="padding: 5px; text-align: right;"><span id="print_prof_total">0</span></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <div style="display: flex; justify-content: space-between; margin-top: 50px;">
+            <div style="width: 50%;">
+                <div style="border: 2px solid #000; padding: 10px; width: 300px;">
+                    <p style="margin: 0; font-weight: bold;" id="print_prof_bank_name">Bank Central Asia</p>
+                    <p style="margin: 5px 0 0 0;">No. Rekening :<span id="print_prof_bank_acc">8106.222.423</span></p>
+                    <p style="margin: 5px 0 0 0;">Atas Nama : <span id="print_prof_bank_holder">Orion Karya Sejahtera,
+                            PT</span></p>
+                </div>
+            </div>
+            <div style="width: 30%; text-align: center;">
+                <p style="margin-bottom: 80px;">Hormat Kami,</p>
+                <p style="margin: 0;">Direktur</p>
+                <p style="margin: 0; font-weight: bold;">Von Von</p>
+            </div>
         </div>
     </div>
     </div>
@@ -3703,6 +3803,7 @@
     <datalist id="customer-list"></datalist>
     <datalist id="bom-bahan-baku-list"></datalist>
     <datalist id="lokasi-list"></datalist>
+    <datalist id="po-list"></datalist>
     <datalist id="satuan-list">
         <option value="Pcs"></option>
         <option value="Meter"></option>
