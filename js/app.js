@@ -757,8 +757,8 @@ window.setupDOMPagination();
                     if (String(item.status).toUpperCase() === 'BATAL' || String(item.status).toUpperCase() === 'DITOLAK') return false;
                     
                     const relatedSPK = spkList.filter(s => s.referensi_po === item.no_penawaran || s.referensi_po === item.id_po_customer || s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer || s.kode_po_customer === item.id_po_customer);
-                    const relatedSJ = sjList.filter(s => s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer);
-                    const relatedInv = invList.filter(s => s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer);
+                    const relatedSJ = sjList.filter(s => [s.no_penawaran, s.id_po_customer, s.referensi_penawaran].some(val => val && (val === item.no_penawaran || val === item.id_po_customer)));
+                    const relatedInv = invList.filter(s => [s.no_penawaran, s.id_po_customer, s.referensi_penawaran].some(val => val && (val === item.no_penawaran || val === item.id_po_customer)));
                     
                     let progress = 0;
                     if (relatedInv.length > 0) {
@@ -2127,14 +2127,16 @@ window.setupDOMPagination();
         document.getElementById('inv_jatuh_tempo').value = new Date(today.getTime() - offset + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         
         const poSel = document.getElementById('inv_no_penawaran');
-        if (poSel && item.no_penawaran) {
-            if (!Array.from(poSel.options).some(o => o.value === item.no_penawaran)) {
+        const refId = item.id_po_customer || item.no_penawaran || '';
+        if (poSel && refId) {
+            if (!Array.from(poSel.options).some(o => o.value === refId)) {
                 const opt = document.createElement('option');
-                opt.value = item.no_penawaran;
-                opt.textContent = item.no_penawaran;
+                opt.value = refId;
+                opt.textContent = refId;
                 poSel.appendChild(opt);
             }
-            poSel.value = item.no_penawaran;
+            poSel.value = refId;
+            poSel.dispatchEvent(new Event('change'));
         } else if (poSel) {
             poSel.value = '';
         }
@@ -2147,8 +2149,8 @@ window.setupDOMPagination();
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><input type="text" class="inv-item-desc" list="bom-items-list" value="Down Payment" style="width: 100%; background: transparent; border: none; color: white;"></td>
-                <td><input type="number" class="inv-item-qty" value="1" min="1" style="width: 100%; background: transparent; border: 1px solid #555; color: white; text-align: right;"></td>
-                <td><input type="text" class="inv-item-price" value="${window.formatRupiah(dpVal).replace('Rp ', '')}" min="0" style="width: 100%; background: transparent; border: 1px solid #555; color: white; text-align: right;" oninput="window.formatCurrencyInput(this); calculateInvoiceTotal()"></td>
+                <td><input type="number" class="inv-item-qty" value="1" min="1" style="width: 100%; text-align: right;"></td>
+                <td><input type="text" class="inv-item-price" value="${window.formatRupiah(dpVal).replace('Rp ', '')}" min="0" style="width: 100%; text-align: right;" oninput="window.formatCurrencyInput(this); calculateInvoiceTotal()"></td>
                 <td class="inv-item-subtotal" style="text-align: right;">Rp 0</td>
                 <td style="text-align: center;"><button type="button" class="btn btn-sm btn-danger btn-remove-inv-item"><i class="fa-solid fa-trash"></i></button></td>
             `;
@@ -2211,8 +2213,8 @@ window.setupDOMPagination();
                 let progressColor = "var(--secondary)";
 
                 const relatedSPK = spkList.filter(s => s.referensi_po === item.no_penawaran || s.referensi_po === item.id_po_customer || s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer || s.kode_po_customer === item.id_po_customer);
-                const relatedSJ = sjList.filter(s => s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer);
-                const relatedInv = invList.filter(s => s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer);
+                const relatedSJ = sjList.filter(s => [s.no_penawaran, s.id_po_customer, s.referensi_penawaran].some(val => val && (val === item.no_penawaran || val === item.id_po_customer)));
+                const relatedInv = invList.filter(s => [s.no_penawaran, s.id_po_customer, s.referensi_penawaran].some(val => val && (val === item.no_penawaran || val === item.id_po_customer)));
 
                 if (relatedInv.length > 0) {
                     if (relatedInv.every(i => i.status_pembayaran === 'Lunas')) {
@@ -2642,8 +2644,8 @@ window.setupDOMPagination();
 
             // Find related records based on no_penawaran or id_po_customer
             const relatedSPK = spkList.filter(s => s.referensi_po === item.no_penawaran || s.referensi_po === item.id_po_customer || s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer || s.kode_po_customer === item.id_po_customer);
-            const relatedSJ = sjList.filter(s => s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer);
-            const relatedInv = invList.filter(s => s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer);
+            const relatedSJ = sjList.filter(s => [s.no_penawaran, s.id_po_customer, s.referensi_penawaran].some(val => val && (val === item.no_penawaran || val === item.id_po_customer)));
+            const relatedInv = invList.filter(s => [s.no_penawaran, s.id_po_customer, s.referensi_penawaran].some(val => val && (val === item.no_penawaran || val === item.id_po_customer)));
 
             // Populate Items Table with SPK Progress
             if (itemsTbody) {
@@ -3101,10 +3103,34 @@ window.setupDOMPagination();
         document.querySelector('[data-target="invoice"]')?.click();
         setTimeout(() => {
             document.getElementById('invoice-form').reset();
-            document.getElementById('inv_no_penawaran').value = window.currentDetailPOC.no_penawaran || window.currentDetailPOC.id_po_customer || '';
+            
+            // Set Tanggal & Jatuh Tempo Default
+            const today = new Date();
+            const offset = today.getTimezoneOffset() * 60000;
+            const todayStr = new Date(today.getTime() - offset).toISOString().split('T')[0];
+            const dueStr = new Date(today.getTime() - offset + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            
+            document.getElementById('inv_tanggal').value = todayStr;
+            document.getElementById('inv_jatuh_tempo').value = dueStr;
+
+            // Set PO Customer Ref
+            const poSel = document.getElementById('inv_no_penawaran');
+            const refId = window.currentDetailPOC.id_po_customer || window.currentDetailPOC.no_penawaran || '';
+            if (poSel && refId) {
+                if (!Array.from(poSel.options).some(o => o.value === refId)) {
+                    const opt = document.createElement('option');
+                    opt.value = refId;
+                    opt.textContent = refId;
+                    poSel.appendChild(opt);
+                }
+                poSel.value = refId;
+                poSel.dispatchEvent(new Event('change'));
+            }
+
             document.getElementById('inv_customer').value = window.currentDetailPOC.nama_customer || window.currentDetailPOC.customer || '';
             const ppnInput = document.getElementById('inv_ppn');
             if (ppnInput) ppnInput.value = window.currentDetailPOC.ppn || 0;
+            
             if (typeof calculateInvoiceTotal === 'function') calculateInvoiceTotal();
             document.getElementById('invoice-modal').classList.add('active');
         }, 500);
@@ -7811,8 +7837,8 @@ window.setupDOMPagination();
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td><input type="text" class="inv-item-desc" list="bom-items-list" value="Tagihan Sisa dari ${item.no_invoice}" style="width: 100%; background: transparent; border: none; color: white;"></td>
-                        <td><input type="number" class="inv-item-qty" value="1" min="1" style="width: 100%; background: transparent; border: 1px solid #555; color: white; text-align: right;"></td>
-                        <td><input type="text" class="inv-item-price" value="${window.formatRupiah(sisa).replace('Rp ', '')}" min="0" style="width: 100%; background: transparent; border: 1px solid #555; color: white; text-align: right;" oninput="window.formatCurrencyInput(this); calculateInvoiceTotal()"></td>
+                        <td><input type="number" class="inv-item-qty" value="1" min="1" style="width: 100%; text-align: right;"></td>
+                        <td><input type="text" class="inv-item-price" value="${window.formatRupiah(sisa).replace('Rp ', '')}" min="0" style="width: 100%; text-align: right;" oninput="window.formatCurrencyInput(this); calculateInvoiceTotal()"></td>
                         <td class="inv-item-subtotal" style="text-align: right;">Rp 0</td>
                         <td style="text-align: center;"><button type="button" class="btn btn-sm btn-danger btn-remove-inv-item"><i class="fa-solid fa-trash"></i></button></td>
                     `;
@@ -8154,9 +8180,9 @@ window.setupDOMPagination();
         const price = item.harga_satuan || item.price || 0;
 
         tr.innerHTML = `
-        <td><input type="text" class="inv-item-desc" list="bom-items-list" value="${desc}" placeholder="Nama barang / Jasa" required style="width: 100%; padding: 0.4rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 4px;"></td>
-        <td><input type="number" class="inv-item-qty" value="${qty}" min="1" required style="width: 100%; padding: 0.4rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 4px;"></td>
-        <td><input type="text" class="inv-item-price" value="${window.formatRupiah(price).replace('Rp ', '')}" min="0" required oninput="window.formatCurrencyInput(this); calculateInvoiceTotal()" style="width: 100%; padding: 0.4rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 4px; text-align:right;"></td>
+        <td><input type="text" class="inv-item-desc" list="bom-items-list" value="${desc}" placeholder="Nama barang / Jasa" required style="width: 100%;"></td>
+        <td><input type="number" class="inv-item-qty" value="${qty}" min="1" required style="width: 100%; text-align: right;"></td>
+        <td><input type="text" class="inv-item-price" value="${window.formatRupiah(price).replace('Rp ', '')}" min="0" required oninput="window.formatCurrencyInput(this); calculateInvoiceTotal()" style="width: 100%; text-align:right;"></td>
         <td style="text-align: right;" class="inv-item-subtotal">Rp 0</td>
         <td style="text-align: center;"><button type="button" class="btn btn-remove-inv-item" style="padding: 0.4rem; background: transparent; color: var(--danger); border: none;"><i class="fa-solid fa-trash"></i></button></td>
     `;
@@ -8268,8 +8294,8 @@ window.setupDOMPagination();
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><input type="text" class="inv-item-desc" list="bom-items-list" value="${it.nama}" style="width: 100%; background: transparent; border: none; color: white;" readonly></td>
-                    <td><input type="number" class="inv-item-qty" value="${it.qty || 0}" min="1" style="width: 100%; background: transparent; border: 1px solid #555; color: white; text-align: right;" readonly></td>
-                    <td><input type="text" class="inv-item-price" value="${window.formatRupiah(harga).replace('Rp ', '')}" min="0" style="width: 100%; background: transparent; border: 1px solid #555; color: white; text-align: right;" oninput="window.formatCurrencyInput(this); calculateInvoiceTotal()"></td>
+                    <td><input type="number" class="inv-item-qty" value="${it.qty || 0}" min="1" style="width: 100%; text-align: right;" readonly></td>
+                    <td><input type="text" class="inv-item-price" value="${window.formatRupiah(harga).replace('Rp ', '')}" min="0" style="width: 100%; text-align: right;" oninput="window.formatCurrencyInput(this); calculateInvoiceTotal()"></td>
                     <td class="inv-item-subtotal" style="text-align: right;">Rp 0</td>
                     <td style="text-align: center;"><button type="button" class="btn btn-sm btn-danger btn-remove-inv-item"><i class="fa-solid fa-trash"></i></button></td>
                 `;
@@ -8289,6 +8315,56 @@ window.setupDOMPagination();
             }
 
             calculateInvoiceTotal();
+            
+            // --- SMART DP CALCULATION ---
+            if (poNo && window.invoiceData) {
+                let totalDpPaid = 0;
+                let totalDpConsumed = 0;
+                const currentInvNo = document.getElementById('inv_no')?.value || '';
+
+                window.invoiceData.filter(inv => String(inv.no_penawaran).trim() === poNo).forEach(inv => {
+                    let isDpInv = false;
+                    let dpItemValue = 0;
+                    try {
+                        const items = typeof inv.items === 'string' ? JSON.parse(inv.items) : (inv.items || []);
+                        items.forEach(it => {
+                            const desc = String(it.nama || it.desc || '').toLowerCase();
+                            if (desc.includes('down payment') || desc.match(/\bdp\b/)) {
+                                isDpInv = true;
+                                dpItemValue += parseFloat(it.harga || it.harga_satuan || it.price || 0) * parseFloat(it.qty || 1);
+                            }
+                        });
+                    } catch(e) {}
+
+                    if (isDpInv) {
+                        totalDpPaid += dpItemValue;
+                    } else if (inv.no_invoice !== currentInvNo) {
+                        totalDpConsumed += parseFloat(inv.potongan_dp || 0);
+                    }
+                });
+
+                let sisaDp = totalDpPaid - totalDpConsumed;
+                if (sisaDp > 0) {
+                    let currentSub = 0;
+                    document.querySelectorAll('#inv-items-tbody tr').forEach(tr => {
+                        const qI = tr.querySelector('.inv-item-qty');
+                        const pI = tr.querySelector('.inv-item-price');
+                        if (qI && pI) currentSub += parseFloat(qI.value || 0) * parseFloat(String(pI.value).replace(/[^0-9]/g, '') || 0);
+                    });
+                    const pRate = parseFloat(document.getElementById('inv_ppn')?.value || 0);
+                    const tTagihan = currentSub + (currentSub * (pRate / 100));
+
+                    const maxPotongan = Math.min(sisaDp, tTagihan);
+                    const dpInput = document.getElementById('inv_potongan_dp');
+                    if (dpInput && maxPotongan > 0) {
+                        dpInput.value = window.formatRupiah(maxPotongan).replace('Rp ', '');
+                        calculateInvoiceTotal();
+                        setTimeout(() => showToast?.(`Sisa DP sebesar Rp ${sisaDp.toLocaleString('id-ID')} ditemukan. Otomatis memotong Rp ${maxPotongan.toLocaleString('id-ID')}!`, 'info'), 500);
+                    }
+                }
+            }
+            // -----------------------------
+
             showToast?.(`Berhasil menarik ${Object.keys(combinedItems).length} item dari ${relatedSj.length} Surat Jalan!`, 'success');
 
         } catch (error) {
@@ -8330,9 +8406,19 @@ window.setupDOMPagination();
                 if (res.status === 'success' && res.data) {
                     window.allSjData = res.data;
                     sjSelect.innerHTML = '<option value="">Pilih Surat Jalan...</option>';
+                    const currentInvNo = document.getElementById('inv_no')?.value || '';
+                    const usedSJ = new Set();
+                    if (window.invoiceData) {
+                        window.invoiceData.forEach(inv => {
+                            if (inv.no_invoice !== currentInvNo && inv.no_sj) {
+                                inv.no_sj.split(',').forEach(s => usedSJ.add(s.trim()));
+                            }
+                        });
+                    }
+
                     res.data.sort((a,b) => new Date(b.tanggal_kirim || b.tanggal || 0) - new Date(a.tanggal_kirim || a.tanggal || 0)).forEach(sj => {
                         const sjNo = String(sj.no_sj || sj.no_surat_jalan || '').trim();
-                        if(sjNo) {
+                        if(sjNo && !usedSJ.has(sjNo)) {
                             const opt = document.createElement('option');
                             opt.value = sjNo;
                             opt.textContent = `${sjNo} - ${sj.customer || sj.nama_penerima || '-'} (${sj.tanggal || sj.tanggal_kirim || '-'})`;
@@ -8372,14 +8458,37 @@ window.setupDOMPagination();
         }
     });
 
-    document.getElementById('inv_no_penawaran')?.addEventListener('change', (e) => {
+    document.getElementById('inv_no_penawaran')?.addEventListener('change', async (e) => {
         const selectedPo = e.target.value.trim();
         const sjSelect = document.getElementById('inv_no_sj');
         if (sjSelect && sjSelect.tomselect) {
             sjSelect.tomselect.destroy();
         }
-        sjSelect.innerHTML = '<option value="">Pilih Surat Jalan...</option>';
+        if (sjSelect) sjSelect.innerHTML = '<option value="">Memuat Surat Jalan...</option>';
+        
+        if (!window.allSjData) {
+            try {
+                const res = await window.ERPAPI.request('get_surat_jalan');
+                if (res.status === 'success' && res.data) {
+                    window.allSjData = res.data;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+        
+        if (sjSelect) sjSelect.innerHTML = '<option value="">Pilih Surat Jalan...</option>';
         if (window.allSjData) {
+            const currentInvNo = document.getElementById('inv_no')?.value || '';
+            const usedSJ = new Set();
+            if (window.invoiceData) {
+                window.invoiceData.forEach(inv => {
+                    if (inv.no_invoice !== currentInvNo && inv.no_sj) {
+                        inv.no_sj.split(',').forEach(s => usedSJ.add(s.trim()));
+                    }
+                });
+            }
+
             const sortedSj = [...window.allSjData].sort((a,b) => new Date(b.tanggal_kirim || b.tanggal || 0) - new Date(a.tanggal_kirim || a.tanggal || 0));
             sortedSj.filter(sj => {
                 if(!selectedPo) return true;
@@ -8387,11 +8496,11 @@ window.setupDOMPagination();
                 return sPo === selectedPo;
             }).forEach(sj => {
                 const sjNo = String(sj.no_sj || sj.no_surat_jalan || '').trim();
-                if(sjNo) {
+                if(sjNo && !usedSJ.has(sjNo)) {
                     const opt = document.createElement('option');
                     opt.value = sjNo;
                     opt.textContent = `${sjNo} - ${sj.customer || sj.nama_penerima || '-'} (${sj.tanggal || sj.tanggal_kirim || '-'})`;
-                    sjSelect.appendChild(opt);
+                    if (sjSelect) sjSelect.appendChild(opt);
                 }
             });
         }

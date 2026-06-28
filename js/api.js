@@ -1,5 +1,5 @@
 // Replace with the actual URL from Google Apps Script deployment
-const API_URL = 'https://script.google.com/macros/s/AKfycbxpWtZ4n7rr4F3H5r3ORbvSBaF9SiyJuJukiOmJ6O3m_c57L9vowjHqJjVjKmfoisOuFQ/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbx0AdWdrzVmorW5wJNs4C4Ctgvw5oVzAD5F9ArSjVnAoqO1gDJsC-mx86VY7vRwAqRA7g/exec';
 
 let activeRequests = 0;
 function toggleSyncIcon(isSyncing) {
@@ -251,7 +251,7 @@ class ERPAPI {
             return { status: 'success', message: 'Invoice berhasil disimpan (Simulasi).' };
         } else if (action === 'delete_invoice') {
             return { status: 'success', message: 'Invoice dihapus.' };
-                } else if (action === 'get_coa') {
+        } else if (action === 'get_coa') {
             return {
                 status: 'success',
                 data: [

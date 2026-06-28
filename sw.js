@@ -1,4 +1,4 @@
-const CACHE_NAME = 'erporion-v22';
+const CACHE_NAME = 'erporion-v23';
 const urlsToCache = [
   './',
   './index.html',
@@ -24,7 +24,7 @@ self.addEventListener('fetch', event => {
         if (response && response.status === 200 && response.type === 'basic') {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME).then(cache => {
-             cache.put(event.request, responseToCache);
+            cache.put(event.request, responseToCache);
           });
         }
         return response;
