@@ -1001,12 +1001,13 @@
                                 <th>Customer</th>
                                 <th>Total Tagihan</th>
                                 <th>Status Pembayaran</th>
+                                <th>Penyelesai</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="table-invoice">
                             <tr>
-                                <td colspan="6" style="text-align: center;">Memuat data...</td>
+                                <td colspan="7" style="text-align: center;">Memuat data...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -3379,7 +3380,7 @@
                             <option value="">-- Pilih PO Customer --</option>
                         </select>
                     </div>
-                    <div class="input-group" style="margin-bottom:0; display:flex; flex-direction:column;">
+                    <div class="input-group" id="inv_sj_group" style="margin-bottom:0; display:flex; flex-direction:column;">
                         <label>Pilih Surat Jalan (Bisa Multi)</label>
                         <div style="display: flex; gap: 5px; width: 100%;">
                             <select id="inv_no_sj" multiple style="flex: 1;" placeholder="Pilih Surat Jalan..."></select>
@@ -3397,7 +3398,7 @@
                         <input type="text" id="inv_subtotal" required readonly
                             style="background: rgba(255,255,255,0.05); color: #aaa;">
                     </div>
-                    <div class="input-group" style="margin-bottom:0;">
+                    <div class="input-group" id="inv_ppn_group" style="margin-bottom:0;">
                         <label>PPN (%)</label>
                         <input type="number" id="inv_ppn" value="0" min="0" max="100"
                             oninput="if(typeof calculateInvoiceTotal === 'function') calculateInvoiceTotal()">
@@ -3407,7 +3408,7 @@
                         <input type="text" id="inv_total" required readonly
                             style="background: rgba(255,255,255,0.05); color: #aaa; font-weight: bold;">
                     </div>
-                    <div class="input-group" style="margin-bottom:0;">
+                    <div class="input-group" id="inv_potongan_dp_group" style="margin-bottom:0;">
                         <label>Potongan DP (Rp)</label>
                         <input type="text" id="inv_potongan_dp" value="0"
                             oninput="window.formatCurrencyInput(this); calculateInvoiceTotal()">
@@ -3565,21 +3566,21 @@
     <div id="print-inv-container" class="print-only"
         style="font-family: 'Arial', sans-serif; font-size: 14px; color: #000; padding: 20px;">
         <!-- Header -->
-        <div style="display: flex; justify-content: flex-start; gap: 5%; align-items: flex-start; margin-bottom: 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px;">
             <div style="width: 45%;">
                 <img src="logo.png" style="width: 100px; object-fit: contain; margin-bottom: 15px;">
-                <p id="print_inv_company_name" style="margin: 0; font-size: 14px;">PT. Orion Karya Sejahtera</p>
-                <p id="print_inv_company_address" style="margin: 2px 0; font-size: 14px;">Jl. Kopo Bihbul No.45, Sayati, Kec.<br>Margahayu, Kabupaten Bandung,<br>Jawa Barat Kode pos : 40228</p>
+                <p id="print_inv_company_name" style="margin: 0; font-size: 14px; font-weight: bold;">PT. Orion Karya Sejahtera</p>
+                <p id="print_inv_company_address" style="margin: 4px 0 0 0; font-size: 14px;">Jl. Kopo Bihbul No.45, Sayati, Kec.<br>Margahayu, Kabupaten Bandung,<br>Jawa Barat Kode pos : 40228</p>
             </div>
-            <div style="width: 50%; padding-top: 20px;">
-                <table style="width: 100%; border: none; font-size: 14px; line-height: 1.3;">
+            <div style="width: 50%; padding-top: 0;">
+                <h2 style="margin: 0 0 15px 0; font-size: 28px; font-weight: bold; letter-spacing: 2px;">INVOICE</h2>
+                <table style="width: 100%; border: none; font-size: 14px; line-height: 1.2;">
                     <tr><td style="width: 130px; padding: 0;">No Invoice</td><td style="padding: 0;">: <span id="print_inv_no"></span></td></tr>
                     <tr><td style="padding: 0;">Customer</td><td style="padding: 0;">: <span id="print_inv_customer"></span></td></tr>
-                    <tr><td style="padding: 0;">Alamat</td><td style="padding: 0;">: <span id="print_inv_alamat"></span></td></tr>
+                    <tr><td style="padding: 0; vertical-align: top;">Alamat</td><td style="padding: 0;">: <span id="print_inv_alamat"></span></td></tr>
                     <tr><td style="padding: 0;">No.PO</td><td style="padding: 0;">: <span id="print_inv_po"></span></td></tr>
-                    <tr><td colspan="2" style="padding: 10px 0;"></td></tr>
                     <tr><td style="padding: 0;">Tanggal Invoice</td><td style="padding: 0;">: <span id="print_inv_date"></span></td></tr>
-                    <tr><td style="padding: 0;">Due Date</td><td style="padding: 0;">: <span id="print_inv_due"></span></td></tr>
+                    <tr><td style="padding: 0;">Jatuh Tempo</td><td style="padding: 0;">: <span id="print_inv_due"></span></td></tr>
                 </table>
             </div>
         </div>
@@ -3591,8 +3592,8 @@
                     <th style="border-right: 1px solid #000; padding: 8px; text-align: center;">Nama Barang</th>
                     <th style="border-right: 1px solid #000; padding: 8px; text-align: center;">Jumlah</th>
                     <th style="border-right: 1px solid #000; padding: 8px; text-align: center;">Harga Satuan</th>
-                    <th style="border-right: 1px solid #000; padding: 8px; text-align: center;">Subtotal</th>
-                    <th style="padding: 8px; text-align: center;">PPN</th>
+                    <th style="border-right: 1px solid #000; padding: 8px; text-align: center;" id="print_inv_th_subtotal">Subtotal</th>
+                    <th style="padding: 8px; text-align: center;" id="print_inv_th_ppn">PPN</th>
                 </tr>
             </thead>
             <tbody id="print-inv-items">
@@ -3600,8 +3601,14 @@
             </tbody>
         </table>
 
+        <!-- Notes / Catatan -->
+        <div style="margin-bottom: 20px; width: 60%; float: left;">
+            <p style="margin: 0; font-weight: bold;">Catatan:</p>
+            <p style="margin: 5px 0 0 0; font-style: italic; white-space: pre-line;" id="print_inv_catatan">-</p>
+        </div>
+
         <!-- Totals -->
-        <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 30px; clear: both;">
             <table style="width: 40%; font-size: 14px; border: none;">
                 <tr id="print_inv_subtotal_row">
                     <td style="padding: 5px; text-align: left;">Subtotal</td>
@@ -3618,7 +3625,7 @@
                     <td style="padding: 5px; text-align: left;">Rp</td>
                     <td style="padding: 5px; text-align: right;" id="print_inv_ppn_amount">0</td>
                 </tr>
-                <tr>
+                <tr style="font-weight: bold; border-top: 1px solid #000;">
                     <td style="padding: 5px; text-align: left;">Total</td>
                     <td style="padding: 5px; text-align: left;">Rp</td>
                     <td style="padding: 5px; text-align: right;" id="print_inv_total">0</td>
@@ -3652,12 +3659,12 @@
         <div style="display: flex; justify-content: flex-start; gap: 5%; align-items: flex-start; margin-bottom: 30px;">
             <div style="width: 45%;">
                 <img src="logo.png" style="width: 100px; object-fit: contain; margin-bottom: 15px;">
-                <p id="print_prof_company_name" style="margin: 0; font-size: 14px;">PT. Orion Karya Sejahtera</p>
+                <p id="print_prof_company_name" style="margin: 0; font-size: 14px; font-weight: bold;">PT. Orion Karya Sejahtera</p>
                 <p id="print_prof_company_address" style="margin: 2px 0; font-size: 14px;">Jl. Kopo Bihbul No.45,
                     Sayati, Kec.<br>Margahayu, Kabupaten Bandung,<br>Jawa Barat Kode pos : 40228</p>
             </div>
             <div style="width: 50%;">
-                <h2 style="margin: 0 0 10px 0; font-size: 18px; font-weight: normal;">PROFORMA INVOICE</h2>
+                <h2 style="margin: 0 0 10px 0; font-size: 24px; font-weight: bold; text-transform: uppercase;">PROFORMA INVOICE</h2>
                 <table style="width: 100%; border: none; font-size: 14px; line-height: 1;">
                     <tr>
                         <td style="width: 130px; padding: 0;">No Proforma</td>
@@ -3680,7 +3687,7 @@
                         <td style="padding: 0;">: <span id="print_prof_date"></span></td>
                     </tr>
                     <tr>
-                        <td style="padding: 0;">Due Date</td>
+                        <td style="padding: 0;">Jatuh Tempo</td>
                         <td style="padding: 0;">: <span id="print_prof_due"></span></td>
                     </tr>
                 </table>
@@ -3716,7 +3723,7 @@
                     <td style="padding: 5px; text-align: left;">Rp</td>
                     <td style="padding: 5px; text-align: right;"><span id="print_prof_ppn_amount">0</span></td>
                 </tr>
-                <tr>
+                <tr style="font-weight: bold; border-top: 1px solid #000;">
                     <td style="padding: 5px; text-align: left;">Total</td>
                     <td style="padding: 5px; text-align: left;">Rp</td>
                     <td style="padding: 5px; text-align: right;"><span id="print_prof_total">0</span></td>
@@ -3736,6 +3743,7 @@
             </div>
             <div style="width: 30%; text-align: center;">
                 <p style="margin-bottom: 80px;">Hormat Kami,</p>
+                <div style="border-bottom: 1px solid #ccc; width: 100%; height: 1px; margin-bottom: 5px;"></div>
                 <p style="margin: 0;">Direktur</p>
                 <p style="margin: 0; font-weight: bold;">Von Von</p>
             </div>
@@ -3795,6 +3803,8 @@
         </div>
     </div>
 
+    <!-- Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="js/tom-select.complete.min.js"></script>

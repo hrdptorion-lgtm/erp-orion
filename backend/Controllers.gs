@@ -2338,13 +2338,29 @@ function saveInvoice(payload) {
   let sheet = ss.getSheetByName('DB Invoice');
   if (!sheet) {
     sheet = ss.insertSheet('DB Invoice');
-    sheet.appendRow(['No Invoice', 'Tanggal', 'Jatuh Tempo', 'No Penawaran', 'Customer', 'Total Tagihan', 'Terbayar', 'Sisa Tagihan', 'Status Pembayaran', 'Items', 'Catatan']);
-    sheet.getRange(1, 1, 1, 11).setFontWeight('bold');
+    sheet.appendRow(['No Invoice', 'Tanggal', 'Jatuh Tempo', 'No Penawaran', 'Customer', 'Total Tagihan', 'Potongan DP', 'Grand Total', 'Terbayar', 'Sisa Tagihan', 'Status Pembayaran', 'PPN', 'Items', 'Catatan', 'Dibuat Oleh', 'Diselesaikan Oleh', 'Waktu Selesai']);
+    sheet.getRange(1, 1, 1, 17).setFontWeight('bold');
   }
   
-  const values = sheet.getDataRange().getDisplayValues();
-  const headers = values[0];
-  const invIdx = headers.findIndex(h => /no.*invoice/i.test(h));
+  let values = sheet.getDataRange().getDisplayValues();
+  let headers = values[0];
+  let hMap = {};
+  headers.forEach((h, idx) => hMap[h.toLowerCase().trim()] = idx);
+
+  const expectedHeaders = ['No Invoice', 'Tanggal', 'Jatuh Tempo', 'No Penawaran', 'Customer', 'Total Tagihan', 'Potongan DP', 'Grand Total', 'Terbayar', 'Sisa Tagihan', 'Status Pembayaran', 'PPN', 'Items', 'Catatan', 'Dibuat Oleh', 'Diselesaikan Oleh', 'Waktu Selesai'];
+  expectedHeaders.forEach(eh => {
+    if (hMap[eh.toLowerCase().trim()] === undefined) {
+      headers.push(eh);
+      sheet.getRange(1, headers.length).setValue(eh);
+      sheet.getRange(1, headers.length).setFontWeight('bold');
+      hMap[eh.toLowerCase().trim()] = headers.length - 1;
+    }
+  });
+  
+  // Refresh values in case headers were added
+  values = sheet.getDataRange().getDisplayValues();
+  
+  const invIdx = hMap['no invoice'];
   
   const noInv = payload.no_invoice || ('INV-' + Date.now());
   const itemsStr = typeof payload.items === 'string' ? payload.items : JSON.stringify(payload.items || []);
@@ -2369,6 +2385,17 @@ function saveInvoice(payload) {
         if (hMap['items'] !== undefined) sheet.getRange(i + 1, hMap['items'] + 1).setValue(itemsStr);
         if (hMap['catatan'] !== undefined) sheet.getRange(i + 1, hMap['catatan'] + 1).setValue(payload.catatan || values[i][hMap['catatan']]);
         if (hMap['ppn'] !== undefined) sheet.getRange(i + 1, hMap['ppn'] + 1).setValue(payload.ppn !== undefined ? payload.ppn : (values[i][hMap['ppn']] || 0));
+        
+        if (payload.status_pembayaran === 'Lunas') {
+            if (hMap['diselesaikan oleh'] !== undefined) {
+                const prevPenyelesai = values[i][hMap['diselesaikan oleh']];
+                sheet.getRange(i + 1, hMap['diselesaikan oleh'] + 1).setValue(payload.penyelesai || prevPenyelesai || 'Sistem');
+            }
+            if (hMap['waktu selesai'] !== undefined) {
+                const prevWaktu = values[i][hMap['waktu selesai']];
+                sheet.getRange(i + 1, hMap['waktu selesai'] + 1).setValue(prevWaktu || Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy HH:mm:ss'));
+            }
+        }
         found = true;
         break;
       }
@@ -2393,12 +2420,83 @@ function saveInvoice(payload) {
       if (hl === 'items') return itemsStr;
       if (hl === 'catatan') return payload.catatan || '';
       if (hl === 'ppn') return payload.ppn || 0;
+      if (hl === 'dibuat oleh') return payload.pembuat || 'Sistem';
+      if (hl === 'diselesaikan oleh') return payload.status_pembayaran === 'Lunas' ? (payload.penyelesai || 'Sistem') : '';
+      if (hl === 'waktu selesai') return payload.status_pembayaran === 'Lunas' ? Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy HH:mm:ss') : '';
       return '';
     });
     sheet.appendRow(newRow);
   }
   if (payload.status_pembayaran === 'Lunas' && payload.no_penawaran) {
-    updatePOCustomerStatusByPOId(payload.no_penawaran, 'Selesai');
+    let totalLunas = 0;
+    const updatedInvValues = sheet.getDataRange().getDisplayValues();
+    const updatedInvHeaders = updatedInvValues[0];
+    let invNoPenawaranIdx = -1;
+    let invStatusIdx = -1;
+    let invTerbayarIdx = -1;
+    let invGrandTotalIdx = -1;
+
+    updatedInvHeaders.forEach((h, idx) => {
+      const hl = h.toLowerCase().trim();
+      if (hl === 'no penawaran' || hl.includes('referensi po') || hl.includes('po customer')) invNoPenawaranIdx = idx;
+      if (hl === 'status pembayaran') invStatusIdx = idx;
+      if (hl === 'terbayar') invTerbayarIdx = idx;
+      if (hl === 'grand total' || hl === 'total tagihan') invGrandTotalIdx = idx;
+    });
+
+    if (invNoPenawaranIdx !== -1 && invStatusIdx !== -1) {
+      for (let i = 1; i < updatedInvValues.length; i++) {
+        if (String(updatedInvValues[i][invNoPenawaranIdx]).trim() === String(payload.no_penawaran).trim()) {
+           if (String(updatedInvValues[i][invStatusIdx]).trim() === 'Lunas') {
+               let val = 0;
+               if (invTerbayarIdx !== -1) val = parseFloat(String(updatedInvValues[i][invTerbayarIdx]).replace(/[^0-9.-]+/g, "")) || 0;
+               if (val === 0 && invGrandTotalIdx !== -1) val = parseFloat(String(updatedInvValues[i][invGrandTotalIdx]).replace(/[^0-9.-]+/g, "")) || 0;
+               totalLunas += val;
+           }
+        }
+      }
+    }
+
+    const poSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB PO Customer');
+    if (poSheet) {
+      const poValues = poSheet.getDataRange().getDisplayValues();
+      const poHeaders = poValues[0];
+      let poIdIdx = -1;
+      let poNoPenawaranIdx = -1;
+      let poTotalIdx = -1;
+      
+      poHeaders.forEach((h, idx) => {
+         const hl = h.toLowerCase().trim();
+         if (hl === 'id po' || hl === 'no po') poIdIdx = idx;
+         if (hl === 'no penawaran') poNoPenawaranIdx = idx;
+         if (hl === 'total harga' || hl === 'total' || hl === 'grand total') poTotalIdx = idx;
+      });
+      
+      if (poIdIdx !== -1 && poTotalIdx !== -1) {
+         let poTotal = 0;
+         for (let i = 1; i < poValues.length; i++) {
+            if (String(poValues[i][poIdIdx]).trim() === String(payload.no_penawaran).trim() || 
+                (poNoPenawaranIdx !== -1 && String(poValues[i][poNoPenawaranIdx]).trim() === String(payload.no_penawaran).trim())) {
+                poTotal = parseFloat(String(poValues[i][poTotalIdx]).replace(/[^0-9.-]+/g, "")) || 0;
+                break;
+            }
+         }
+         
+         if (poTotal > 0) {
+            if (totalLunas >= poTotal) {
+               updatePOCustomerStatusByPOId(payload.no_penawaran, 'Selesai');
+            } else {
+               updatePOCustomerStatusByPOId(payload.no_penawaran, 'Proses');
+            }
+         } else {
+            updatePOCustomerStatusByPOId(payload.no_penawaran, 'Selesai');
+         }
+      } else {
+         updatePOCustomerStatusByPOId(payload.no_penawaran, 'Selesai');
+      }
+    } else {
+      updatePOCustomerStatusByPOId(payload.no_penawaran, 'Selesai');
+    }
   }
   
   return { status: 'success', message: 'Invoice berhasil disimpan.', no_invoice: noInv };

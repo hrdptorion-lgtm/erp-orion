@@ -2110,72 +2110,117 @@ window.setupDOMPagination();
         const item = window.poCustomerData.find(p => p.id_po_customer === poId);
         if (!item) return;
 
-        const dpRaw = window.prompt(`Masukkan Nilai DP (Rp) untuk PO Customer: ${poId}`);
-        if (dpRaw === null || dpRaw.trim() === '') return;
-        
-        const dpVal = parseFloat(dpRaw.replace(/[^0-9]/g, ''));
-        if (isNaN(dpVal) || dpVal <= 0) {
-            alert('Nilai DP tidak valid.');
-            return;
-        }
-
-        document.getElementById('invoice-form').reset();
-        document.getElementById('inv_no').value = '';
-        const today = new Date();
-        const offset = today.getTimezoneOffset() * 60000;
-        document.getElementById('inv_tanggal').value = new Date(today.getTime() - offset).toISOString().split('T')[0];
-        document.getElementById('inv_jatuh_tempo').value = new Date(today.getTime() - offset + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        
-        const poSel = document.getElementById('inv_no_penawaran');
-        const refId = item.id_po_customer || item.no_penawaran || '';
-        if (poSel && refId) {
-            if (!Array.from(poSel.options).some(o => o.value === refId)) {
-                const opt = document.createElement('option');
-                opt.value = refId;
-                opt.textContent = refId;
-                poSel.appendChild(opt);
+        Swal.fire({
+            title: `Masukkan Nilai DP`,
+            html: `<div style="color: #545454; font-size: 15px; margin-bottom: 20px; line-height: 1.6;">
+                       PO Customer: <b style="color: #333;">${poId}</b><br>
+                       Total PO: <b style="color: #333;">${window.formatRupiah(item.total_harga || 0)}</b>
+                   </div>
+                   <div style="text-align: left; padding: 0 5px;">
+                       <label for="swal-dp-input" style="font-weight: 600; font-size: 14px; margin-bottom: 8px; display: block; color: #545454;">Nilai DP (Rp)</label>
+                       <input type="text" id="swal-dp-input" class="swal2-input" placeholder="Contoh: 5.000.000" style="color: #333; width: 100%; box-sizing: border-box; margin: 0; padding: 0.75rem 1rem; border-radius: 8px; font-size: 16px; display: block;" oninput="this.value = this.value.replace(/[^0-9]/g, '').replace(/\\B(?=(\\d{3})+(?!\\d))/g, '.')">
+                   </div>`,
+            showCancelButton: true,
+            confirmButtonText: 'Lanjutkan',
+            cancelButtonText: 'Batal',
+            didOpen: () => {
+                document.getElementById('swal-dp-input').focus();
+            },
+            preConfirm: () => {
+                const value = document.getElementById('swal-dp-input').value;
+                if (!value) {
+                    Swal.showValidationMessage('Nilai DP tidak boleh kosong!');
+                    return false;
+                }
+                const dpVal = parseFloat(value.replace(/[^0-9]/g, ''));
+                if (isNaN(dpVal) || dpVal <= 0) {
+                    Swal.showValidationMessage('Nilai DP tidak valid!');
+                    return false;
+                }
+                return dpVal;
             }
-            poSel.value = refId;
-            poSel.dispatchEvent(new Event('change'));
-        } else if (poSel) {
-            poSel.value = '';
-        }
-        
-        document.getElementById('inv_customer').value = item.nama_customer || '';
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const dpVal = result.value;
 
-        const tbody = document.getElementById('inv-items-tbody');
-        if (tbody) {
-            tbody.innerHTML = '';
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><input type="text" class="inv-item-desc" list="bom-items-list" value="Down Payment" style="width: 100%; background: transparent; border: none; color: white;"></td>
-                <td><input type="number" class="inv-item-qty" value="1" min="1" style="width: 100%; text-align: right;"></td>
-                <td><input type="text" class="inv-item-price" value="${window.formatRupiah(dpVal).replace('Rp ', '')}" min="0" style="width: 100%; text-align: right;" oninput="window.formatCurrencyInput(this); calculateInvoiceTotal()"></td>
-                <td class="inv-item-subtotal" style="text-align: right;">Rp 0</td>
-                <td style="text-align: center;"><button type="button" class="btn btn-sm btn-danger btn-remove-inv-item"><i class="fa-solid fa-trash"></i></button></td>
-            `;
-            tr.querySelector('.inv-item-qty').addEventListener('input', calculateInvoiceTotal);
-            tr.querySelector('.inv-item-price').addEventListener('input', calculateInvoiceTotal);
-            tr.querySelector('.btn-remove-inv-item').addEventListener('click', () => {
-                tr.remove();
-                calculateInvoiceTotal();
-            });
-            tbody.appendChild(tr);
-        }
+                document.getElementById('invoice-form').reset();
+                document.getElementById('inv_no').value = '';
+                const today = new Date();
+                const offset = today.getTimezoneOffset() * 60000;
+                document.getElementById('inv_tanggal').value = new Date(today.getTime() - offset).toISOString().split('T')[0];
+                document.getElementById('inv_jatuh_tempo').value = new Date(today.getTime() - offset + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                
+                const poSel = document.getElementById('inv_no_penawaran');
+                const sjGroup = document.getElementById('inv_sj_group');
+                if (sjGroup) sjGroup.style.display = 'none';
+                
+                const ppnGroup = document.getElementById('inv_ppn_group');
+                if (ppnGroup) ppnGroup.style.display = 'none';
+                
+                const dpGroup = document.getElementById('inv_potongan_dp_group');
+                if (dpGroup) dpGroup.style.display = 'none';
 
-        if (document.getElementById('inv_potongan_dp')) document.getElementById('inv_potongan_dp').value = '0';
-        if (document.getElementById('inv_ppn')) document.getElementById('inv_ppn').value = '0';
+                const refId = item.id_po_customer || item.no_penawaran || '';
+                if (poSel && refId) {
+                    if (!Array.from(poSel.options).some(o => o.value === refId)) {
+                        const opt = document.createElement('option');
+                        opt.value = refId;
+                        opt.textContent = refId;
+                        poSel.appendChild(opt);
+                    }
+                    poSel.value = refId;
+                    poSel.dispatchEvent(new Event('change'));
+                } else if (poSel) {
+                    poSel.value = '';
+                }
+                
+                document.getElementById('inv_customer').value = item.nama_customer || item.customer || '';
 
-        if (typeof calculateInvoiceTotal === 'function') calculateInvoiceTotal();
+                const tbody = document.getElementById('inv-items-tbody');
+                if (tbody) {
+                    tbody.innerHTML = '';
+                    const poTotal = window.parseRupiah(item.total_harga || 0);
+                    const percentage = poTotal ? Math.round((dpVal / poTotal) * 100) : '';
+                    const desc = `Tagihan Down Payment (DP) ${percentage ? percentage + '%' : ''} untuk PO ${poId}`.trim();
+                    
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><input type="text" class="inv-item-desc" list="bom-items-list" value="${desc}" style="width: 100%; background: transparent; border: none; color: white;"></td>
+                        <td><input type="number" class="inv-item-qty" value="1" min="1" style="width: 100%; text-align: right;"></td>
+                        <td><input type="text" class="inv-item-price" value="${window.formatRupiah(dpVal).replace('Rp ', '')}" min="0" style="width: 100%; text-align: right;" oninput="window.formatCurrencyInput(this); calculateInvoiceTotal()"></td>
+                        <td class="inv-item-subtotal" style="text-align: right;">Rp 0</td>
+                        <td style="text-align: center;"><button type="button" class="btn btn-sm btn-danger btn-remove-inv-item"><i class="fa-solid fa-trash"></i></button></td>
+                    `;
+                    tr.querySelector('.inv-item-qty').addEventListener('input', calculateInvoiceTotal);
+                    tr.querySelector('.inv-item-price').addEventListener('input', calculateInvoiceTotal);
+                    tr.querySelector('.btn-remove-inv-item').addEventListener('click', () => {
+                        tr.remove();
+                        calculateInvoiceTotal();
+                    });
+                    tbody.appendChild(tr);
+                }
 
-        const sjSelect = document.getElementById('inv_no_sj');
-        if (sjSelect && sjSelect.tomselect) sjSelect.tomselect.clear();
+                if (document.getElementById('inv_potongan_dp')) {
+                    document.getElementById('inv_potongan_dp').value = '0'; // Tidak ada potongan DP di tagihan khusus DP
+                }
+                if (document.getElementById('inv_ppn')) document.getElementById('inv_ppn').value = '0';
+                if (document.getElementById('inv_catatan')) {
+                    const poTotal = window.parseRupiah(item.total_harga || 0);
+                    const sisa = poTotal - dpVal;
+                    document.getElementById('inv_catatan').value = `Pembayaran Uang Muka (DP) untuk PO Customer: ${poId}. Sisa tagihan pelunasan: ${window.formatRupiah(sisa)}`;
+                }
 
-        document.getElementById('invoice-modal').classList.add('active');
-        
-        // Optionally switch to the invoice tab so they can see the saved invoice later
-        const tabInvoice = document.querySelector('.menu-item[data-tab="invoice"]');
-        if (tabInvoice) tabInvoice.click();
+                if (typeof calculateInvoiceTotal === 'function') calculateInvoiceTotal();
+
+                const sjSelect = document.getElementById('inv_no_sj');
+                if (sjSelect && sjSelect.tomselect) sjSelect.tomselect.clear();
+
+                document.getElementById('invoice-modal').classList.add('active');
+                
+                const tabInvoice = document.querySelector('.menu-item[data-tab="invoice"]');
+                if (tabInvoice) tabInvoice.click();
+            }
+        });
     };
 
     async function loadPOCustomerData() {
@@ -2283,7 +2328,7 @@ window.setupDOMPagination();
                 <td><span class="badge badge-${item.status === 'Selesai' ? 'success' : (item.status === 'Proses' ? 'warning' : 'info')}">${item.status || 'Pending'}</span></td>
                 <td style="white-space: nowrap;">
                     <div style="display: flex; gap: 5px; flex-wrap: nowrap; align-items: center;">
-                        <button class="btn btn-dp-inv" title="Buat Invoice DP" onclick="createDPInvoice('${item.id_po_customer}')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: rgba(245, 158, 11, 0.2); color: #f59e0b;"><i class="fa-solid fa-money-bill-wave"></i></button>
+                        ${relatedInv.length === 0 ? `<button class="btn btn-dp-inv" title="Buat Invoice DP" onclick="createDPInvoice('${item.id_po_customer}')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: rgba(245, 158, 11, 0.2); color: #f59e0b;"><i class="fa-solid fa-money-bill-wave"></i></button>` : ''}
                         <button class="btn btn-print" title="Cetak PO" onclick="printPOCustomer('${item.id_po_customer}')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--info);"><i class="fa-solid fa-print"></i></button>
                         <button class="btn btn-edit" title="Edit" onclick="openPOCustomerModal('${item.id_po_customer}')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--primary);"><i class="fa-solid fa-edit"></i></button>
                         <button class="btn btn-delete" title="Hapus" onclick="deletePOCustomer('${item.id_po_customer}')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger);"><i class="fa-solid fa-trash"></i></button>
@@ -3422,17 +3467,22 @@ window.setupDOMPagination();
         } else if (btnInv) {
             const item = JSON.parse(btnInv.getAttribute('data-item'));
             document.getElementById('invoice-form').reset();
-            const poSelect = document.getElementById('inv_id_po_customer');
+            const poSelect = document.getElementById('inv_no_penawaran');
             if (poSelect) {
-                let found = Array.from(poSelect.options).find(o => o.value === item.no_penawaran);
-                if (!found && item.no_penawaran) {
+                let ref = item.id_po_customer || item.no_penawaran;
+                let found = Array.from(poSelect.options).find(o => o.value === ref);
+                if (!found && ref) {
                     const opt = document.createElement('option');
-                    opt.value = item.no_penawaran;
-                    opt.text = item.no_penawaran + " (Dari PO Customer)";
+                    opt.value = ref;
+                    opt.text = ref + " (Dari PO Customer)";
                     poSelect.add(opt);
                 }
-                poSelect.value = item.no_penawaran || '';
+                poSelect.value = ref || '';
             }
+            
+            const custInput = document.getElementById('inv_customer');
+            if (custInput) custInput.value = item.nama_customer || item.customer || '';
+
             document.getElementById('inv_no').value = '';
 
             const tbody = document.getElementById('inv-items-tbody');
@@ -7258,14 +7308,7 @@ window.setupDOMPagination();
         document.querySelectorAll('.btn-print-proforma-sj').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const idx = e.currentTarget.getAttribute('data-idx');
-                const originalHtml = e.currentTarget.innerHTML;
-                e.currentTarget.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memuat...';
-                e.currentTarget.disabled = true;
-                
                 await printProformaInvoice(suratJalanData[idx]);
-                
-                e.currentTarget.innerHTML = originalHtml;
-                e.currentTarget.disabled = false;
             });
         });
 
@@ -7507,7 +7550,9 @@ window.setupDOMPagination();
 
     async function printSuratJalan(item) {
         document.getElementById('print_sj_company_name').textContent = cachedSettings['NAMA_PERUSAHAAN'] || 'PT. Orion Karya Sejahtera';
-        document.getElementById('print_sj_company_address').innerHTML = (cachedSettings['ALAMAT'] || '') + '<br>' + (cachedSettings['NO_TELP'] || '');
+        const defaultAddress = 'Jl. Kopo Bihbul No.45, Sayati, Kec.<br>Margahayu, Kabupaten Bandung,<br>Jawa Barat Kode pos : 40228';
+        const alamatStr = cachedSettings['ALAMAT'] ? (cachedSettings['ALAMAT'] + '<br>' + (cachedSettings['NO_TELP'] || '')) : defaultAddress;
+        document.getElementById('print_sj_company_address').innerHTML = alamatStr;
 
         const sjNo = item.no_sj || item.no_surat_jalan || '-';
         const sjTanggal = item.tanggal || item.tanggal_kirim || '-';
@@ -7761,7 +7806,7 @@ window.setupDOMPagination();
         const tbody = document.getElementById('table-invoice');
         tbody.innerHTML = '';
         if (invoiceData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Tidak ada data invoice.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Tidak ada data invoice.</td></tr>';
             return;
         }
         invoiceData.forEach(inv => {
@@ -7771,35 +7816,154 @@ window.setupDOMPagination();
             else if (inv.status_pembayaran === 'Batal') badgeClass = 'badge-danger';
 
             let sisa = parseFloat(inv.sisa_tagihan);
-            if (isNaN(sisa)) sisa = parseFloat(inv.grand_total) || parseFloat(inv.total_tagihan) || 0;
             
-            let btnSisa = '';
-            if (sisa > 0 && inv.status_pembayaran !== 'Lunas') {
-                btnSisa = `<button class="btn btn-sisa-inv" data-idx="${invoiceData.indexOf(inv)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(245, 158, 11, 0.2); color: #f59e0b; margin-right: 5px;" title="Buat Tagihan Sisa"><i class="fa-solid fa-file-invoice-dollar"></i></button>`;
+            let actionBtns = `
+                <button class="btn btn-print-inv" data-idx="${invoiceData.indexOf(inv)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(168, 85, 247, 0.2); color: #a855f7; margin-right: 5px;" title="Print Invoice"><i class="fa-solid fa-print"></i></button>
+            `;
+
+            if ((inv.status_pembayaran || '').toLowerCase() !== 'lunas') {
+                actionBtns += `<button class="btn btn-selesai-inv" data-idx="${invoiceData.indexOf(inv)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(34, 197, 94, 0.2); color: #22c55e; margin-right: 5px;" title="Selesaikan Invoice"><i class="fa-solid fa-check"></i></button>`;
+                
+                if (inv.grand_total > 0 && inv.sisa_tagihan > 0) {
+                    actionBtns += `<button class="btn btn-sisa-inv" data-idx="${invoiceData.indexOf(inv)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(234, 179, 8, 0.2); color: #eab308; margin-right: 5px;" title="Bayar Sisa (Cicil)"><i class="fa-solid fa-money-bill-wave"></i></button>`;
+                }
             }
 
-            let actionBtns = `
-            ${btnSisa}
-            <button class="btn btn-edit-inv" data-idx="${invoiceData.indexOf(inv)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(16, 185, 129, 0.2); color: var(--secondary); margin-right: 5px;" title="Edit"><i class="fa-solid fa-pen"></i></button>
-            <button class="btn btn-print-inv" data-idx="${invoiceData.indexOf(inv)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(59, 130, 246, 0.2); color: #60a5fa; margin-right: 5px;" title="Print"><i class="fa-solid fa-print"></i></button>
-            <button class="btn btn-delete-inv" data-no="${inv.no_invoice}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(239, 68, 68, 0.1); color: var(--danger);" title="Hapus"><i class="fa-solid fa-trash"></i></button>
-        `;
+            actionBtns += `
+                <button class="btn btn-edit-inv" data-idx="${invoiceData.indexOf(inv)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(59, 130, 246, 0.2); color: #3b82f6; margin-right: 5px;" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn btn-delete-inv" data-no="${inv.no_invoice}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(239, 68, 68, 0.1); color: var(--danger);" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+            `;
+
+            let penyelesaiText = '-';
+            if (inv.status_pembayaran === 'Lunas') {
+                penyelesaiText = `Oleh: <b style="color:var(--text-main);">${inv.diselesaikan_oleh || 'Sistem'}</b><br><small style="color:var(--text-muted);">${inv.waktu_selesai || '-'}</small>`;
+            }
 
             tr.innerHTML = `
-            <td><strong>${inv.no_invoice}</strong></td>
+            <td><strong>${inv.no_invoice}</strong><br><small style="color:var(--text-muted); font-size:0.75rem;">Dibuat: ${inv.dibuat_oleh || 'Sistem'}</small></td>
             <td>${inv.tanggal || '-'}</td>
             <td>${inv.customer || '-'}</td>
             <td>${window.formatRupiah(inv.total_tagihan || 0)}</td>
             <td><span class="badge ${badgeClass}">${inv.status_pembayaran || 'Belum Lunas'}</span></td>
+            <td>${penyelesaiText}</td>
             <td><div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">${actionBtns}</div></td>
         `;
             tbody.appendChild(tr);
         });
 
         document.querySelectorAll('.btn-print-inv').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', async (e) => {
                 const idx = e.currentTarget.getAttribute('data-idx');
+                const btnEl = e.currentTarget;
+                const originalHtml = btnEl.innerHTML;
+                btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                try {
+                    if (!window.ERPAPI.getCached('get_customers')) {
+                        await window.ERPAPI.request('get_customers');
+                    }
+                } catch(err) {
+                    console.error('Gagal memuat data customer', err);
+                }
+                btnEl.innerHTML = originalHtml;
                 printInvoice(invoiceData[idx]);
+            });
+        });
+
+        document.querySelectorAll('.btn-selesai-inv').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const idx = e.currentTarget.getAttribute('data-idx');
+                const inv = invoiceData[idx];
+                
+                // Fetch COA if not loaded
+                if (!window.coaData || window.coaData.length === 0) {
+                    try {
+                        const res = await window.ERPAPI.request('get_coa');
+                        if (res.status === 'success') window.coaData = res.data;
+                    } catch (e) { console.error('Failed to load COA', e); }
+                }
+
+                let coaOptions = '<option value="">Pilih COA...</option>';
+                if (window.coaData) {
+                    window.coaData.forEach(c => {
+                        coaOptions += `<option value="${c.kode} - ${c.keterangan}">${c.kode} - ${c.keterangan}</option>`;
+                    });
+                }
+
+                const currentUser = localStorage.getItem('erp_session') ? JSON.parse(localStorage.getItem('erp_session')).name : 'Admin';
+
+                Swal.fire({
+                    title: 'Selesaikan Invoice',
+                    html: `
+                        <p style="margin-bottom: 15px; color: #333;">Tandai invoice <b>${inv.no_invoice}</b> sebagai Lunas?</p>
+                        <p style="margin-bottom: 10px; font-size: 0.9em; color: #666;">Hal ini otomatis mencatat Uang Masuk sebesar <b>${window.formatRupiah(inv.grand_total || inv.total_tagihan || 0)}</b> ke Kasir.</p>
+                        <div style="text-align: left; margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #333;">Pilih Rekening / COA Tujuan:</label>
+                            <select id="selesai-inv-coa" class="form-control" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; background: #fff; color: #000;">
+                                ${coaOptions}
+                            </select>
+                        </div>
+                    `,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fa-solid fa-check"></i> Ya, Selesaikan',
+                    cancelButtonText: 'Batal',
+                    confirmButtonColor: '#22c55e',
+                    preConfirm: () => {
+                        const selectedCoa = document.getElementById('selesai-inv-coa').value;
+                        if (!selectedCoa) {
+                            Swal.showValidationMessage('Anda harus memilih COA tujuan!');
+                            return false;
+                        }
+                        return selectedCoa;
+                    }
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+                        const selectedCoa = result.value;
+                        const btnEl = btn;
+                        const originalHtml = btnEl.innerHTML;
+                        btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                        btnEl.disabled = true;
+
+                        try {
+                            const updatedInv = { ...inv };
+                            updatedInv.status_pembayaran = 'Lunas';
+                            updatedInv.terbayar = parseFloat(updatedInv.grand_total) || parseFloat(updatedInv.total_tagihan) || 0;
+                            updatedInv.sisa_tagihan = 0;
+                            updatedInv.penyelesai = currentUser;
+
+                            // 1. Update Invoice
+                            const invRes = await window.ERPAPI.request('save_invoice', updatedInv);
+                            if (invRes.status === 'success') {
+                                showToast('Invoice diselesaikan. Silakan klik "Simpan Mutasi" untuk mencatat uang masuk.', 'success');
+                                loadInvoiceData(); // reload
+                                
+                                // Buka Form Finance (Petty Cash)
+                                document.getElementById('pc_jenis').value = 'Masuk';
+                                document.getElementById('pc_nominal').value = updatedInv.terbayar;
+                                document.getElementById('pc_keterangan').value = 'Pembayaran Invoice ' + inv.no_invoice + ' (' + inv.customer + ')';
+                                
+                                const pcCoa = document.getElementById('pc_coa');
+                                if (pcCoa) pcCoa.value = selectedCoa;
+                                
+                                const displayText = document.getElementById('pc_coa_display_text');
+                                if (displayText) {
+                                    displayText.textContent = selectedCoa;
+                                    displayText.style.color = 'var(--text-main)';
+                                }
+                                
+                                document.getElementById('petty-cash-modal').classList.add('active');
+                            } else {
+                                Swal.fire('Gagal!', invRes.message, 'error');
+                                btnEl.innerHTML = originalHtml;
+                                btnEl.disabled = false;
+                            }
+                        } catch (err) {
+                            Swal.fire('Error', 'Koneksi bermasalah.', 'error');
+                            btnEl.innerHTML = originalHtml;
+                            btnEl.disabled = false;
+                        }
+                    }
+                });
             });
         });
 
@@ -7934,20 +8098,42 @@ window.setupDOMPagination();
 
     function printInvoice(item) {
         document.getElementById('print_inv_company_name').textContent = cachedSettings['NAMA_PERUSAHAAN'] || 'PT. Orion Karya Sejahtera';
-        document.getElementById('print_inv_company_address').innerHTML = (cachedSettings['ALAMAT'] || '') + '<br>' + (cachedSettings['NO_TELP'] || '');
+        const defaultAddress = 'Jl. Kopo Bihbul No.45, Sayati, Kec.<br>Margahayu, Kabupaten Bandung,<br>Jawa Barat Kode pos : 40228';
+        const alamatStr = cachedSettings['ALAMAT'] ? (cachedSettings['ALAMAT'] + '<br>' + (cachedSettings['NO_TELP'] || '')) : defaultAddress;
+        document.getElementById('print_inv_company_address').innerHTML = alamatStr;
 
         const todayDate = new Date();
         const offset = todayDate.getTimezoneOffset() * 60000;
         const localTodayStr = new Date(todayDate.getTime() - offset).toISOString().split('T')[0];
 
         document.getElementById('print_inv_customer').textContent = item.customer || '-';
+        
+        let alamat = '-';
+        const customersRes = window.ERPAPI.getCached('get_customers');
+        if (customersRes && customersRes.data) {
+            const c = customersRes.data.find(x => x.nama === item.customer);
+            if (c) alamat = c.alamat;
+        }
+        document.getElementById('print_inv_alamat').textContent = item.alamat || alamat;
+        
         document.getElementById('print_inv_no').textContent = item.no_invoice || '-';
         document.getElementById('print_inv_date').textContent = item.tanggal || localTodayStr;
         document.getElementById('print_inv_due').textContent = item.jatuh_tempo || '-';
-        document.getElementById('print_inv_po').textContent = item.no_penawaran || '-';
+        document.getElementById('print_inv_po').textContent = item.no_penawaran || item.id_po_customer || '-';
 
         const tbody = document.getElementById('print-inv-items');
         tbody.innerHTML = '';
+
+        let ppnRate = 0;
+        if (item.ppn !== undefined && item.ppn !== null && item.ppn !== '') {
+            ppnRate = parseFloat(item.ppn);
+        } else if (window.poCustomerData && window.poCustomerData.length > 0) {
+            const poData = window.poCustomerData.find(p => p.id_po_customer === item.no_penawaran || p.no_penawaran === item.no_penawaran);
+            if (poData && poData.ppn > 0) ppnRate = parseFloat(poData.ppn);
+        }
+
+        const thPpn = document.getElementById('print_inv_th_ppn');
+        if (thPpn) thPpn.style.display = ppnRate > 0 ? 'table-cell' : 'none';
 
         let items = [];
         const itemsRaw = item.items || item.item || '[]';
@@ -7959,27 +8145,21 @@ window.setupDOMPagination();
                 const harga = parseFloat(it.harga_satuan || it.harga || 0);
                 const sub = (it.qty || 0) * harga;
                 subtotal += sub;
-                // Assuming PPN per item is 0 for simplicity, or we calculate it globally
+                
+                let ppnCell = ppnRate > 0 ? `<td style="border: 1px solid #000; padding: 8px; text-align: right;">-</td>` : '';
                 tbody.innerHTML += `
                 <tr>
                     <td style="border: 1px solid #000; padding: 8px;">${it.nama || it.item || '-'}</td>
                     <td style="border: 1px solid #000; padding: 8px; text-align: center;">${it.qty || 0} ${it.satuan || 'Pcs'}</td>
                     <td style="border: 1px solid #000; padding: 8px; text-align: right;">Rp ${harga.toLocaleString('id-ID')}</td>
                     <td style="border: 1px solid #000; padding: 8px; text-align: right;">Rp ${sub.toLocaleString('id-ID')}</td>
-                    <td style="border: 1px solid #000; padding: 8px; text-align: right;">-</td>
+                    ${ppnCell}
                 </tr>
             `;
             });
         } else {
-            tbody.innerHTML = `<tr><td colspan="5" style="border: 1px solid #000; padding: 8px; text-align: center;">Tidak ada barang</td></tr>`;
-        }
-        
-        let ppnRate = 0;
-        if (item.ppn !== undefined && item.ppn !== null && parseFloat(item.ppn) > 0) {
-            ppnRate = parseFloat(item.ppn);
-        } else if (window.poCustomerData && window.poCustomerData.length > 0) {
-            const poData = window.poCustomerData.find(p => p.id_po_customer === item.no_penawaran || p.no_penawaran === item.no_penawaran);
-            if (poData && poData.ppn > 0) ppnRate = parseFloat(poData.ppn);
+            let colspan = ppnRate > 0 ? 5 : 4;
+            tbody.innerHTML = `<tr><td colspan="${colspan}" style="border: 1px solid #000; padding: 8px; text-align: center;">Tidak ada barang</td></tr>`;
         }
         
         const ppnAmount = subtotal * (ppnRate / 100);
@@ -7988,9 +8168,14 @@ window.setupDOMPagination();
         const subtotalRow = document.getElementById('print_inv_subtotal_row');
         const ppnRow = document.getElementById('print_inv_ppn_row');
         const dpRow = document.getElementById('print_inv_dp_row');
+        const catatanEl = document.getElementById('print_inv_catatan');
         
-        if (subtotalRow) subtotalRow.style.display = 'table-row';
-        if (ppnRow) ppnRow.style.display = 'table-row';
+        if (catatanEl) {
+            catatanEl.textContent = item.catatan || '-';
+        }
+        
+        if (subtotalRow) subtotalRow.style.display = (ppnRate > 0 || dpAmount > 0) ? 'table-row' : 'none';
+        if (ppnRow) ppnRow.style.display = ppnRate > 0 ? 'table-row' : 'none';
         if (dpRow) {
             dpRow.style.display = dpAmount > 0 ? 'table-row' : 'none';
         }
@@ -8036,7 +8221,9 @@ window.setupDOMPagination();
 
     async function printProformaInvoice(sjItem) {
         document.getElementById('print_prof_company_name').textContent = cachedSettings['NAMA_PERUSAHAAN'] || 'PT. Orion Karya Sejahtera';
-        document.getElementById('print_prof_company_address').innerHTML = (cachedSettings['ALAMAT'] || '') + '<br>' + (cachedSettings['NO_TELP'] || '');
+        const defaultAddress = 'Jl. Kopo Bihbul No.45, Sayati, Kec.<br>Margahayu, Kabupaten Bandung,<br>Jawa Barat Kode pos : 40228';
+        const alamatStr = cachedSettings['ALAMAT'] ? (cachedSettings['ALAMAT'] + '<br>' + (cachedSettings['NO_TELP'] || '')) : defaultAddress;
+        document.getElementById('print_prof_company_address').innerHTML = alamatStr;
 
         const noSjStr = sjItem.no_sj || sjItem.no_surat_jalan || '';
         document.getElementById('print_prof_no').textContent = 'PROFORMA-INV-' + noSjStr.replace('SJ-', '');
@@ -8391,6 +8578,15 @@ window.setupDOMPagination();
         addInvoiceItemRow(); // start with 1 empty row
         calculateInvoiceTotal();
 
+        const sjGroup = document.getElementById('inv_sj_group');
+        if (sjGroup) sjGroup.style.display = 'flex';
+        
+        const ppnGroup = document.getElementById('inv_ppn_group');
+        if (ppnGroup) ppnGroup.style.display = '';
+        
+        const dpGroup = document.getElementById('inv_potongan_dp_group');
+        if (dpGroup) dpGroup.style.display = '';
+
         const sjSelect = document.getElementById('inv_no_sj');
         if (sjSelect) {
             sjSelect.removeAttribute('disabled');
@@ -8581,7 +8777,8 @@ window.setupDOMPagination();
             status_pembayaran: document.getElementById('inv_status').value,
             catatan: document.getElementById('inv_catatan').value,
             ppn: document.getElementById('inv_ppn') ? document.getElementById('inv_ppn').value : 0,
-            items: items
+            items: items,
+            pembuat: typeof currentUser !== 'undefined' ? currentUser : (localStorage.getItem('erp_session') ? JSON.parse(localStorage.getItem('erp_session')).name : 'Admin')
         };
 
         try {
@@ -9777,7 +9974,7 @@ async function loadTransaksiGudangData(isBackgroundSync = false) {
                         cancelText: 'Batal',
                         type: 'danger'
                     })) {
-                        e.currentTarget.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
                         const res = await window.ERPAPI.request('delete_transaksi_gudang', { id });
                         if (res.status === 'success') {
                             showToast(res.message, 'success');
@@ -9804,8 +10001,8 @@ async function loadTransaksiGudangData(isBackgroundSync = false) {
                     });
                     if (!ok) return;
                     
-                    e.currentTarget.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-                    e.currentTarget.disabled = true;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                    btn.disabled = true;
                     
                     window.ERPAPI.request('approve_transaksi', { id_transaksi: id, pemberi: pemberiName }).then(res => {
                         if (res.status === 'success') {
