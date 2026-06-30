@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="css/style.css?v=60">
+    <link rel="stylesheet" href="css/style.css?v=62">
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Tom Select for Smart Dropdowns -->
@@ -94,7 +94,7 @@
             <div class="brand"
                 style="justify-content: center; border: none; margin-bottom: 1rem; flex-direction: column; gap: 10px; padding: 20px 0;">
                 <div class="brand-icon" style="background: transparent; box-shadow: none; width: 80px; height: 80px;">
-                    <img src="logo.png" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;">
+                    <img src="logo.png?v=2" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;">
                 </div>
                 <h2 style="margin: 0; font-size: 1.5rem;">ERP ORION</h2>
             </div>
@@ -125,7 +125,7 @@
     <nav class="sidebar">
         <div class="brand">
             <div class="brand-icon" style="background: transparent; box-shadow: none;">
-                <img src="logo.png" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;">
+                <img src="logo.png?v=2" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;">
             </div>
             <h2>ERP ORION</h2>
         </div>
@@ -827,14 +827,14 @@
                         <span>Kas Masuk (Hari Ini)</span>
                         <div class="stat-icon icon-green"><i class="fa-solid fa-arrow-down"></i></div>
                     </div>
-                    <div class="stat-value">Rp 0</div>
+                    <div class="stat-value" id="finance-kas-masuk">Rp 0</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">
                         <span>Kas Keluar (Hari Ini)</span>
                         <div class="stat-icon icon-orange"><i class="fa-solid fa-arrow-up"></i></div>
                     </div>
-                    <div class="stat-value">Rp 0</div>
+                    <div class="stat-value" id="finance-kas-keluar">Rp 0</div>
                 </div>
             </div>
 
@@ -844,8 +844,21 @@
                     <button class="btn" id="btn-add-cash"><i class="fa-solid fa-plus"></i> Mutasi Kas</button>
                 </div>
                 <div class="table-container">
-                    <p style="color: var(--text-muted); text-align: center; padding: 2rem;">Belum ada mutasi kas hari
-                        ini.</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>WAKTU</th>
+                                <th>PIC</th>
+                                <th>JENIS</th>
+                                <th>COA</th>
+                                <th>KETERANGAN</th>
+                                <th style="text-align: right;">NOMINAL</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-finance-kasir">
+                            <tr><td colspan="6" style="text-align: center;">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -2023,7 +2036,7 @@
 
                 <!-- Quick Actions -->
                 <div id="detail-poc-actions"
-                    style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px;">
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 20px;">
                     <button type="button" class="btn" id="btn-detail-act-spk"
                         style="flex-direction: column; align-items: center; justify-content: center; height: 80px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; color: #60a5fa; cursor: pointer; padding: 10px;">
                         <i class="fa-solid fa-industry" style="font-size: 1.3rem; margin-bottom: 5px;"></i>
@@ -2047,7 +2060,13 @@
                         style="flex-direction: column; align-items: center; justify-content: center; height: 80px; background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 10px; color: #a78bfa; cursor: pointer; padding: 10px;">
                         <i class="fa-solid fa-file-invoice-dollar" style="font-size: 1.3rem; margin-bottom: 5px;"></i>
                         <span style="font-size: 0.7rem; text-align: center; font-weight: bold; line-height: 1.2;">Buat
-                            Invoice</span>
+                            Invoice Lunas</span>
+                    </button>
+                    <button type="button" class="btn" id="btn-detail-act-inv-dp"
+                        style="flex-direction: column; align-items: center; justify-content: center; height: 80px; background: rgba(236, 72, 153, 0.1); border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 10px; color: #f472b6; cursor: pointer; padding: 10px;">
+                        <i class="fa-solid fa-money-bill-wave" style="font-size: 1.3rem; margin-bottom: 5px;"></i>
+                        <span style="font-size: 0.7rem; text-align: center; font-weight: bold; line-height: 1.2;">Buat
+                            Invoice DP</span>
                     </button>
                 </div>
 
@@ -3752,21 +3771,21 @@
     </div>
 
     <!-- MODAL PENERIMAAN BARANG -->
-    <div class="modal-overlay" id="grn-modal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3><i class="fa-solid fa-box-open"></i> Terima Barang</h3>
-                <button class="btn" id="btn-close-grn"
-                    style="background: transparent; color: var(--text-dark); box-shadow: none;"><i
-                        class="fa-solid fa-xmark"></i></button>
+    <div class="login-overlay" id="grn-penerimaan-modal">
+        <div class="login-box" style="max-width: 800px; padding: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+                <h3 style="margin: 0;"><i class="fa-solid fa-box-open"></i> Terima Barang</h3>
+                <button class="btn" id="btn-close-grn" type="button"
+                    style="background: transparent; color: var(--text-muted); font-size: 1.2rem; padding: 0.5rem; box-shadow: none;"><i
+                        class="fa-solid fa-times"></i></button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-info">
                     <i class="fa-solid fa-info-circle"></i> Catat kuantitas aktual yang diterima. Stok gudang akan
                     otomatis bertambah!
                 </div>
-                <form id="grn-form">
-                    <input type="hidden" id="grn_no_po">
+                <form id="grn-penerimaan-form">
+                    <input type="hidden" id="grn_penerimaan_no_po">
                     <div class="form-group">
                         <label>Penerima (PIC)</label>
                         <input type="text" id="grn_penerima" required placeholder="Nama penerima barang">
@@ -3778,7 +3797,7 @@
 
                     <h4 style="margin: 20px 0 10px; color: var(--text-dark);">Daftar Barang Diterima</h4>
                     <div class="table-container">
-                        <table>
+                        <table class="table" style="width: 100%; font-size: 0.9rem;">
                             <thead>
                                 <tr>
                                     <th>Kode</th>
@@ -3793,7 +3812,7 @@
                         </table>
                     </div>
 
-                    <div style="margin-top: 20px; text-align: right;">
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
                         <button type="button" class="btn" id="btn-cancel-grn"
                             style="background: var(--bg-glass); color: var(--text-dark);">Batal</button>
                         <button type="submit" class="btn"><i class="fa-solid fa-save"></i> Simpan Penerimaan</button>
@@ -3824,8 +3843,8 @@
         <option value="Set"></option>
     </datalist>
 
-    <script src="js/api.js?v=32"></script>
-    <script src="js/app.js?v=61"></script>
+    <script src="js/api.js?v=33"></script>
+    <script src="js/app.js?v=80"></script>
 </body>
 
 </html>

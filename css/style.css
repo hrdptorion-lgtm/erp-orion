@@ -737,6 +737,13 @@ tbody tr:hover {
   display: none;
 }
 
+.modal-overlay.active {
+  display: flex !important;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
 /* Login Overlay */
 .login-overlay {
   position: fixed;

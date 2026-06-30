@@ -10,7 +10,7 @@ function setupDatabase() {
     { name: 'DB Penawaran', cols: ['No Penawaran', 'Tanggal', 'Customer', 'Rincian Item', 'Total Harga', 'Down Payment', 'Status', 'Narasi', 'Info Tambahan'] },
     { name: 'DB Surat Jalan', cols: ['No Surat Jalan', 'Referensi Penawaran', 'Tanggal Kirim', 'Item', 'Qty', 'Sisa Outstanding PO'] },
     { name: 'DB Invoice', cols: ['No Invoice', 'Tanggal', 'Jatuh Tempo', 'No Penawaran', 'Customer', 'Total Tagihan', 'Potongan DP', 'Grand Total', 'Terbayar', 'Sisa Tagihan', 'Status Pembayaran', 'PPN', 'Items', 'Catatan', 'Dibuat Oleh', 'Diselesaikan Oleh', 'Waktu Selesai'] },
-    { name: 'DB Petty Cash', cols: ['Tanggal', 'Jenis (Masuk/Keluar)', 'Keterangan', 'Nominal', 'Saldo Aktif'] },
+    { name: 'DB Petty Cash', cols: ['Tanggal', 'Jenis (Masuk/Keluar)', 'Keterangan', 'Nominal', 'Saldo Aktif', 'PIC / User'] },
     { name: 'DB Transaksi Gudang', cols: ['ID Transaksi', 'Tanggal', 'Jenis (IN/OUT)', 'Referensi', 'Kode Material', 'Qty', 'PIC', 'Keterangan'] },
     { name: 'DB Pengaturan', cols: ['Key', 'Value'] },
     { name: 'DB Users', cols: ['Username', 'Password', 'Role', 'Nama Lengkap'] },

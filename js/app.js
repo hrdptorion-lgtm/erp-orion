@@ -419,17 +419,19 @@ window.setupDOMPagination();
 
     function applyUserSession(user) {
         loginOverlay.classList.remove('active');
-        userNameDisplay.textContent = user.nama;
-        userRoleDisplay.textContent = user.role;
-        userAvatarInitial.textContent = user.nama.charAt(0).toUpperCase();
+        const userNama = user.nama || user.username || 'User';
+        userNameDisplay.textContent = userNama;
+        userRoleDisplay.textContent = user.role || 'User';
+        userAvatarInitial.textContent = userNama.charAt(0).toUpperCase();
 
         // Role-based Access Control Fallback
-        const isPurchasing = user.role.toLowerCase().includes('purchasing');
-        const isProduksi = user.role.toLowerCase().includes('produksi') || user.role.toLowerCase().includes('gudang');
-        const isFinance = user.role.toLowerCase().includes('finance') || user.role.toLowerCase().includes('accounting');
-        const isSales = user.role.toLowerCase().includes('marketing');
-        const isAdmin = ['direktur', 'admin', 'management'].some(r => user.role.toLowerCase().includes(r));
-        const isSuperAdmin = ['super admin'].some(r => user.role.toLowerCase().includes(r));
+        const userRole = (user.role || '').toLowerCase();
+        const isPurchasing = userRole.includes('purchasing');
+        const isProduksi = userRole.includes('produksi') || userRole.includes('gudang');
+        const isFinance = userRole.includes('finance') || userRole.includes('accounting');
+        const isSales = userRole.includes('marketing');
+        const isAdmin = ['direktur', 'admin', 'management'].some(r => userRole.includes(r));
+        const isSuperAdmin = ['super admin'].some(r => userRole.includes(r));
 
         const hasPermissions = user.permissions && Object.keys(user.permissions).length > 0;
 
@@ -708,26 +710,29 @@ window.setupDOMPagination();
 
 
         // Load data
-        if (targetViewId === 'purchasing') loadPurchasingData();
-        else if (targetViewId === 'admin') loadAdminData();
-        else if (targetViewId === 'sales') loadPenawaranData();
-        else if (targetViewId === 'po-customer') loadPOCustomerData();
-        else if (targetViewId === 'bom') loadBOMData();
-        else if (targetViewId === 'produksi') loadProduksiData();
+        if (targetViewId === 'purchasing') loadPurchasingData(true);
+        else if (targetViewId === 'admin') loadAdminData(true);
+        else if (targetViewId === 'sales') loadPenawaranData(true);
+        else if (targetViewId === 'po-customer') loadPOCustomerData(true);
+        else if (targetViewId === 'bom') loadBOMData(true);
+        else if (targetViewId === 'produksi') loadProduksiData(true);
         else if (targetViewId === 'po-internal') loadPOInternalData();
-        else if (targetViewId === 'transaksi-gudang') loadTransaksiGudangData();
+        else if (targetViewId === 'transaksi-gudang') loadTransaksiGudangData(true);
         else if (targetViewId === 'barang-jadi') loadBarangJadiData();
         else if (targetViewId === 'profil') loadSettingsData();
         else if (targetViewId === 'coa') loadCOAData();
         else if (targetViewId === 'approval') loadApprovalData();
-        else if (targetViewId === 'customer') loadCustomerData();
-        else if (targetViewId === 'supplier') loadSupplierData();
-        else if (targetViewId === 'surat-jalan') loadSuratJalanData();
-        else if (targetViewId === 'invoice') loadInvoiceData();
+        else if (targetViewId === 'customer') loadCustomerData(true);
+        else if (targetViewId === 'supplier') loadSupplierData(true);
+        else if (targetViewId === 'surat-jalan') loadSuratJalanData(true);
+        else if (targetViewId === 'invoice') loadInvoiceData(true);
         else if (targetViewId === 'dashboard') loadDashboardData();
         else if (targetViewId === 'rbac') loadRBACData();
         else if (targetViewId === 'grn') loadGRNData();
-        else if (targetViewId === 'finance') loadCOAData();
+        else if (targetViewId === 'finance') {
+            loadCOAData();
+            loadFinanceKasirData();
+        }
         else if (targetViewId === 'laporan-kas') loadLaporanKasData();
 
         if (typeof updateGlobalFAB === 'function') updateGlobalFAB(targetViewId);
@@ -1414,7 +1419,7 @@ window.setupDOMPagination();
                     const user = session ? JSON.parse(session) : {};
                     const res = await window.ERPAPI.request('import_stock', { items, username: user.username, user_nama: user.nama });
                     alert(res.message);
-                    if (res.status === 'success') loadPurchasingData();
+                    if (res.status === 'success') loadPurchasingData(true);
                 } else {
                     alert('Tidak ada data valid yang bisa diimpor. Pastikan ada kolom Kode dan Nama Material.');
                 }
@@ -1639,8 +1644,8 @@ window.setupDOMPagination();
         if (res.status === 'success') {
             document.getElementById('grn-modal').classList.remove('active');
             loadPOInternalData();
-            loadPurchasingData(); // Reload stock
-            loadTransaksiGudangData(); // Reload history
+            loadPurchasingData(true); // Reload stock
+            loadTransaksiGudangData(true); // Reload history
         }
     });
 
@@ -2181,11 +2186,23 @@ window.setupDOMPagination();
                     tbody.innerHTML = '';
                     const poTotal = window.parseRupiah(item.total_harga || 0);
                     const percentage = poTotal ? Math.round((dpVal / poTotal) * 100) : '';
-                    const desc = `Tagihan Down Payment (DP) ${percentage ? percentage + '%' : ''} untuk PO ${poId}`.trim();
+                    window.dpDescTemp = `Tagihan Down Payment (DP) ${percentage ? percentage + '%' : ''} untuk PO ${poId}`.trim();
+                    
+                    let itemNames = '';
+                    try {
+                        const parsedItems = typeof item.item_po === 'string' ? JSON.parse(item.item_po) : (item.item_po || []);
+                        itemNames = parsedItems.map(it => {
+                            let name = it.nama || it.part_name || '';
+                            let qty = it.qty || it.jumlah || '';
+                            let numQty = String(qty).replace(/[^0-9.]/g, '').trim();
+                            return name + (numQty ? ` (${numQty})` : '');
+                        }).filter(n => n).join(', ');
+                    } catch (e) {}
+                    const itemDesc = itemNames ? itemNames : 'Barang PO';
                     
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td><input type="text" class="inv-item-desc" list="bom-items-list" value="${desc}" style="width: 100%; background: transparent; border: none; color: white;"></td>
+                        <td><input type="text" class="inv-item-desc" list="bom-items-list" value="${itemDesc}" style="width: 100%; background: transparent; border: none; color: white;"></td>
                         <td><input type="number" class="inv-item-qty" value="1" min="1" style="width: 100%; text-align: right;"></td>
                         <td><input type="text" class="inv-item-price" value="${window.formatRupiah(dpVal).replace('Rp ', '')}" min="0" style="width: 100%; text-align: right;" oninput="window.formatCurrencyInput(this); calculateInvoiceTotal()"></td>
                         <td class="inv-item-subtotal" style="text-align: right;">Rp 0</td>
@@ -2207,7 +2224,7 @@ window.setupDOMPagination();
                 if (document.getElementById('inv_catatan')) {
                     const poTotal = window.parseRupiah(item.total_harga || 0);
                     const sisa = poTotal - dpVal;
-                    document.getElementById('inv_catatan').value = `Pembayaran Uang Muka (DP) untuk PO Customer: ${poId}. Sisa tagihan pelunasan: ${window.formatRupiah(sisa)}`;
+                    document.getElementById('inv_catatan').value = `${window.dpDescTemp}. Sisa tagihan pelunasan: ${window.formatRupiah(sisa)}`;
                 }
 
                 if (typeof calculateInvoiceTotal === 'function') calculateInvoiceTotal();
@@ -2223,11 +2240,11 @@ window.setupDOMPagination();
         });
     };
 
-    async function loadPOCustomerData() {
+    async function loadPOCustomerData(isBackgroundSync = false) {
         const tbody = document.getElementById('table-po-customer');
         if (!tbody) return;
         if (!tbody.innerHTML.trim() || tbody.innerHTML.includes('Tidak ada') || tbody.innerHTML.includes('Gagal') || tbody.innerHTML.includes('Memuat data')) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+            if (!isBackgroundSync) tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>';
         }
 
         // Make sure penawaran is loaded for references
@@ -2328,7 +2345,6 @@ window.setupDOMPagination();
                 <td><span class="badge badge-${item.status === 'Selesai' ? 'success' : (item.status === 'Proses' ? 'warning' : 'info')}">${item.status || 'Pending'}</span></td>
                 <td style="white-space: nowrap;">
                     <div style="display: flex; gap: 5px; flex-wrap: nowrap; align-items: center;">
-                        ${relatedInv.length === 0 ? `<button class="btn btn-dp-inv" title="Buat Invoice DP" onclick="createDPInvoice('${item.id_po_customer}')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: rgba(245, 158, 11, 0.2); color: #f59e0b;"><i class="fa-solid fa-money-bill-wave"></i></button>` : ''}
                         <button class="btn btn-print" title="Cetak PO" onclick="printPOCustomer('${item.id_po_customer}')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--info);"><i class="fa-solid fa-print"></i></button>
                         <button class="btn btn-edit" title="Edit" onclick="openPOCustomerModal('${item.id_po_customer}')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--primary);"><i class="fa-solid fa-edit"></i></button>
                         <button class="btn btn-delete" title="Hapus" onclick="deletePOCustomer('${item.id_po_customer}')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger);"><i class="fa-solid fa-trash"></i></button>
@@ -2562,7 +2578,7 @@ window.setupDOMPagination();
         if (res.status === 'success') {
             window.showToast(res.message, 'success');
             document.getElementById('po-customer-modal').classList.remove('active');
-            loadPOCustomerData();
+            loadPOCustomerData(true);
         } else {
             window.showToast(res.message, 'error');
         }
@@ -3181,7 +3197,16 @@ window.setupDOMPagination();
         }, 500);
     });
 
-    window.openPOCustomerModal = function (id) {
+    
+    document.getElementById('btn-detail-act-inv-dp')?.addEventListener('click', () => {
+        if (!window.currentDetailPOC) return;
+        document.getElementById('detail-poc-modal').classList.remove('active');
+        if (typeof window.createDPInvoice === 'function') {
+            window.createDPInvoice(window.currentDetailPOC.id_po_customer);
+        }
+    });
+
+window.openPOCustomerModal = function (id) {
         const item = window.poCustomerData.find(i => i.id_po_customer === id);
         if (!item) return;
 
@@ -3240,12 +3265,14 @@ window.setupDOMPagination();
         document.getElementById('po-customer-modal').classList.add('active');
     };
 
-    window.deletePOCustomer = async function (id) {
+    window.deletePOCustomer = async function (id, btn) {
         if (!confirm('Hapus PO Customer ini?')) return;
+        const tr = btn ? btn.closest('tr') : null;
+        if (tr) tr.style.display = 'none';
         const res = await window.ERPAPI.request('delete_po_customer', { id: id });
         if (res.status === 'success') {
             window.showToast(res.message, 'success');
-            loadPOCustomerData();
+            loadPOCustomerData(true);
         } else {
             window.showToast(res.message, 'error');
         }
@@ -4446,7 +4473,7 @@ window.setupDOMPagination();
         if (res.status === 'success') {
             paymentModal.classList.remove('active');
             alert(res.message);
-            loadPenawaranData(); // Reload table
+            loadPenawaranData(true); // Reload table
         } else {
             alert(res.message);
         }
@@ -4459,7 +4486,7 @@ window.setupDOMPagination();
         if (kode && qty) {
             const res = await window.ERPAPI.request('receive_grn', { no_po: 'PO-Dummy', kode_material: kode, qty: qty });
             alert(res.message);
-            if (res.status === 'success') loadPurchasingData();
+            if (res.status === 'success') loadPurchasingData(true);
         }
     });
 
@@ -5789,9 +5816,9 @@ window.setupDOMPagination();
     });
 
     // --- Admin (User Management) Logic ---
-    async function loadAdminData() {
+    async function loadAdminData(isBackgroundSync = false) {
         const tbody = document.getElementById('table-users');
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data pengguna...</td></tr>';
+        if (!isBackgroundSync) tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data pengguna...</td></tr>';
 
         const response = await window.ERPAPI.request('get_users');
         if (response.status === 'success' && response.data) {
@@ -5837,7 +5864,7 @@ window.setupDOMPagination();
                     if (ok) {
                         window.ERPAPI.request('delete_user', { username }).then(res => {
                             showToast(res.status === 'success' ? `✅ ${res.message}` : `❌ ${res.message}`, res.status === 'success' ? 'success' : 'error', 3000);
-                            loadAdminData();
+                            loadAdminData(true);
                         });
                     }
                 });
@@ -5905,7 +5932,7 @@ window.setupDOMPagination();
                 }
             }
             if (typeof loadAdminData === 'function') {
-                loadAdminData();
+                loadAdminData(true);
             }
         });
     });
@@ -5949,13 +5976,87 @@ window.setupDOMPagination();
             coa: coa,
             user: user
         };
+        
+        pettyCashModal.classList.remove('active');
+        
+        // Optimistic UI Update
+        const todayStr = new Date().toLocaleDateString('id-ID'); // e.g. 30/6/2026
+        const optData = {
+            waktu: todayStr + ' 12:00:00', // Dummy time
+            user: user,
+            jenis: jenis,
+            coa: coa,
+            keterangan: keterangan + ' (Menyimpan...)',
+            jumlah: nominal
+        };
+
+        if (typeof globalPettyCashData !== 'undefined') {
+            globalPettyCashData.unshift(optData);
+            if (typeof renderLaporanKasTable === 'function') {
+                applyLaporanKasFilter(); // Re-render Laporan Kas
+            }
+        }
+        
+        // Manual DOM Injection for Kasir View
+        const tbodyKasir = document.getElementById('table-finance-kasir');
+        if (tbodyKasir) {
+            const emptyRow = tbodyKasir.querySelector('td[colspan="6"]');
+            if (emptyRow) emptyRow.parentElement.remove();
+            
+            const badgeColor = jenis === 'Masuk' ? 'background: rgba(0,255,136,0.1); color: var(--success);' : 'background: rgba(255,68,68,0.1); color: var(--danger);';
+            const tr = document.createElement('tr');
+            tr.style.opacity = '0.7';
+            tr.innerHTML = `
+                <td>${todayStr}</td>
+                <td>${user || '-'}</td>
+                <td><span class="status-badge" style="${badgeColor}">${jenis}</span></td>
+                <td>${coa || '-'}</td>
+                <td>${keterangan} (Menyimpan...)</td>
+                <td style="font-weight: bold; text-align: right; color: ${jenis === 'Masuk' ? 'var(--success)' : 'var(--danger)'};">
+                    ${jenis === 'Masuk' ? '+' : '-'} Rp ${parseFloat(nominal).toLocaleString('id-ID')}
+                </td>
+            `;
+            tbodyKasir.insertBefore(tr, tbodyKasir.firstChild);
+            
+            // Update Totals Optismistically
+            const elMasuk = document.getElementById('finance-kas-masuk');
+            const elKeluar = document.getElementById('finance-kas-keluar');
+            if (jenis === 'Masuk' && elMasuk) {
+                let curr = parseFloat(elMasuk.textContent.replace(/[^0-9]/g, '')) || 0;
+                elMasuk.textContent = 'Rp ' + (curr + parseFloat(nominal)).toLocaleString('id-ID');
+            } else if (jenis === 'Keluar' && elKeluar) {
+                let curr = parseFloat(elKeluar.textContent.replace(/[^0-9]/g, '')) || 0;
+                elKeluar.textContent = 'Rp ' + (curr + parseFloat(nominal)).toLocaleString('id-ID');
+            }
+        }
+        
+        // Update SessionStorage Cache for Kasir explicitly so loadFinanceKasirData can read it immediately
+        const cacheKey = 'erp_cache_get_petty_cash';
+        const cachedStr = sessionStorage.getItem(cacheKey);
+        if (cachedStr) {
+            try {
+                const c = JSON.parse(cachedStr);
+                if (c && c.data && Array.isArray(c.data.data)) {
+                    c.data.data.unshift(optData);
+                    sessionStorage.setItem(cacheKey, JSON.stringify(c));
+                }
+            } catch(e) {}
+        }
+
+        if (typeof loadFinanceKasirData === 'function') {
+            loadFinanceKasirData(); // Re-render Kasir view
+        }
+
+        if (typeof showToast !== 'undefined') showToast('Sinkronisasi Kas ke server...', 'info');
 
         const res = await window.ERPAPI.request('add_petty_cash', payload);
         if (res.status === 'success') {
-            pettyCashModal.classList.remove('active');
-            showToast('Mutasi kas berhasil disimpan', 'success');
+            if (typeof showToast !== 'undefined') showToast('✅ Mutasi kas berhasil disimpan', 'success');
+            // Data asli akan ter-sync saat buka menu lagi atau refetch
         } else {
-            showToast(res.message, 'error');
+            if (typeof showToast !== 'undefined') showToast(res.message, 'error');
+            // Revert by refetching
+            loadLaporanKasData(true);
         }
     });
 
@@ -7113,7 +7214,7 @@ window.setupDOMPagination();
         const res = await window.ERPAPI.request('save_penawaran', payload);
         if (res.status === 'success') {
             showToast('Status berhasil diperbarui!', 'success');
-            loadPenawaranData();
+            loadPenawaranData(true);
         } else {
             showToast(res.message || 'Gagal mengupdate status', 'danger');
         }
@@ -7935,7 +8036,7 @@ window.setupDOMPagination();
                             const invRes = await window.ERPAPI.request('save_invoice', updatedInv);
                             if (invRes.status === 'success') {
                                 showToast('Invoice diselesaikan. Silakan klik "Simpan Mutasi" untuk mencatat uang masuk.', 'success');
-                                loadInvoiceData(); // reload
+                                loadInvoiceData(true); // reload
                                 
                                 // Buka Form Finance (Petty Cash)
                                 document.getElementById('pc_jenis').value = 'Masuk';
@@ -8086,7 +8187,13 @@ window.setupDOMPagination();
         document.querySelectorAll('.btn-delete-inv').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const no = e.currentTarget.getAttribute('data-no');
-                if (confirm(`Hapus Invoice ${no}?`)) {
+                const proceed = await window.showConfirm({
+                    title: 'Hapus Invoice',
+                    message: `Hapus invoice <strong style="color:#fff">${no}</strong>?<br><span style="font-size:0.82rem;color:rgba(255,255,255,0.4);">Data akan dihapus permanen dan tidak bisa dikembalikan.</span>`,
+                    confirmText: 'Ya, Hapus',
+                    cancelText: 'Batal'
+                });
+                if (proceed) {
                     e.currentTarget.closest('tr').style.display = 'none';
                     const res = await window.ERPAPI.request('delete_invoice', { no_invoice: no });
                     if (res.status === 'success') loadInvoiceData(true);
@@ -8781,15 +8888,46 @@ window.setupDOMPagination();
             pembuat: typeof currentUser !== 'undefined' ? currentUser : (localStorage.getItem('erp_session') ? JSON.parse(localStorage.getItem('erp_session')).name : 'Admin')
         };
 
+        document.getElementById('invoice-modal').classList.remove('active');
+        
+        // Optimistic UI Update
+        if (typeof window.invoiceData !== 'undefined') {
+            const isEdit = window.invoiceData.findIndex(inv => inv.no_invoice === payload.no_invoice);
+            if (isEdit > -1) {
+                window.invoiceData[isEdit] = payload;
+            } else {
+                window.invoiceData.unshift(payload);
+            }
+            if (typeof applyInvoiceFilter === 'function') applyInvoiceFilter(); // re-render
+        }
+        
+        // Update SessionStorage Cache
+        const cacheKey = 'erp_cache_get_invoices';
+        const cachedStr = sessionStorage.getItem(cacheKey);
+        if (cachedStr) {
+            try {
+                const c = JSON.parse(cachedStr);
+                if (c && c.data && Array.isArray(c.data.data)) {
+                    const existingIdx = c.data.data.findIndex(inv => inv.no_invoice === payload.no_invoice);
+                    if (existingIdx > -1) {
+                        c.data.data[existingIdx] = payload;
+                    } else {
+                        c.data.data.unshift(payload);
+                    }
+                    sessionStorage.setItem(cacheKey, JSON.stringify(c));
+                }
+            } catch(e) {}
+        }
+
         try {
-            showToast?.('Menyimpan Invoice...', 'info');
+            showToast?.('Sinkronisasi Invoice ke server...', 'info');
             const res = await window.ERPAPI.request('save_invoice', payload);
             if (res.status === 'success') {
-                showToast?.('Invoice berhasil disimpan', 'success');
-                document.getElementById('invoice-modal').classList.remove('active');
-                loadInvoiceData(true);
+                showToast?.('✅ Invoice berhasil disinkronisasi', 'success');
+                // SWR handles fresh data on next fetch
             } else {
                 showToast?.('Gagal: ' + res.message, 'danger');
+                loadInvoiceData(true); // revert
             }
         } catch (err) {
             console.error('Error saving invoice:', err);
@@ -8810,7 +8948,7 @@ window.setupDOMPagination();
 // ==========================================
 let coaDataList = [];
 
-async function loadCOAData() {
+async function loadCOAData(isBackgroundSync = false) {
     try {
         const result = await ERPAPI.request('get_coa');
         if (result.status === 'success') {
@@ -9213,10 +9351,10 @@ const MENUS = [
     { id: 'rbac', name: 'Manajemen Akses (RBAC)', viewOnly: true }
 ];
 
-async function loadRBACData() {
+async function loadRBACData(isBackgroundSync = false) {
     const tbody = document.getElementById('table-rbac');
     if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat hak akses...</td></tr>`;
+    if (!isBackgroundSync) tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat hak akses...</td></tr>`;
 
     try {
         const response = await window.ERPAPI.request('get_all_permissions');
@@ -9387,8 +9525,9 @@ window.checkRBACAction = function (action, menuId) {
     if (!session) return false;
     const user = JSON.parse(session);
 
+    const userRole = (user.role || '').toLowerCase();
     // Fallback: Admin can do anything
-    const isAdmin = ['direktur', 'admin', 'management', 'super admin'].some(r => user.role.toLowerCase().includes(r));
+    const isAdmin = ['direktur', 'admin', 'management', 'super admin'].some(r => userRole.includes(r));
 
     // Map sub-menus to main menus for permissions
     if (menuId === 'invoice' || menuId === 'laporan-kas' || menuId === 'coa') {
@@ -9452,11 +9591,11 @@ rbacObserver.observe(document.body, { childList: true, subtree: true });
 let currentGRN_PO_Data = [];
 let currentGRN_History = [];
 
-async function loadGRNData() {
+async function loadGRNData(isBackgroundSync = false) {
     const tbody = document.getElementById('table-grn');
     if (!tbody) return;
     if (!tbody.innerHTML.trim() || tbody.innerHTML.includes('Tidak ada') || tbody.innerHTML.includes('Gagal') || tbody.innerHTML.includes('Memuat data')) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>`;
+        if (!isBackgroundSync) tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>`;
     }
 
     try {
@@ -9466,7 +9605,7 @@ async function loadGRNData() {
         ]);
 
         if (poRes.status === 'success') {
-            currentGRN_PO_Data = poRes.data.filter(po => po.status === 'Disetujui (Sedang Dibelikan)' || po.status === 'Parsial');
+            currentGRN_PO_Data = poRes.data.filter(po => po.status === 'Disetujui (Sedang Dibelikan)' || po.status === 'Parsial' || po.status === 'Selesai' || po.status === 'Selesai (Barang Diterima)');
         }
         if (grnRes.status === 'success') {
             currentGRN_History = grnRes.data;
@@ -9490,27 +9629,101 @@ function renderGRNTable() {
 
     currentGRN_PO_Data.forEach(po => {
         const tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
+        tr.onclick = (e) => {
+            if (!e.target.closest('button')) {
+                window.openGRNDetail(po.no_po);
+            }
+        };
+        
+        let actionBtn = '';
+        if (po.status !== 'Selesai' && po.status !== 'Selesai (Barang Diterima)') {
+            actionBtn = `
+                <button class="btn btn-edit" onclick="window.openGRNModal('${po.no_po}')" style="background: var(--primary); padding: 5px 10px; font-size: 0.8rem;">
+                    <i class="fa-solid fa-box-open"></i> Terima
+                </button>
+            `;
+        } else {
+            actionBtn = `<span style="font-size:0.85rem; color:var(--success); font-weight:600;"><i class="fa-solid fa-check-circle"></i> Komplit</span>`;
+        }
+        
         tr.innerHTML = `
             <td><strong>${po.no_po}</strong></td>
             <td>${po.tanggal}</td>
             <td>${po.pemohon}</td>
-            <td><span class="status-badge status-${po.status.toLowerCase()}">${po.status}</span></td>
+            <td><span class="status-badge status-${po.status.toLowerCase().replace(/[^a-z0-9]/g, '-')}">${po.status}</span></td>
             <td style="text-align: center;">
-                <button class="btn btn-edit" onclick="openGRNModal('${po.no_po}')" style="background: var(--primary); padding: 5px 10px; font-size: 0.8rem;">
-                    <i class="fa-solid fa-box-open"></i> Terima
-                </button>
+                ${actionBtn}
             </td>
         `;
         tbody.appendChild(tr);
     });
 }
 
+window.openGRNDetail = function (no_po) {
+    const po = currentGRN_PO_Data.find(p => String(p.no_po) === String(no_po));
+    if (!po) return;
+
+    // Hitung qty yang sudah diterima
+    const historyPO = currentGRN_History.filter(g => String(g.no_po) === String(no_po));
+    let mapDiterima = {};
+    let riwayatHTML = '';
+    
+    if (historyPO.length > 0) {
+        riwayatHTML += `<h5 style="text-align:left; margin-top:15px; margin-bottom:5px;">Riwayat Penerimaan:</h5>`;
+        riwayatHTML += `<table style="width:100%; border-collapse:collapse; font-size:0.8rem; text-align:left;">`;
+        riwayatHTML += `<tr style="border-bottom:1px solid #ccc;"><th>Tgl</th><th>Penerima</th><th>Catatan</th><th>Item (Qty)</th></tr>`;
+        historyPO.forEach(g => {
+            let itemsStr = (g.daftar_item_parsed || []).map(i => `${i.nama} (${i.qty_diterima || i.qty_terima || 0})`).join(', ');
+            riwayatHTML += `<tr style="border-bottom:1px solid #eee;">
+                <td style="padding:4px 0;">${g.tanggal || '-'}</td>
+                <td>${g.penerima || '-'}</td>
+                <td>${g.catatan || '-'}</td>
+                <td>${itemsStr}</td>
+            </tr>`;
+            
+            (g.daftar_item_parsed || []).forEach(item => {
+                const key = item.kode || item.nama;
+                if (!mapDiterima[key]) mapDiterima[key] = 0;
+                mapDiterima[key] += Number(item.qty_diterima || item.qty_terima || 0);
+            });
+        });
+        riwayatHTML += `</table>`;
+    } else {
+        riwayatHTML = `<div style="text-align:left; margin-top:15px; font-size:0.85rem; color:#888;">Belum ada riwayat penerimaan untuk PO ini.</div>`;
+    }
+
+    let itemsHTML = `<table style="width:100%; border-collapse:collapse; font-size:0.85rem; text-align:left; margin-top:10px;">`;
+    itemsHTML += `<tr style="background:rgba(0,0,0,0.05);"><th style="padding:5px;">Kode</th><th>Nama Barang</th><th style="text-align:center;">Diminta</th><th style="text-align:center;">Sudah Diterima</th></tr>`;
+    
+    (po.items_parsed || []).forEach(item => {
+        const key = item.kode || item.nama;
+        const diminta = Number(item.qty);
+        const diterima = mapDiterima[key] || 0;
+        itemsHTML += `<tr style="border-bottom:1px solid #eee;">
+            <td style="padding:5px;">${item.kode || '-'}</td>
+            <td>${item.nama}</td>
+            <td style="text-align:center;">${diminta}</td>
+            <td style="text-align:center; font-weight:bold; color:${diterima >= diminta ? 'green' : 'inherit'}">${diterima}</td>
+        </tr>`;
+    });
+    itemsHTML += `</table>`;
+
+    Swal.fire({
+        title: `Detail Penerimaan PO: ${no_po}`,
+        html: itemsHTML + riwayatHTML,
+        width: 700,
+        showCloseButton: true,
+        showConfirmButton: false
+    });
+};
+
 window.openGRNModal = function (no_po) {
     const po = currentGRN_PO_Data.find(p => String(p.no_po) === String(no_po));
     if (!po) return;
 
-    document.getElementById('grn-form').reset();
-    document.getElementById('grn_no_po').value = po.no_po;
+    document.getElementById('grn-penerimaan-form').reset();
+    document.getElementById('grn_penerimaan_no_po').value = po.no_po;
 
     // Set default penerima to current user
     const session = localStorage.getItem('erp_session');
@@ -9521,54 +9734,56 @@ window.openGRNModal = function (no_po) {
     const tbody = document.getElementById('grn-items-table');
     tbody.innerHTML = '';
 
-    // Hitung qty yang sudah diterima
     const historyPO = currentGRN_History.filter(g => String(g.no_po) === String(no_po));
     let mapDiterima = {};
     historyPO.forEach(g => {
-        g.daftar_item_parsed.forEach(item => {
-            if (!mapDiterima[item.kode]) mapDiterima[item.kode] = 0;
-            mapDiterima[item.kode] += Number(item.qty_diterima);
+        (g.daftar_item_parsed || []).forEach(item => {
+            const key = item.kode || item.nama;
+            if (!mapDiterima[key]) mapDiterima[key] = 0;
+            mapDiterima[key] += Number(item.qty_diterima || item.qty_terima || 0);
         });
     });
 
-    po.items_parsed.forEach((item, index) => {
+    (po.items_parsed || []).forEach((item, index) => {
+        const key = item.kode || item.nama;
         const diminta = Number(item.qty);
-        const diterima = mapDiterima[item.kode] || 0;
+        const diterima = mapDiterima[key] || 0;
         const sisa = diminta - diterima;
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${item.kode}<input type="hidden" name="grn_item_kode" value="${item.kode}"></td>
+            <td>${item.kode || '-'}<input type="hidden" name="grn_item_kode" value="${item.kode || ''}"><input type="hidden" name="grn_item_nama" value="${item.nama || ''}"></td>
             <td>${item.nama}</td>
             <td style="text-align: center;">${diminta}</td>
             <td style="text-align: center; color: ${diterima > 0 ? 'var(--success)' : 'inherit'};">${diterima}</td>
             <td style="text-align: center;">
-                <input type="number" name="grn_item_terima" min="0" max="${sisa}" value="${sisa === 0 ? 0 : ''}" ${sisa === 0 ? 'readonly' : 'required'} style="width: 100%; padding: 5px; text-align: center;">
+                <input type="number" name="grn_item_terima" min="0" max="${sisa}" value="${sisa === 0 ? 0 : ''}" ${sisa === 0 ? 'readonly' : 'required'} oninput="if(this.value > ${sisa}) this.value = ${sisa};" style="width: 100%; max-width: 80px; padding: 5px; text-align: center; border-radius: 4px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main);">
             </td>
         `;
         tbody.appendChild(tr);
     });
 
-    document.getElementById('grn-modal').classList.add('active');
+    document.getElementById('grn-penerimaan-modal').classList.add('active');
 };
 
 document.getElementById('btn-close-grn')?.addEventListener('click', () => {
-    document.getElementById('grn-modal').classList.remove('active');
+    document.getElementById('grn-penerimaan-modal').classList.remove('active');
 });
 
 document.getElementById('btn-cancel-grn')?.addEventListener('click', () => {
-    document.getElementById('grn-modal').classList.remove('active');
+    document.getElementById('grn-penerimaan-modal').classList.remove('active');
 });
 
-document.getElementById('grn-form')?.addEventListener('submit', async (e) => {
+document.getElementById('grn-penerimaan-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const btnSubmit = document.querySelector('#grn-form button[type="submit"]');
+    const btnSubmit = document.querySelector('#grn-penerimaan-form button[type="submit"]');
 
-    const no_po = document.getElementById('grn_no_po').value;
+    const no_po = document.getElementById('grn_penerimaan_no_po').value;
     const penerima = document.getElementById('grn_penerima').value;
     const catatan = document.getElementById('grn_catatan').value;
 
     const kodes = document.getElementsByName('grn_item_kode');
+    const namas = document.getElementsByName('grn_item_nama');
     const terimas = document.getElementsByName('grn_item_terima');
 
     let items = [];
@@ -9577,7 +9792,7 @@ document.getElementById('grn-form')?.addEventListener('submit', async (e) => {
     for (let i = 0; i < kodes.length; i++) {
         const qty = Number(terimas[i].value);
         if (qty > 0) {
-            items.push({ kode: kodes[i].value, qty_diterima: qty });
+            items.push({ kode: kodes[i].value, nama: namas[i].value, qty_diterima: qty });
             totalDiterima += qty;
         }
     }
@@ -9597,7 +9812,7 @@ document.getElementById('grn-form')?.addEventListener('submit', async (e) => {
 
         if (result.status === 'success') {
             showToast('✅ Penerimaan Barang berhasil dicatat!', 'success');
-            document.getElementById('grn-modal').classList.remove('active');
+            document.getElementById('grn-penerimaan-modal').classList.remove('active');
             loadGRNData();
         } else {
             showToast('❌ Gagal: ' + result.message, 'error');
@@ -9612,10 +9827,10 @@ document.getElementById('grn-form')?.addEventListener('submit', async (e) => {
 
 let globalPettyCashData = [];
 
-async function loadLaporanKasData() {
+async function loadLaporanKasData(isBackgroundSync = false) {
     const tbody = document.getElementById('table-laporan-kas');
     if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat Laporan...</td></tr>`;
+    if (!isBackgroundSync) tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat Laporan...</td></tr>`;
 
     try {
         // Load COA for filter dropdown
@@ -9766,6 +9981,16 @@ document.addEventListener('click', function (e) {
     }
 });
 
+window.parseDDMMYYYY = function(dateStr) {
+    if (!dateStr) return new Date(0);
+    if (dateStr.includes('-')) return new Date(dateStr); // maybe YYYY-MM-DD
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+        return new Date(parts[2], parts[1] - 1, parts[0]);
+    }
+    return new Date(dateStr);
+}
+
 function applyLaporanKasFilter() {
     const startDate = document.getElementById('filter-kas-start').value;
     const endDate = document.getElementById('filter-kas-end').value;
@@ -9775,7 +10000,7 @@ function applyLaporanKasFilter() {
 
     if (startDate) {
         filteredData = filteredData.filter(item => {
-            const itemDate = new Date(item.waktu.split(' ')[0]);
+            const itemDate = window.parseDDMMYYYY(item.waktu.split(' ')[0]);
             const sDate = new Date(startDate);
             return itemDate >= sDate;
         });
@@ -9783,7 +10008,7 @@ function applyLaporanKasFilter() {
 
     if (endDate) {
         filteredData = filteredData.filter(item => {
-            const itemDate = new Date(item.waktu.split(' ')[0]);
+            const itemDate = window.parseDDMMYYYY(item.waktu.split(' ')[0]);
             const eDate = new Date(endDate);
             return itemDate <= eDate;
         });
@@ -9817,7 +10042,11 @@ function renderLaporanKasTable(data) {
     let totalKeluar = 0;
 
     // Sort descending by date
-    data.sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
+    data.sort((a, b) => {
+        const dateA = window.parseDDMMYYYY(a.waktu.split(' ')[0]);
+        const dateB = window.parseDDMMYYYY(b.waktu.split(' ')[0]);
+        return dateB - dateA;
+    });
 
     data.forEach(item => {
         const nominal = parseFloat(item.jumlah) || 0;
@@ -9978,10 +10207,10 @@ async function loadTransaksiGudangData(isBackgroundSync = false) {
                         const res = await window.ERPAPI.request('delete_transaksi_gudang', { id });
                         if (res.status === 'success') {
                             showToast(res.message, 'success');
-                            loadTransaksiGudangData();
+                            loadTransaksiGudangData(true);
                         } else {
                             showToast(res.message, 'error');
-                            loadTransaksiGudangData();
+                            loadTransaksiGudangData(true);
                         }
                     }
                 });
@@ -10007,10 +10236,10 @@ async function loadTransaksiGudangData(isBackgroundSync = false) {
                     window.ERPAPI.request('approve_transaksi', { id_transaksi: id, pemberi: pemberiName }).then(res => {
                         if (res.status === 'success') {
                             if (typeof showToast !== 'undefined') showToast('✅ Transaksi disetujui', 'success');
-                            loadTransaksiGudangData();
+                            loadTransaksiGudangData(true);
                         } else {
                             if (typeof showToast !== 'undefined') showToast('❌ Gagal menyetujui: ' + res.message, 'error');
-                            loadTransaksiGudangData();
+                            loadTransaksiGudangData(true);
                         }
                     });
                 });
@@ -10126,7 +10355,7 @@ document.getElementById('transaksi-gudang-form')?.addEventListener('submit', asy
         if (res.status === 'success') {
             showToast('Transaksi berhasil disimpan', 'success');
             document.getElementById('transaksi-gudang-modal').classList.remove('active');
-            loadTransaksiGudangData();
+            loadTransaksiGudangData(true);
         } else {
             showToast(res.message, 'error');
         }
@@ -10139,3 +10368,75 @@ document.getElementById('transaksi-gudang-form')?.addEventListener('submit', asy
 });
 
 });
+
+async function loadFinanceKasirData() {
+    try {
+        const res = await window.ERPAPI.request('get_petty_cash');
+        const tbody = document.getElementById('table-finance-kasir');
+        const elMasuk = document.getElementById('finance-kas-masuk');
+        const elKeluar = document.getElementById('finance-kas-keluar');
+
+        if (res.status === 'success') {
+            let data = res.data || [];
+            
+            // Filter hari ini
+            const today = new Date();
+            const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+
+            let totalMasuk = 0;
+            let totalKeluar = 0;
+
+            const todayData = data.filter(item => {
+                const d = window.parseDDMMYYYY(item.waktu.split(' ')[0]);
+                return d >= startOfDay && d <= endOfDay;
+            });
+
+            // Hitung total hari ini (masuk & keluar)
+            todayData.forEach(item => {
+                const nominal = parseFloat(item.jumlah) || 0;
+                if (item.jenis === 'Masuk') totalMasuk += nominal;
+                else totalKeluar += nominal;
+            });
+
+            if (elMasuk) elMasuk.textContent = 'Rp ' + totalMasuk.toLocaleString('id-ID');
+            if (elKeluar) elKeluar.textContent = 'Rp ' + totalKeluar.toLocaleString('id-ID');
+
+            if (tbody) {
+                if (todayData.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Belum ada mutasi kas hari ini.</td></tr>';
+                } else {
+                    tbody.innerHTML = '';
+                    todayData.sort((a, b) => {
+                        const dateA = window.parseDDMMYYYY(a.waktu.split(' ')[0]);
+                        const dateB = window.parseDDMMYYYY(b.waktu.split(' ')[0]);
+                        return dateB - dateA;
+                    });
+
+                    todayData.forEach(item => {
+                        const nominal = parseFloat(item.jumlah) || 0;
+                        const badgeColor = item.jenis === 'Masuk' ? 'background: rgba(0,255,136,0.1); color: var(--success);' : 'background: rgba(255,68,68,0.1); color: var(--danger);';
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${item.waktu}</td>
+                            <td>${item.user || '-'}</td>
+                            <td><span class="status-badge" style="${badgeColor}">${item.jenis}</span></td>
+                            <td>${item.coa || '-'}</td>
+                            <td>${item.keterangan || '-'}</td>
+                            <td style="font-weight: bold; text-align: right; color: ${item.jenis === 'Masuk' ? 'var(--success)' : 'var(--danger)'};">
+                                ${item.jenis === 'Masuk' ? '+' : '-'} Rp ${nominal.toLocaleString('id-ID')}
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            }
+        } else {
+            if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Gagal memuat data</td></tr>';
+        }
+    } catch(e) {
+        console.error(e);
+        const tbody = document.getElementById('table-finance-kasir');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Gagal memuat data</td></tr>';
+    }
+}
