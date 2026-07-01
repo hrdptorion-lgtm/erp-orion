@@ -554,6 +554,11 @@ window.setupDOMPagination();
 
     window.parseRibuan = window.parseRupiah;
 
+    window.formatCurrencyInput = function (inputElem) {
+        if (!inputElem) return;
+        inputElem.value = window.formatRibuan(inputElem.value);
+    };
+
     document.addEventListener('input', (e) => {
         if (e.target.classList && e.target.classList.contains('number-format')) {
             e.target.value = window.formatRibuan(e.target.value);
@@ -761,9 +766,20 @@ window.setupDOMPagination();
                 const poOut = poReq.value.data.filter(item => {
                     if (String(item.status).toUpperCase() === 'BATAL' || String(item.status).toUpperCase() === 'DITOLAK') return false;
                     
-                    const relatedSPK = spkList.filter(s => s.referensi_po === item.no_penawaran || s.referensi_po === item.id_po_customer || s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer || s.kode_po_customer === item.id_po_customer);
-                    const relatedSJ = sjList.filter(s => [s.no_penawaran, s.id_po_customer, s.referensi_penawaran].some(val => val && (val === item.no_penawaran || val === item.id_po_customer)));
-                    const relatedInv = invList.filter(s => [s.no_penawaran, s.id_po_customer, s.referensi_penawaran].some(val => val && (val === item.no_penawaran || val === item.id_po_customer)));
+                    const checkMatch = (val) => val && (
+                        (item.no_penawaran && String(val).trim().toLowerCase() === String(item.no_penawaran).trim().toLowerCase()) ||
+                        (item.id_po_customer && String(val).trim().toLowerCase() === String(item.id_po_customer).trim().toLowerCase())
+                    );
+                    const relatedSPK = spkList.filter(s => [s.referensi_po, s.no_penawaran, s.kode_po_customer].some(checkMatch));
+                    const relatedSJ = sjList.filter(s => [s.no_penawaran, s.id_po_customer, s.referensi_penawaran].some(checkMatch));
+                    const relatedInv = invList.filter(s => {
+                        if ([s.no_penawaran, s.id_po_customer, s.referensi_penawaran, s.referensi_po].some(checkMatch)) return true;
+                        if (s.no_sj) {
+                            const invSjs = String(s.no_sj).split(',').map(x => x.trim().toLowerCase());
+                            return relatedSJ.some(sj => (sj.no_sj && invSjs.includes(String(sj.no_sj).trim().toLowerCase())) || (sj.no_surat_jalan && invSjs.includes(String(sj.no_surat_jalan).trim().toLowerCase())));
+                        }
+                        return false;
+                    });
                     
                     let progress = 0;
                     if (relatedInv.length > 0) {
@@ -2274,9 +2290,20 @@ window.setupDOMPagination();
                 let progressLabel = "PO Diterima";
                 let progressColor = "var(--secondary)";
 
-                const relatedSPK = spkList.filter(s => s.referensi_po === item.no_penawaran || s.referensi_po === item.id_po_customer || s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer || s.kode_po_customer === item.id_po_customer);
-                const relatedSJ = sjList.filter(s => [s.no_penawaran, s.id_po_customer, s.referensi_penawaran].some(val => val && (val === item.no_penawaran || val === item.id_po_customer)));
-                const relatedInv = invList.filter(s => [s.no_penawaran, s.id_po_customer, s.referensi_penawaran].some(val => val && (val === item.no_penawaran || val === item.id_po_customer)));
+                const checkMatch = (val) => val && (
+                    (item.no_penawaran && String(val).trim().toLowerCase() === String(item.no_penawaran).trim().toLowerCase()) ||
+                    (item.id_po_customer && String(val).trim().toLowerCase() === String(item.id_po_customer).trim().toLowerCase())
+                );
+                const relatedSPK = spkList.filter(s => [s.referensi_po, s.no_penawaran, s.kode_po_customer].some(checkMatch));
+                const relatedSJ = sjList.filter(s => [s.no_penawaran, s.id_po_customer, s.referensi_penawaran].some(checkMatch));
+                const relatedInv = invList.filter(s => {
+                    if ([s.no_penawaran, s.id_po_customer, s.referensi_penawaran, s.referensi_po].some(checkMatch)) return true;
+                    if (s.no_sj) {
+                        const invSjs = String(s.no_sj).split(',').map(x => x.trim().toLowerCase());
+                        return relatedSJ.some(sj => (sj.no_sj && invSjs.includes(String(sj.no_sj).trim().toLowerCase())) || (sj.no_surat_jalan && invSjs.includes(String(sj.no_surat_jalan).trim().toLowerCase())));
+                    }
+                    return false;
+                });
 
                 if (relatedInv.length > 0) {
                     if (relatedInv.every(i => i.status_pembayaran === 'Lunas')) {
@@ -4462,13 +4489,10 @@ window.openPOCustomerModal = function (id) {
 
         const btnSubmit = paymentForm.querySelector('button[type="submit"]');
         const oldHtml = btnSubmit.innerHTML;
-        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
-        btnSubmit.disabled = true;
-
-        const res = await window.ERPAPI.request('save_invoice', payload);
-
-        btnSubmit.innerHTML = oldHtml;
-        btnSubmit.disabled = false;
+        
+        alert("Fitur Terima Pembayaran sedang diperbarui. Silakan gunakan menu Buat Invoice untuk menagih DP/Pembayaran.");
+        paymentModal.classList.remove('active');
+        return;
 
         if (res.status === 'success') {
             paymentModal.classList.remove('active');
@@ -8187,6 +8211,7 @@ window.openPOCustomerModal = function (id) {
         document.querySelectorAll('.btn-delete-inv').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const no = e.currentTarget.getAttribute('data-no');
+                const tr = e.currentTarget.closest('tr');
                 const proceed = await window.showConfirm({
                     title: 'Hapus Invoice',
                     message: `Hapus invoice <strong style="color:#fff">${no}</strong>?<br><span style="font-size:0.82rem;color:rgba(255,255,255,0.4);">Data akan dihapus permanen dan tidak bisa dikembalikan.</span>`,
@@ -8194,7 +8219,7 @@ window.openPOCustomerModal = function (id) {
                     cancelText: 'Batal'
                 });
                 if (proceed) {
-                    e.currentTarget.closest('tr').style.display = 'none';
+                    if (tr) tr.style.display = 'none';
                     const res = await window.ERPAPI.request('delete_invoice', { no_invoice: no });
                     if (res.status === 'success') loadInvoiceData(true);
                     else { showToast?.(res.message, 'danger'); loadInvoiceData(true); }
