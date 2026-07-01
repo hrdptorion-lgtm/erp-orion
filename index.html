@@ -2092,8 +2092,9 @@
                                 <tr>
                                     <th>Nama Barang / Deskripsi</th>
                                     <th style="text-align: center;">Pesanan</th>
-                                    <th style="text-align: center;">Sudah SPK</th>
-                                    <th style="text-align: center;">Sisa</th>
+                                    <th style="text-align: center;">Terkirim (SJ)</th>
+                                    <th style="text-align: center;">Stok Tersedia</th>
+                                    <th style="text-align: center;">Kurang (Sisa)</th>
                                 </tr>
                             </thead>
                             <tbody id="detail-poc-items-tbody">
@@ -2103,7 +2104,7 @@
                     </div>
                 </div>
 
-                <div>
+                <div id="detail-poc-shortage-container">
                     <h3 style="margin-bottom: 10px; font-size: 1.1rem; color: var(--warning);">Analisis Kebutuhan Bahan
                         Baku</h3>
                     <div class="table-responsive" style="min-height: auto;">
@@ -2123,6 +2124,7 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
 
 
                     <!-- Lacak Progress End-to-End -->
@@ -2167,7 +2169,6 @@
                     </div>
                 </div>
             </div>
-        </div>
 
         <!-- Produksi Modal Overlay --> <!-- Modal Transaksi Gudang -->
         <div id="transaksi-gudang-modal" class="login-overlay">

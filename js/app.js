@@ -2219,7 +2219,7 @@ window.setupDOMPagination();
                     
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td><input type="text" class="inv-item-desc" list="bom-items-list" value="${itemDesc}" style="width: 100%; background: transparent; border: none; color: white;"></td>
+                        <td><input type="text" class="inv-item-desc" list="bom-items-list" value="${window.dpDescTemp} - ${itemDesc}" style="width: 100%; background: transparent; border: none; color: white;"></td>
                         <td><input type="number" class="inv-item-qty" value="1" min="1" style="width: 100%; text-align: right;"></td>
                         <td><input type="text" class="inv-item-price" value="${window.formatRupiah(dpVal).replace('Rp ', '')}" min="0" style="width: 100%; text-align: right;" oninput="window.formatCurrencyInput(this); calculateInvoiceTotal()"></td>
                         <td class="inv-item-subtotal" style="text-align: right;">Rp 0</td>
@@ -2661,47 +2661,84 @@ window.setupDOMPagination();
 
         // 3. Shortage Analysis
         try {
-            const [resBom, resStock] = await Promise.all([
+            const [resBom, resStock, resInv] = await Promise.all([
                 window.ERPAPI.request('get_bom'),
-                window.ERPAPI.request('get_stock')
+                window.ERPAPI.request('get_stock'),
+                window.ERPAPI.request('get_inventory')
             ]);
             const boms = resBom.data || [];
             const stocks = resStock.data || [];
+            const inventory = resInv.data || [];
             window.stockData = stocks;
 
             let totalShortageData = {};
 
             if (Array.isArray(rincian)) {
                 rincian.forEach(poItem => {
-                    const matchedBom = boms.find(b => String(b.nama_barang).trim().toLowerCase() === String(poItem.nama || poItem.nama_barang).trim().toLowerCase());
-                    if (matchedBom) {
-                        const mats = typeof matchedBom.rincian_material === 'string' ? JSON.parse(matchedBom.rincian_material) : (matchedBom.rincian_material || []);
-                        mats.forEach(mat => {
-                            const matName = (mat.nama || mat.nama_material || '').trim();
-                            const reqQty = parseFloat(mat.qty || 0) * parseFloat(poItem.qty || 1);
+                    const itemName = String(poItem.nama || poItem.nama_barang).trim().toLowerCase();
+                    const orderedQty = parseFloat(poItem.qty || poItem.moq_pcs || 1);
+                    const deliveredQty = parseFloat(poItem.qty_delivered || 0);
+                    
+                    let fgStock = 0;
+                    const fgMatch = inventory.find(b => {
+                        const bName = String(b.nama_barang || b.nama || b.nama_material || '').trim().toLowerCase();
+                        return bName === itemName || bName.includes(itemName) || itemName.includes(bName);
+                    });
+                    if (fgMatch) {
+                        fgStock = parseFloat(String(fgMatch.stok || fgMatch.qty || 0).replace(/[^0-9-]/g, '')) || 0;
+                    }
+                    
+                    let belumTerkirim = orderedQty - deliveredQty;
+                    if (belumTerkirim < 0) belumTerkirim = 0;
+                    
+                    let sisaKekurangan = belumTerkirim - fgStock;
+                    if (sisaKekurangan < 0) sisaKekurangan = 0;
 
-                            if (!totalShortageData[matName]) {
-                                const stockItem = stocks.find(s => (s.nama || s.nama_material || '').trim().toLowerCase() === matName.toLowerCase());
-                                const currentStock = stockItem ? (parseFloat(String(stockItem.stok).replace(/[^\d.,]/g, '').replace(/\./g, '').replace(',', '.')) || 0) : 0;
-                                totalShortageData[matName] = {
-                                    required: 0,
-                                    stock: currentStock,
-                                    satuan: mat.satuan || (stockItem ? stockItem.satuan : 'pcs')
-                                };
-                            }
-                            totalShortageData[matName].required += reqQty;
-                        });
+                    if (sisaKekurangan > 0) {
+                        const matchedBom = boms.find(b => String(b.nama_barang).trim().toLowerCase() === itemName);
+                        if (matchedBom) {
+                            const mats = typeof matchedBom.rincian_material === 'string' ? JSON.parse(matchedBom.rincian_material) : (matchedBom.rincian_material || []);
+                            mats.forEach(mat => {
+                                const matName = (mat.nama || mat.nama_material || '').trim();
+                                const reqQty = parseFloat(mat.qty || 0) * sisaKekurangan;
+    
+                                if (!totalShortageData[matName]) {
+                                    const stockItem = stocks.find(s => (s.nama || s.nama_material || '').trim().toLowerCase() === matName.toLowerCase());
+                                    const currentStock = stockItem ? (parseFloat(String(stockItem.stok).replace(/[^\d.,]/g, '').replace(/\./g, '').replace(',', '.')) || 0) : 0;
+                                    totalShortageData[matName] = {
+                                        required: 0,
+                                        stock: currentStock,
+                                        satuan: mat.satuan || (stockItem ? stockItem.satuan : 'pcs')
+                                    };
+                                }
+                                totalShortageData[matName].required += reqQty;
+                            });
+                        }
                     }
                 });
             }
 
             if (shortageTbody) {
+                const container = document.getElementById('detail-poc-shortage-container');
                 shortageTbody.innerHTML = '';
+                
+                // Hapus material yang required-nya 0
+                Object.keys(totalShortageData).forEach(k => {
+                    if (totalShortageData[k].required <= 0) delete totalShortageData[k];
+                });
+                
                 window.currentShortageData = totalShortageData; // Expose globally for auto-fill
                 const matKeys = Object.keys(totalShortageData);
-                if (matKeys.length === 0) {
-                    shortageTbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Tidak ada material BOM yang terdeteksi.</td></tr>';
+                
+                let hasRealShortage = false;
+                matKeys.forEach(k => {
+                    if (totalShortageData[k].required > totalShortageData[k].stock) hasRealShortage = true;
+                });
+
+                if (matKeys.length === 0 || !hasRealShortage) {
+                    if (container) container.style.display = 'none';
                 } else {
+                    if (container) container.style.display = 'block';
                     matKeys.forEach(matName => {
                         const data = totalShortageData[matName];
                         const tr = document.createElement('tr');
@@ -2748,10 +2785,15 @@ window.setupDOMPagination();
             // Populate Items Table with SPK Progress
             if (itemsTbody) {
                 itemsTbody.innerHTML = '';
+                
+                let allSpkCreated = true;
+                let allSjDelivered = true;
+                
                 if (Array.isArray(rincian) && rincian.length > 0) {
                     rincian.forEach(poItem => {
                         const itemName = poItem.nama || poItem.part_name || poItem.nama_barang || '-';
                         const orderedQty = parseInt(poItem.qty || poItem.moq_pcs || 1);
+                        const deliveredQty = parseInt(poItem.qty_delivered || 0);
                         
                         let producedQty = 0;
                         relatedSPK.forEach(spk => {
@@ -2778,25 +2820,101 @@ window.setupDOMPagination();
                             }
                         });
                         
-                        let sisaQty = orderedQty - producedQty;
-                        if (sisaQty < 0) sisaQty = 0;
+                        let fgStock = 0;
+                        const cInvData = window.ERPAPI.getCached('get_inventory');
+                        if (cInvData && cInvData.data) {
+                            const fgMatch = cInvData.data.find(b => {
+                                const bName = String(b.nama_barang || b.nama || b.nama_material || '').trim().toLowerCase();
+                                const iName = String(itemName).trim().toLowerCase();
+                                return bName === iName || bName.includes(iName) || iName.includes(bName);
+                            });
+                            if (fgMatch) {
+                                fgStock = parseInt(String(fgMatch.stok || fgMatch.qty || 0).replace(/[^0-9-]/g, '')) || 0;
+                            }
+                        }
                         
-                        let sisaHtml = `<strong>${sisaQty}</strong>`;
-                        if (sisaQty === 0) sisaHtml = `<span style="color: var(--success);"><i class="fa-solid fa-check"></i> Terpenuhi</span>`;
-                        else if (sisaQty < orderedQty) sisaHtml = `<span style="color: var(--warning);">${sisaQty}</span>`;
-                        else sisaHtml = `<span style="color: var(--danger);">${sisaQty}</span>`;
+                        let belumTerkirim = orderedQty - deliveredQty;
+                        if (belumTerkirim < 0) belumTerkirim = 0;
+                        
+                        let sisaKekurangan = belumTerkirim - fgStock;
+                        if (sisaKekurangan < 0) sisaKekurangan = 0;
+                        
+                        if (sisaKekurangan > 0) allSpkCreated = false;
+                        if (deliveredQty < orderedQty) allSjDelivered = false;
+                        
+                        let sisaHtml = `<strong>${sisaKekurangan}</strong>`;
+                        if (sisaKekurangan === 0) sisaHtml = `<span style="color: var(--success);"><i class="fa-solid fa-check"></i> Aman</span>`;
+                        else if (sisaKekurangan < orderedQty) sisaHtml = `<span style="color: var(--warning);">${sisaKekurangan}</span>`;
+                        else sisaHtml = `<span style="color: var(--danger);">${sisaKekurangan}</span>`;
 
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
                             <td>${itemName}</td>
                             <td style="text-align: center;">${orderedQty}</td>
-                            <td style="text-align: center;">${producedQty}</td>
+                            <td style="text-align: center;">${deliveredQty}</td>
+                            <td style="text-align: center;">${fgStock}</td>
                             <td style="text-align: center;">${sisaHtml}</td>
                         `;
                         itemsTbody.appendChild(tr);
                     });
                 } else {
-                    itemsTbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Tidak ada rincian item.</td></tr>';
+                    allSpkCreated = true;
+                    allSjDelivered = true;
+                    itemsTbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Tidak ada rincian item.</td></tr>';
+                }
+                
+                const btnSpk = document.getElementById('btn-detail-act-spk');
+                if (btnSpk) {
+                    if (allSpkCreated) {
+                        btnSpk.style.opacity = '0.5';
+                        btnSpk.style.cursor = 'not-allowed';
+                        btnSpk.style.pointerEvents = 'none';
+                    } else {
+                        btnSpk.style.opacity = '1';
+                        btnSpk.style.cursor = 'pointer';
+                        btnSpk.style.pointerEvents = 'auto';
+                    }
+                }
+                const btnSj = document.getElementById('btn-detail-act-sj');
+                if (btnSj) {
+                    if (allSjDelivered) {
+                        btnSj.style.opacity = '0.5';
+                        btnSj.style.cursor = 'not-allowed';
+                        btnSj.style.pointerEvents = 'none';
+                    } else {
+                        btnSj.style.opacity = '1';
+                        btnSj.style.cursor = 'pointer';
+                        btnSj.style.pointerEvents = 'auto';
+                    }
+                }
+                const btnDp = document.getElementById('btn-detail-act-inv-dp');
+                if (btnDp) {
+                    if (relatedInv.length > 0) {
+                        btnDp.style.opacity = '0.5';
+                        btnDp.style.cursor = 'not-allowed';
+                        btnDp.style.pointerEvents = 'none';
+                    } else {
+                        btnDp.style.opacity = '1';
+                        btnDp.style.cursor = 'pointer';
+                        btnDp.style.pointerEvents = 'auto';
+                    }
+                }
+                const btnLunas = document.getElementById('btn-detail-act-inv');
+                if (btnLunas) {
+                    const totalTerbayar = relatedInv.reduce((sum, i) => {
+                        if (i.status_pembayaran === 'Lunas') return sum + (parseFloat(i.grand_total) || parseFloat(i.total_tagihan) || 0);
+                        return sum + (parseFloat(i.terbayar) || 0);
+                    }, 0);
+                    const numericTotalHarga = typeof item.total_harga === 'string' ? parseFloat(item.total_harga.replace(/[^0-9]/g, '')) || 0 : parseFloat(item.total_harga) || 0;
+                    if (totalTerbayar >= numericTotalHarga && numericTotalHarga > 0) {
+                        btnLunas.style.opacity = '0.5';
+                        btnLunas.style.cursor = 'not-allowed';
+                        btnLunas.style.pointerEvents = 'none';
+                    } else {
+                        btnLunas.style.opacity = '1';
+                        btnLunas.style.cursor = 'pointer';
+                        btnLunas.style.pointerEvents = 'auto';
+                    }
                 }
             }
 
@@ -2877,11 +2995,24 @@ window.setupDOMPagination();
                 if (sjStatusEl) sjStatusEl.innerHTML = `<span class="badge badge-secondary" style="background: rgba(255,255,255,0.1); color: var(--text-muted);">Belum Ada DO</span>`;
                 if (sjDescEl) sjDescEl.innerText = '-';
             } else {
-                const isSelesai = relatedSJ.every(s => s.status === 'Selesai (Diterima)');
-                if (isSelesai) {
-                    if (sjStatusEl) sjStatusEl.innerHTML = `<span class="badge badge-success">Diterima Penuh</span>`;
+                let isFullDelivered = true;
+                if (Array.isArray(rincian) && rincian.length > 0) {
+                    rincian.forEach(poItem => {
+                        const ord = parseInt(poItem.qty || poItem.moq_pcs || 1);
+                        const deliv = parseInt(poItem.qty_delivered || 0);
+                        if (deliv < ord) isFullDelivered = false;
+                    });
                 } else {
-                    if (sjStatusEl) sjStatusEl.innerHTML = `<span class="badge badge-warning" style="background: var(--info); color: #fff;">Sedang Dikirim</span>`;
+                    isFullDelivered = false;
+                }
+
+                const isSjSelesai = relatedSJ.length > 0 && relatedSJ.every(s => s.status === 'Selesai (Diterima)');
+                if (isFullDelivered && isSjSelesai) {
+                    if (sjStatusEl) sjStatusEl.innerHTML = `<span class="badge badge-success">Diterima Penuh</span>`;
+                } else if (isSjSelesai) {
+                    if (sjStatusEl) sjStatusEl.innerHTML = `<span class="badge badge-warning" style="background: var(--info); color: #fff;">Diterima Sebagian</span>`;
+                } else {
+                    if (sjStatusEl) sjStatusEl.innerHTML = `<span class="badge badge-warning" style="background: var(--warning); color: #000;">Sedang Dikirim</span>`;
                 }
                 if (sjDescEl) {
                     let sjListHtml = `<div style="margin-top: 8px; color: var(--text-main); font-weight: 500; font-size: 0.9rem; margin-bottom: 5px;">Rincian Surat Jalan:</div>
@@ -2891,6 +3022,7 @@ window.setupDOMPagination();
                                 <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
                                     <th style="padding: 5px 8px; color: var(--text-muted);">No SJ</th>
                                     <th style="padding: 5px 8px; color: var(--text-muted);">Tanggal</th>
+                                    <th style="padding: 5px 8px; color: var(--text-muted);">Item & Qty</th>
                                     <th style="padding: 5px 8px; color: var(--text-muted);">Status</th>
                                 </tr>
                             </thead>
@@ -2907,11 +3039,24 @@ window.setupDOMPagination();
                         else if (st === 'Proses Pengiriman' || st === 'Dikirim') { badgeColor = 'var(--info)'; textColor = '#fff'; }
                         else if (st === 'Batal') badgeColor = 'var(--danger)';
 
+                        let itemHtml = '-';
+                        try {
+                            const itemsArr = typeof s.items === 'string' ? JSON.parse(s.items) : (s.items || []);
+                            if (itemsArr.length > 0) {
+                                itemHtml = itemsArr.map(it => `<div style="margin-bottom:2px;">• ${it.nama || it.item} : <b>${it.qty}</b></div>`).join('');
+                            } else if (s.item) {
+                                itemHtml = s.item;
+                            }
+                        } catch(e) {
+                            itemHtml = s.item || '-';
+                        }
+
                         sjListHtml += `
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                    <td style="padding: 5px 8px; font-weight: 500;">${no}</td>
-                                    <td style="padding: 5px 8px; white-space: nowrap;">${tgl}</td>
-                                    <td style="padding: 5px 8px; white-space: nowrap;"><span style="background: ${badgeColor}; color: ${textColor}; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">${st}</span></td>
+                                    <td style="padding: 5px 8px; font-weight: 500; vertical-align: top;">${no}</td>
+                                    <td style="padding: 5px 8px; white-space: nowrap; vertical-align: top;">${tgl}</td>
+                                    <td style="padding: 5px 8px; font-size: 0.75rem; vertical-align: top;">${itemHtml}</td>
+                                    <td style="padding: 5px 8px; white-space: nowrap; vertical-align: top;"><span style="background: ${badgeColor}; color: ${textColor}; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">${st}</span></td>
                                 </tr>`;
                     });
                     sjListHtml += `</tbody></table></div>`;
@@ -2926,8 +3071,22 @@ window.setupDOMPagination();
                 if (invStatusEl) invStatusEl.innerHTML = `<span class="badge badge-secondary" style="background: rgba(255,255,255,0.1); color: var(--text-muted);">Belum Ditagih</span>`;
                 if (invDescEl) invDescEl.innerText = '-';
             } else {
-                const isPaid = relatedInv.every(s => s.status_pembayaran === 'Lunas');
-                const isPartial = relatedInv.some(s => s.status_pembayaran === 'Sebagian');
+                const numericTotalHarga = typeof item.total_harga === 'string' ? parseFloat(item.total_harga.replace(/[^0-9]/g, '')) || 0 : parseFloat(item.total_harga) || 0;
+                const totalTerbayar = relatedInv.reduce((sum, s) => {
+                    if (s.status_pembayaran === 'Lunas') return sum + (parseFloat(s.grand_total) || parseFloat(s.total_tagihan) || 0);
+                    if (s.status_pembayaran === 'Sebagian') return sum + (parseFloat(s.terbayar) || 0);
+                    return sum;
+                }, 0);
+
+                let isPaid = false;
+                let isPartial = false;
+
+                if (totalTerbayar >= numericTotalHarga && numericTotalHarga > 0) {
+                    isPaid = true;
+                } else if (totalTerbayar > 0) {
+                    isPartial = true;
+                }
+
                 if (isPaid) {
                     if (invStatusEl) invStatusEl.innerHTML = `<span class="badge badge-success">Lunas</span>`;
                 } else if (isPartial) {
@@ -3128,8 +3287,27 @@ window.setupDOMPagination();
         let isKosong = false;
         try {
             const items = typeof window.currentDetailPOC.item_po === 'string' ? JSON.parse(window.currentDetailPOC.item_po) : (window.currentDetailPOC.item_po || []);
+            const poNo = window.currentDetailPOC.id_po_customer || window.currentDetailPOC.no_penawaran || '';
             items.forEach(it => {
                 const name = (it.nama || it.part_name || '').trim().toLowerCase();
+                
+                let deliveredQty = 0;
+                if (window.suratJalanData) {
+                    window.suratJalanData.forEach(sj => {
+                        if (sj.status === 'Batal') return;
+                        const sjPo = sj.no_penawaran || sj.referensi_penawaran || sj.id_po_customer || '';
+                        if (sjPo === poNo) {
+                            let sjIt = [];
+                            try { sjIt = typeof sj.items === 'string' ? JSON.parse(sj.items) : (sj.items || []); } catch(e){}
+                            sjIt.forEach(sItem => {
+                                if (String(sItem.nama || sItem.item || '').trim().toLowerCase() === name) {
+                                    deliveredQty += parseInt(sItem.qty || 0);
+                                }
+                            });
+                        }
+                    });
+                }
+
                 const fg = (window.barangJadiData || []).find(b => {
                     let bNameRaw = '';
                     const nameKey = Object.keys(b).find(k => k.includes('nama') || k.includes('deskripsi') || k.includes('item'));
@@ -3139,14 +3317,17 @@ window.setupDOMPagination();
                     const bName = bNameRaw.trim().toLowerCase();
                     return bName === name;
                 });
-                const req = parseInt(it.qty || it.moq_pcs || 0);
+                
+                const ordered = parseInt(it.qty || it.moq_pcs || 0);
+                const req = Math.max(0, ordered - deliveredQty);
+                
                 let rawStok = 0;
                 if (fg) {
                     const stokKey = Object.keys(fg).find(k => k.includes('stok') || k.includes('qty') || k.includes('jumlah'));
                     if (stokKey) rawStok = fg[stokKey];
                 }
                 const st = fg ? parseInt(String(rawStok).replace(/[^0-9-]/g, '') || 0) : 0;
-                if (st < req) isKosong = true;
+                if (req > 0 && st < req) isKosong = true;
             });
         } catch (e) { }
 
@@ -7484,7 +7665,12 @@ window.openPOCustomerModal = function (id) {
             const sjNo = sj.no_sj || sj.no_surat_jalan || '';
             const sjTanggal = sj.tanggal || sj.tanggal_kirim || '-';
             const sjPenawaran = sj.no_penawaran || sj.referensi_penawaran || sj.id_po_customer || '-';
-            const sjCustomer = sj.customer || '-';
+            let sjCustomer = sj.customer;
+            if (!sjCustomer || sjCustomer === '-') {
+                const poRef = poCustomerData.find(p => (p.id_po_customer === sjPenawaran || p.no_penawaran === sjPenawaran));
+                if (poRef) sjCustomer = poRef.nama_customer || poRef.customer;
+            }
+            sjCustomer = sjCustomer || '-';
 
             const tr = document.createElement('tr');
             let badgeClass = 'badge-warning';
@@ -7514,12 +7700,14 @@ window.openPOCustomerModal = function (id) {
                 `;
             }
 
+            let rowClickFn = `window.openDetailSJ(${suratJalanData.indexOf(sj)})`;
+
             tr.innerHTML = `
-            <td style="font-weight: 700;">${sjNo || '<i style="color:#666">Kosong (Error)</i>'}</td>
-            <td>${sjTanggal}</td>
-            <td>${sjPenawaran}</td>
-            <td>${sjCustomer}</td>
-            <td><span class="badge ${badgeClass}">${sj.status || 'Dikirim'}</span></td>
+            <td style="font-weight: 700; cursor: pointer;" onclick="${rowClickFn}">${sjNo || '<i style="color:#666">Kosong (Error)</i>'}</td>
+            <td style="cursor: pointer;" onclick="${rowClickFn}">${sjTanggal}</td>
+            <td style="cursor: pointer;" onclick="${rowClickFn}">${sjPenawaran}</td>
+            <td style="cursor: pointer;" onclick="${rowClickFn}">${sjCustomer}</td>
+            <td style="cursor: pointer;" onclick="${rowClickFn}"><span class="badge ${badgeClass}">${sj.status || 'Dikirim'}</span></td>
             <td><div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">${actionBtns}</div></td>
         `;
             tbody.appendChild(tr);
@@ -7527,6 +7715,7 @@ window.openPOCustomerModal = function (id) {
 
         document.querySelectorAll('.btn-print-sj').forEach(btn => {
             btn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 const idx = e.currentTarget.getAttribute('data-idx');
                 printSuratJalan(suratJalanData[idx]);
             });
@@ -7534,21 +7723,82 @@ window.openPOCustomerModal = function (id) {
 
         document.querySelectorAll('.btn-print-proforma-sj').forEach(btn => {
             btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
                 const idx = e.currentTarget.getAttribute('data-idx');
                 await printProformaInvoice(suratJalanData[idx]);
             });
         });
 
-        document.querySelectorAll('.btn-edit-sj').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const idx = e.currentTarget.getAttribute('data-idx');
-                const item = suratJalanData[idx];
-                const sjNo = item.no_sj || item.no_surat_jalan || '';
-                const sjTanggal = item.tanggal || item.tanggal_kirim || '';
-                const sjPenawaran = item.no_penawaran || item.referensi_penawaran || item.id_po_customer || '';
-                const sjCustomer = item.customer || '';
+        window.openDetailSJ = async function(idx) {
+            if (window.event && window.event.stopPropagation) window.event.stopPropagation();
+            const item = suratJalanData[idx];
+            if (!item) return;
 
-                document.getElementById('surat-jalan-form').reset();
+            let sjItems = [];
+            try { sjItems = typeof item.items === 'string' ? JSON.parse(item.items) : (item.items || []); } catch (e) { }
+
+            let itemsHtml = `
+                <table style="width: 100%; margin-top: 15px; font-size: 0.9em; text-align: left; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <th style="padding: 8px;">Nama Barang</th>
+                            <th style="padding: 8px; text-align: right;">Qty</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            if (sjItems.length === 0) {
+                itemsHtml += `<tr><td colspan="2" style="text-align: center; padding: 8px;">Tidak ada item</td></tr>`;
+            } else {
+                sjItems.forEach(it => {
+                    itemsHtml += `
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 8px;">${it.nama || it.item || '-'}</td>
+                            <td style="padding: 8px; text-align: right;">${parseInt(it.qty || 0).toLocaleString('id-ID')}</td>
+                        </tr>
+                    `;
+                });
+            }
+            itemsHtml += `</tbody></table>`;
+
+            Swal.fire({
+                title: 'Detail Surat Jalan',
+                html: `
+                    <div style="text-align: left; font-size: 0.95em; line-height: 1.6; color: var(--text-main);">
+                        <div><strong style="color: var(--text-muted); width: 100px; display: inline-block;">No. SJ</strong>: ${item.no_sj || item.no_surat_jalan || '-'}</div>
+                        <div><strong style="color: var(--text-muted); width: 100px; display: inline-block;">Tanggal</strong>: ${item.tanggal || item.tanggal_kirim || '-'}</div>
+                        <div><strong style="color: var(--text-muted); width: 100px; display: inline-block;">Customer</strong>: ${item.customer || '-'}</div>
+                        <div><strong style="color: var(--text-muted); width: 100px; display: inline-block;">No. PO</strong>: ${item.no_penawaran || item.referensi_penawaran || item.id_po_customer || '-'}</div>
+                        <div><strong style="color: var(--text-muted); width: 100px; display: inline-block;">Supir / Plat</strong>: ${item.supir || '-'} / ${item.plat_nomor || '-'}</div>
+                        <div><strong style="color: var(--text-muted); width: 100px; display: inline-block;">Status</strong>: <span class="badge badge-info">${item.status || 'Dikirim'}</span></div>
+                        ${item.catatan ? `<div style="margin-top: 10px;"><strong>Catatan:</strong><br><span style="color: var(--text-muted);">${item.catatan}</span></div>` : ''}
+                        
+                        ${itemsHtml}
+                    </div>
+                `,
+                width: '600px',
+                showCloseButton: true,
+                showConfirmButton: false,
+                background: '#1e293b', // solid dark blue/gray for 100% opacity
+                color: '#fff'
+            });
+        };
+
+        window.openEditSJ = async function(idx) {
+            if (window.event && window.event.stopPropagation) window.event.stopPropagation();
+            const item = suratJalanData[idx];
+            if (!item) return;
+            const sjNo = item.no_sj || item.no_surat_jalan || '';
+            const sjTanggal = item.tanggal || item.tanggal_kirim || '';
+            const sjPenawaran = item.no_penawaran || item.referensi_penawaran || item.id_po_customer || '';
+            let sjCustomer = item.customer;
+            if (!sjCustomer) {
+                const poRef = poCustomerData.find(p => (p.id_po_customer === sjPenawaran || p.no_penawaran === sjPenawaran));
+                if (poRef) sjCustomer = poRef.nama_customer || poRef.customer;
+            }
+            sjCustomer = sjCustomer || '-';
+            
+            document.getElementById('surat-jalan-form').reset();
                 document.getElementById('sj_no').value = sjNo;
                 document.getElementById('sj_tanggal').value = sjTanggal ? sjTanggal.split('/').reverse().join('-') : '';
 
@@ -7686,11 +7936,18 @@ window.openPOCustomerModal = function (id) {
                     sortField: { field: 'text', direction: 'asc' },
                     maxOptions: 50
                 });
+            }; // End of openDetailSJ
+
+        document.querySelectorAll('.btn-edit-sj').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                window.openEditSJ(e.currentTarget.getAttribute('data-idx'));
             });
         });
 
         document.querySelectorAll('.btn-delete-sj').forEach(btn => {
             btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
                 const no = e.currentTarget.getAttribute('data-no');
                 if (!no) {
                     showToast?.('Data ini rusak (tidak memiliki No Surat Jalan) dan tidak bisa dihapus dari sini. Hapus manual dari Google Sheets.', 'error');
@@ -7720,6 +7977,7 @@ window.openPOCustomerModal = function (id) {
 
         document.querySelectorAll('.btn-finish-sj').forEach(btn => {
             btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
                 const no = e.currentTarget.getAttribute('data-no');
                 if (!no) return;
                 
@@ -7734,7 +7992,7 @@ window.openPOCustomerModal = function (id) {
                         
                         <div class="input-group" style="text-align: left; margin-bottom: 1.5rem;">
                             <label>Nama Penerima</label>
-                            <input type="text" id="input_nama_penerima" placeholder="Contoh: Bapak Budi" required style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border);">
+                            <input type="text" class="input_nama_penerima" placeholder="Contoh: Bapak Budi" required style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border);">
                         </div>
 
                         <div style="display: flex; gap: 10px;">
@@ -7747,7 +8005,7 @@ window.openPOCustomerModal = function (id) {
 
                 overlay.querySelector('.btn-cancel-fin').onclick = () => overlay.remove();
                 overlay.querySelector('.btn-confirm-fin').onclick = async () => {
-                    const inputPenerima = document.getElementById('input_nama_penerima').value.trim();
+                    const inputPenerima = overlay.querySelector('.input_nama_penerima').value.trim();
                     if (!inputPenerima) {
                         showToast?.('Nama Penerima wajib diisi!', 'error');
                         return;
@@ -8067,13 +8325,15 @@ window.openPOCustomerModal = function (id) {
                 penyelesaiText = `Oleh: <b style="color:var(--text-main);">${inv.diselesaikan_oleh || 'Sistem'}</b><br><small style="color:var(--text-muted);">${inv.waktu_selesai || '-'}</small>`;
             }
 
+            let rowClickFn = `window.openDetailInvoice(${invoiceData.indexOf(inv)})`;
+
             tr.innerHTML = `
-            <td><strong>${inv.no_invoice}</strong><br><small style="color:var(--text-muted); font-size:0.75rem;">Dibuat: ${inv.dibuat_oleh || 'Sistem'}</small></td>
-            <td>${inv.tanggal || '-'}</td>
-            <td>${inv.customer || '-'}</td>
-            <td>${window.formatRupiah(inv.total_tagihan || 0)}</td>
-            <td><span class="badge ${badgeClass}">${inv.status_pembayaran || 'Belum Lunas'}</span></td>
-            <td>${penyelesaiText}</td>
+            <td style="cursor: pointer;" onclick="${rowClickFn}"><strong>${inv.no_invoice}</strong><br><small style="color:var(--text-muted); font-size:0.75rem;">Dibuat: ${inv.dibuat_oleh || 'Sistem'}</small></td>
+            <td style="cursor: pointer;" onclick="${rowClickFn}">${inv.tanggal || '-'}</td>
+            <td style="cursor: pointer;" onclick="${rowClickFn}">${inv.customer || '-'}</td>
+            <td style="cursor: pointer;" onclick="${rowClickFn}">${window.formatRupiah(inv.total_tagihan || 0)}</td>
+            <td style="cursor: pointer;" onclick="${rowClickFn}"><span class="badge ${badgeClass}">${inv.status_pembayaran || 'Belum Lunas'}</span></td>
+            <td style="cursor: pointer;" onclick="${rowClickFn}">${penyelesaiText}</td>
             <td><div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">${actionBtns}</div></td>
         `;
             tbody.appendChild(tr);
@@ -8117,7 +8377,7 @@ window.openPOCustomerModal = function (id) {
                     });
                 }
 
-                const currentUser = localStorage.getItem('erp_session') ? JSON.parse(localStorage.getItem('erp_session')).name : 'Admin';
+                const currentUser = localStorage.getItem('erp_session') ? JSON.parse(localStorage.getItem('erp_session')).nama : 'Admin';
 
                 Swal.fire({
                     title: 'Selesaikan Invoice',
@@ -8199,59 +8459,133 @@ window.openPOCustomerModal = function (id) {
 
 
 
+        window.openDetailInvoice = function(idx) {
+            if (window.event && window.event.stopPropagation) window.event.stopPropagation();
+            const item = invoiceData[idx];
+            if (!item) return;
+
+            let invItems = [];
+            try { invItems = typeof item.items === 'string' ? JSON.parse(item.items) : (item.items || []); } catch (err) { }
+
+            let itemsHtml = `
+                <table style="width: 100%; margin-top: 15px; font-size: 0.9em; text-align: left; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <th style="padding: 8px;">Deskripsi</th>
+                            <th style="padding: 8px; text-align: right;">Qty</th>
+                            <th style="padding: 8px; text-align: right;">Harga</th>
+                            <th style="padding: 8px; text-align: right;">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            if (invItems.length === 0) {
+                itemsHtml += `<tr><td colspan="4" style="text-align: center; padding: 8px;">Tidak ada item</td></tr>`;
+            } else {
+                invItems.forEach(it => {
+                    let qty = parseFloat(it.qty) || 0;
+                    let harga = parseFloat(it.harga) || 0;
+                    let subtotal = parseFloat(it.total) || (qty * harga);
+                    itemsHtml += `
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 8px;">${it.item || it.nama || '-'}</td>
+                            <td style="padding: 8px; text-align: right;">${qty.toLocaleString('id-ID')}</td>
+                            <td style="padding: 8px; text-align: right;">${window.formatRupiah(harga)}</td>
+                            <td style="padding: 8px; text-align: right;">${window.formatRupiah(subtotal)}</td>
+                        </tr>
+                    `;
+                });
+            }
+            itemsHtml += `</tbody></table>`;
+
+            Swal.fire({
+                title: 'Detail Invoice',
+                html: `
+                    <div style="text-align: left; font-size: 0.95em; line-height: 1.6; color: var(--text-main);">
+                        <div><strong style="color: var(--text-muted); width: 130px; display: inline-block;">No. Invoice</strong>: ${item.no_invoice || '-'}</div>
+                        <div><strong style="color: var(--text-muted); width: 130px; display: inline-block;">Tanggal</strong>: ${item.tanggal || '-'}</div>
+                        <div><strong style="color: var(--text-muted); width: 130px; display: inline-block;">Jatuh Tempo</strong>: ${item.jatuh_tempo || '-'}</div>
+                        <div><strong style="color: var(--text-muted); width: 130px; display: inline-block;">Customer</strong>: ${item.customer || '-'}</div>
+                        <div><strong style="color: var(--text-muted); width: 130px; display: inline-block;">No. Penawaran/PO</strong>: ${item.no_penawaran || '-'}</div>
+                        <div><strong style="color: var(--text-muted); width: 130px; display: inline-block;">Status</strong>: <span class="badge ${item.status_pembayaran === 'Lunas' ? 'badge-success' : 'badge-warning'}">${item.status_pembayaran || 'Belum Lunas'}</span></div>
+                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2);">
+                            <div><strong style="color: var(--text-muted); width: 130px; display: inline-block;">Subtotal</strong>: ${window.formatRupiah(item.total_tagihan || 0)}</div>
+                            <div><strong style="color: var(--text-muted); width: 130px; display: inline-block;">PPN (%)</strong>: ${item.ppn || 0}%</div>
+                            <div><strong style="color: var(--text-muted); width: 130px; display: inline-block;">DP / Potongan</strong>: ${window.formatRupiah(item.potongan_dp || 0)}</div>
+                            <div><strong style="color: var(--text-muted); width: 130px; display: inline-block;">Total Akhir</strong>: <strong style="color: var(--success);">${window.formatRupiah(item.grand_total || item.total_tagihan || 0)}</strong></div>
+                        </div>
+                        ${item.catatan ? `<div style="margin-top: 10px;"><strong>Catatan:</strong><br><span style="color: var(--text-muted);">${item.catatan}</span></div>` : ''}
+                        
+                        ${itemsHtml}
+                    </div>
+                `,
+                width: '700px',
+                showCloseButton: true,
+                showConfirmButton: false,
+                background: '#1e293b', // solid dark blue/gray for 100% opacity
+                color: '#fff'
+            });
+        };
+
+        window.openEditInvoice = function(idx) {
+            if (window.event && window.event.stopPropagation) window.event.stopPropagation();
+            const item = invoiceData[idx];
+            if (!item) return;
+
+            document.getElementById('invoice-form').reset();
+            document.getElementById('inv_no').value = item.no_invoice || '';
+            document.getElementById('inv_tanggal').value = item.tanggal ? item.tanggal.split('/').reverse().join('-') : '';
+            document.getElementById('inv_jatuh_tempo').value = item.jatuh_tempo ? item.jatuh_tempo.split('/').reverse().join('-') : '';
+            const poSel = document.getElementById('inv_no_penawaran');
+            if (poSel && item.no_penawaran) {
+                if (!Array.from(poSel.options).some(o => o.value === item.no_penawaran)) {
+                    const opt = document.createElement('option');
+                    opt.value = item.no_penawaran;
+                    opt.textContent = item.no_penawaran;
+                    poSel.appendChild(opt);
+                }
+                poSel.value = item.no_penawaran;
+            } else if (poSel) {
+                poSel.value = '';
+            }
+            document.getElementById('inv_customer').value = item.customer || '';
+            document.getElementById('inv_total').value = window.formatRupiah(item.total_tagihan || 0).replace('Rp ', '');
+            if(document.getElementById('inv_potongan_dp')) {
+                document.getElementById('inv_potongan_dp').value = window.formatRupiah(item.potongan_dp || 0).replace('Rp ', '');
+            }
+            if(document.getElementById('inv_grand_total')) {
+                document.getElementById('inv_grand_total').value = window.formatRupiah(item.grand_total || item.total_tagihan || 0).replace('Rp ', '');
+            }
+            if (document.getElementById('inv_terbayar')) document.getElementById('inv_terbayar').value = item.terbayar || 0;
+            document.getElementById('inv_status').value = item.status_pembayaran || 'Belum Lunas';
+            document.getElementById('inv_catatan').value = item.catatan || '';
+
+            let invItems = [];
+            try { invItems = typeof item.items === 'string' ? JSON.parse(item.items) : (item.items || []); } catch (err) { }
+            document.getElementById('inv_items_hidden').value = JSON.stringify(invItems);
+
+            const tbodyObj = document.getElementById('inv-items-tbody');
+            if (tbodyObj) {
+                tbodyObj.innerHTML = '';
+                if (invItems.length === 0) {
+                    addInvoiceItemRow();
+                } else {
+                    invItems.forEach(it => {
+                        addInvoiceItemRow(it);
+                    });
+                }
+            }
+            const ppnInput = document.getElementById('inv_ppn');
+            if (ppnInput) ppnInput.value = item.ppn || 0;
+            if (typeof calculateInvoiceTotal === 'function') calculateInvoiceTotal();
+            
+            document.getElementById('invoice-modal').classList.add('active');
+        };
+
         document.querySelectorAll('.btn-edit-inv').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const idx = e.currentTarget.getAttribute('data-idx');
-                const item = invoiceData[idx];
-
-                document.getElementById('invoice-form').reset();
-                document.getElementById('inv_no').value = item.no_invoice || '';
-                document.getElementById('inv_tanggal').value = item.tanggal ? item.tanggal.split('/').reverse().join('-') : '';
-                document.getElementById('inv_jatuh_tempo').value = item.jatuh_tempo ? item.jatuh_tempo.split('/').reverse().join('-') : '';
-                const poSel = document.getElementById('inv_no_penawaran');
-                if (poSel && item.no_penawaran) {
-                    if (!Array.from(poSel.options).some(o => o.value === item.no_penawaran)) {
-                        const opt = document.createElement('option');
-                        opt.value = item.no_penawaran;
-                        opt.textContent = item.no_penawaran;
-                        poSel.appendChild(opt);
-                    }
-                    poSel.value = item.no_penawaran;
-                } else if (poSel) {
-                    poSel.value = '';
-                }
-                document.getElementById('inv_customer').value = item.customer || '';
-                document.getElementById('inv_total').value = window.formatRupiah(item.total_tagihan || 0).replace('Rp ', '');
-                if(document.getElementById('inv_potongan_dp')) {
-                    document.getElementById('inv_potongan_dp').value = window.formatRupiah(item.potongan_dp || 0).replace('Rp ', '');
-                }
-                if(document.getElementById('inv_grand_total')) {
-                    document.getElementById('inv_grand_total').value = window.formatRupiah(item.grand_total || item.total_tagihan || 0).replace('Rp ', '');
-                }
-                if (document.getElementById('inv_terbayar')) document.getElementById('inv_terbayar').value = item.terbayar || 0;
-                document.getElementById('inv_status').value = item.status_pembayaran || 'Belum Lunas';
-                document.getElementById('inv_catatan').value = item.catatan || '';
-
-                let invItems = [];
-                try { invItems = typeof item.items === 'string' ? JSON.parse(item.items) : (item.items || []); } catch (err) { }
-                document.getElementById('inv_items_hidden').value = JSON.stringify(invItems);
-
-                const tbodyObj = document.getElementById('inv-items-tbody');
-                if (tbodyObj) {
-                    tbodyObj.innerHTML = '';
-                    if (invItems.length === 0) {
-                        addInvoiceItemRow();
-                    } else {
-                        invItems.forEach(it => {
-                            addInvoiceItemRow(it);
-                        });
-                    }
-                }
-                const ppnInput = document.getElementById('inv_ppn');
-                if (ppnInput) ppnInput.value = item.ppn || 0;
-                if (typeof calculateInvoiceTotal === 'function') calculateInvoiceTotal();
-                
-                document.getElementById('invoice-modal').classList.add('active');
+                e.stopPropagation();
+                window.openEditInvoice(e.currentTarget.getAttribute('data-idx'));
             });
         });
 
@@ -9037,8 +9371,8 @@ window.openPOCustomerModal = function (id) {
             catatan: document.getElementById('inv_catatan').value,
             ppn: document.getElementById('inv_ppn') ? document.getElementById('inv_ppn').value : 0,
             items: items,
-            pembuat: typeof currentUser !== 'undefined' ? currentUser : (localStorage.getItem('erp_session') ? JSON.parse(localStorage.getItem('erp_session')).name : 'Admin'),
-            penyelesai: typeof currentUser !== 'undefined' ? currentUser : (localStorage.getItem('erp_session') ? JSON.parse(localStorage.getItem('erp_session')).name : 'Admin')
+            pembuat: typeof currentUser !== 'undefined' ? currentUser : (localStorage.getItem('erp_session') ? JSON.parse(localStorage.getItem('erp_session')).nama : 'Admin'),
+            penyelesai: typeof currentUser !== 'undefined' ? currentUser : (localStorage.getItem('erp_session') ? JSON.parse(localStorage.getItem('erp_session')).nama : 'Admin')
         };
 
         document.getElementById('invoice-modal').classList.remove('active');

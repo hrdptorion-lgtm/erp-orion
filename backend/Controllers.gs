@@ -1754,14 +1754,6 @@ function selesaikanSPK(payload) {
   return { status: 'success', message: 'SPK Selesai! Stok Barang Jadi ditambahkan.' };
 }
 
-function saveInvoice(payload) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName('DB Invoice');
-  if (!sheet) return { status: 'error', message: 'Sheet DB Invoice tidak ditemukan.' };
-  sheet.appendRow(['INV-' + Date.now(), payload.customer || '', payload.item || '', payload.qty || 0, payload.total || 0, new Date().toLocaleDateString('id-ID'), 'Unpaid']);
-  return { status: 'success', message: 'Invoice berhasil disimpan.' };
-}
-
 function addPettyCash(payload) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName('DB Petty Cash');
@@ -2197,6 +2189,79 @@ function getSuratJalan() {
   });
   return { status: 'success', data: data };
 }
+function adjustSJStockAndPO(items, isRevert, poNo, noSJ, user) {
+  if (!items || items.length === 0) return;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sign = isRevert ? 1 : -1; 
+  
+  // 1. Master Barang Jadi
+  const bjSheet = ss.getSheetByName('DB Master Barang Jadi');
+  const trxSheet = ss.getSheetByName('DB Transaksi Gudang');
+  const dateStr = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy HH:mm');
+  if (bjSheet) {
+     const bjVals = bjSheet.getDataRange().getDisplayValues();
+     const kodeIdx = bjVals[0].findIndex(h => /kode/i.test(h));
+     const namaIdx = bjVals[0].findIndex(h => /nama/i.test(h));
+     const stokIdx = bjVals[0].findIndex(h => /stok|stock/i.test(h));
+     
+     if (kodeIdx !== -1 && stokIdx !== -1) {
+         items.forEach(it => {
+            let qty = parseFloat(it.qty) || 0;
+            if (qty === 0) return;
+            for (let i = 1; i < bjVals.length; i++) {
+               if (String(bjVals[i][namaIdx]).trim().toLowerCase() === String(it.nama).trim().toLowerCase()) {
+                  let cur = parseFloat(String(bjVals[i][stokIdx]).replace(/[^0-9.-]/g, '')) || 0;
+                  let newVal = cur + (qty * sign);
+                  bjSheet.getRange(i + 1, stokIdx + 1).setValue(newVal);
+                  
+                  if (trxSheet) {
+                      const idTrx = 'TRX-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+                      if (!isRevert) {
+                          trxSheet.appendRow([idTrx, dateStr, 'OUT', noSJ, bjVals[i][kodeIdx], qty, user || 'Sistem', 'Pengiriman PO ' + poNo, '', 'Barang Jadi']);
+                      } else {
+                          trxSheet.appendRow([idTrx, dateStr, 'IN', noSJ, bjVals[i][kodeIdx], qty, user || 'Sistem', 'Revisi/Batal SJ ' + noSJ, '', 'Barang Jadi']);
+                      }
+                  }
+                  break;
+               }
+            }
+         });
+     }
+  }
+  
+  // 2. PO Customer
+  const poSheet = ss.getSheetByName('DB PO Customer');
+  if (poSheet && poNo) {
+     const poVals = poSheet.getDataRange().getDisplayValues();
+     const poIdIdx = poVals[0].findIndex(h => h.toLowerCase().trim() === 'id po customer' || h.toLowerCase().trim().includes('id po'));
+     const poNoPenIdx = poVals[0].findIndex(h => h.toLowerCase().trim() === 'no penawaran');
+     const poItemIdx = poVals[0].findIndex(h => h.toLowerCase().trim() === 'item po' || h.toLowerCase().trim() === 'items');
+     
+     if ((poIdIdx !== -1 || poNoPenIdx !== -1) && poItemIdx !== -1) {
+         for (let i = 1; i < poVals.length; i++) {
+             let matchId = poIdIdx !== -1 && String(poVals[i][poIdIdx]).trim() === String(poNo).trim();
+             let matchNo = poNoPenIdx !== -1 && String(poVals[i][poNoPenIdx]).trim() === String(poNo).trim();
+             if (matchId || matchNo) {
+                 let poItems = [];
+                 try { poItems = JSON.parse(poVals[i][poItemIdx]); } catch(e) {}
+                 
+                 items.forEach(it => {
+                    let qty = parseFloat(it.qty) || 0;
+                    if (qty === 0) return;
+                    let poItem = poItems.find(p => String(p.nama || p.part_name).trim().toLowerCase() === String(it.nama).trim().toLowerCase());
+                    if (poItem) {
+                       let delivered = parseFloat(poItem.qty_delivered) || 0;
+                       let deliverChange = isRevert ? -qty : qty;
+                       poItem.qty_delivered = Math.max(0, delivered + deliverChange);
+                    }
+                 });
+                 poSheet.getRange(i + 1, poItemIdx + 1).setValue(JSON.stringify(poItems));
+                 break;
+             }
+         }
+     }
+  }
+}
 
 function saveSuratJalan(payload) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -2249,7 +2314,21 @@ function saveSuratJalan(payload) {
         if (hMap['plat'] !== undefined && payload.plat_nomor !== undefined) sheet.getRange(i + 1, hMap['plat'] + 1).setValue(payload.plat_nomor);
         if (hMap['status'] !== undefined && payload.status !== undefined) sheet.getRange(i + 1, hMap['status'] + 1).setValue(payload.status);
         if (hMap['catatan'] !== undefined && payload.catatan !== undefined) sheet.getRange(i + 1, hMap['catatan'] + 1).setValue(payload.catatan);
-        if (hMap['items'] !== undefined && payload.items !== undefined) sheet.getRange(i + 1, hMap['items'] + 1).setValue(itemsStr);
+        if (hMap['items'] !== undefined && payload.items !== undefined) {
+           const oldItemsStr = String(values[i][hMap['items']]);
+           const oldPoNo = String(values[i][hMap['penawaran']]);
+           try {
+             const oldItems = JSON.parse(oldItemsStr);
+             adjustSJStockAndPO(oldItems, true, oldPoNo, payload.no_sj, payload.dibuat_oleh);
+           } catch(e) {}
+           
+           sheet.getRange(i + 1, hMap['items'] + 1).setValue(itemsStr);
+           
+           try {
+             const newItems = typeof payload.items === 'string' ? JSON.parse(payload.items) : payload.items;
+             adjustSJStockAndPO(newItems, false, payload.no_penawaran || oldPoNo, payload.no_sj, payload.dibuat_oleh);
+           } catch(e) {}
+        }
         if (hMap['penerima'] !== undefined && payload.penerima !== undefined) sheet.getRange(i + 1, hMap['penerima'] + 1).setValue(payload.penerima);
         
         // Update Total Qty and Item (Name) if they exist
@@ -2305,6 +2384,11 @@ function saveSuratJalan(payload) {
       return '';
     });
     sheet.appendRow(newRow);
+    
+    try {
+      const newItems = typeof payload.items === 'string' ? JSON.parse(payload.items) : payload.items;
+      adjustSJStockAndPO(newItems, false, payload.no_penawaran, noSJ, payload.dibuat_oleh);
+    } catch(e) {}
   }
   
   return { status: 'success', message: 'Surat Jalan berhasil disimpan.', no_sj: noSJ };
@@ -2318,6 +2402,15 @@ function deleteSuratJalan(payload) {
   if(sjIdx === -1) return {status: 'error', message: 'Struktur tidak valid.'};
   for (let i = 1; i < values.length; i++) {
     if (String(values[i][sjIdx]).trim() === String(payload.no_sj).trim()) {
+      const hMap = {};
+      values[0].forEach((h, idx) => hMap[h.toLowerCase().trim()] = idx);
+      const oldItemsStr = values[i][hMap['items']];
+      const oldPoNo = values[i][hMap['no penawaran']] || values[i][hMap['po customer']];
+      try {
+        const oldItems = JSON.parse(oldItemsStr);
+        adjustSJStockAndPO(oldItems, true, oldPoNo, payload.no_sj, payload.user);
+      } catch (e) {}
+      
       sheet.deleteRow(i + 1);
       return { status: 'success', message: 'Surat Jalan berhasil dihapus.' };
     }
@@ -2338,7 +2431,7 @@ function getInvoices() {
       obj[key] = row[i];
     });
     return obj;
-  });
+  }).reverse();
   return { status: 'success', data: data };
 }
 
@@ -2369,7 +2462,7 @@ function saveInvoice(payload) {
   // Refresh values in case headers were added
   values = sheet.getDataRange().getDisplayValues();
   
-  const invIdx = hMap['no invoice'];
+  const invIdx = headers.findIndex(h => /no.*invoice/i.test(h));
   
   const noInv = payload.no_invoice || ('INV-' + Date.now());
   const itemsStr = typeof payload.items === 'string' ? payload.items : JSON.stringify(payload.items || []);
@@ -2414,7 +2507,7 @@ function saveInvoice(payload) {
   if (!found) {
     const newRow = headers.map(h => {
       const hl = h.toLowerCase().trim();
-      if (hl.includes('no invoice')) return noInv;
+      if (/no.*invoice/i.test(h)) return noInv;
       if (hl === 'tanggal') return payload.tanggal || Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy');
       if (hl === 'jatuh tempo') return payload.jatuh_tempo || '';
       if (hl === 'no penawaran' || hl.includes('referensi po') || hl.includes('po customer')) return payload.no_penawaran || '';
@@ -2438,7 +2531,11 @@ function saveInvoice(payload) {
   }
   if (payload.no_penawaran) {
     let totalLunas = 0;
-    let totalDp = 0;
+    let totalPotonganDp = 0;
+    let totalDpInvoice = 0;
+    
+    SpreadsheetApp.flush(); // Ensure writes are flushed to the sheet before reading back
+    
     const updatedInvValues = sheet.getDataRange().getDisplayValues();
     const updatedInvHeaders = updatedInvValues[0];
     let invNoPenawaranIdx = -1;
@@ -2446,6 +2543,7 @@ function saveInvoice(payload) {
     let invTerbayarIdx = -1;
     let invGrandTotalIdx = -1;
     let invPotonganDpIdx = -1;
+    let invItemsIdx = -1;
 
     updatedInvHeaders.forEach((h, idx) => {
       const hl = h.toLowerCase().trim();
@@ -2454,13 +2552,22 @@ function saveInvoice(payload) {
       if (hl === 'terbayar') invTerbayarIdx = idx;
       if (hl === 'grand total' || hl === 'total tagihan') invGrandTotalIdx = idx;
       if (hl === 'potongan dp' || hl === 'dp') invPotonganDpIdx = idx;
+      if (hl === 'items') invItemsIdx = idx;
     });
 
     if (invNoPenawaranIdx !== -1) {
       for (let i = 1; i < updatedInvValues.length; i++) {
         if (String(updatedInvValues[i][invNoPenawaranIdx]).trim() === String(payload.no_penawaran).trim()) {
+           let tempDp = 0;
            if (invPotonganDpIdx !== -1) {
-               totalDp += parseFloat(String(updatedInvValues[i][invPotonganDpIdx]).replace(/[^0-9.-]+/g, "")) || 0;
+               tempDp = parseFloat(String(updatedInvValues[i][invPotonganDpIdx]).replace(/[^0-9.-]+/g, "")) || 0;
+               totalPotonganDp += tempDp;
+           }
+           if (tempDp === 0 && invItemsIdx !== -1 && invGrandTotalIdx !== -1) {
+               const itemsStr = String(updatedInvValues[i][invItemsIdx]).toLowerCase();
+               if (itemsStr.includes('down payment (dp)') || itemsStr.includes('tagihan down payment')) {
+                   totalDpInvoice += parseFloat(String(updatedInvValues[i][invGrandTotalIdx]).replace(/[^0-9.-]+/g, "")) || 0;
+               }
            }
            if (invStatusIdx !== -1 && String(updatedInvValues[i][invStatusIdx]).trim() === 'Lunas') {
                let val = 0;
@@ -2471,6 +2578,8 @@ function saveInvoice(payload) {
         }
       }
     }
+    
+    let totalDp = Math.max(totalPotonganDp, totalDpInvoice);
 
     const poSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB PO Customer');
     if (poSheet) {
@@ -2483,7 +2592,7 @@ function saveInvoice(payload) {
       
       poHeaders.forEach((h, idx) => {
          const hl = h.toLowerCase().trim();
-         if (hl === 'id po' || hl === 'no po') poIdIdx = idx;
+         if (hl === 'id po' || hl === 'no po' || hl === 'id po customer' || hl.includes('id po')) poIdIdx = idx;
          if (hl === 'no penawaran') poNoPenawaranIdx = idx;
          if (hl === 'total harga' || hl === 'total' || hl === 'grand total') poTotalIdx = idx;
          if (hl.includes('dp po customer') || hl === 'dp') poDpIdx = idx;
