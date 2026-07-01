@@ -1313,6 +1313,7 @@ function savePOCustomer(payload) {
 
   const headers = values[0];
   const ppnIdx = headers.findIndex(h => String(h).toLowerCase().trim() === 'ppn');
+  const dpIdx = headers.findIndex(h => String(h).toLowerCase().trim() === 'dp po customer');
 
   for (let i = 1; i < values.length; i++) {
     if (String(values[i][0]).trim() === String(payload.id_po_customer).trim()) {
@@ -1326,6 +1327,9 @@ function savePOCustomer(payload) {
       sheet.getRange(i + 1, 9).setValue(payload.tanggal_selesai || '');
       if (ppnIdx !== -1) {
         sheet.getRange(i + 1, ppnIdx + 1).setValue(payload.ppn || 0);
+      }
+      if (dpIdx !== -1) {
+        sheet.getRange(i + 1, dpIdx + 1).setValue(payload.dp_po_customer || 0);
       }
       return { status: 'success', message: 'PO Customer berhasil diupdate.' };
     }
@@ -1343,10 +1347,10 @@ function savePOCustomer(payload) {
     payload.tanggal_selesai || ''
   ];
   
-  if (ppnIdx !== -1) {
-    while (newRow.length <= ppnIdx) newRow.push('');
-    newRow[ppnIdx] = payload.ppn || 0;
-  }
+  const maxIdx = Math.max(ppnIdx, dpIdx, newRow.length - 1);
+  while (newRow.length <= maxIdx) newRow.push('');
+  if (ppnIdx !== -1) newRow[ppnIdx] = payload.ppn || 0;
+  if (dpIdx !== -1) newRow[dpIdx] = payload.dp_po_customer || 0;
   
   sheet.appendRow(newRow);
   return { status: 'success', message: 'PO Customer berhasil disimpan.' };
@@ -2432,14 +2436,16 @@ function saveInvoice(payload) {
     });
     sheet.appendRow(newRow);
   }
-  if (payload.status_pembayaran === 'Lunas' && payload.no_penawaran) {
+  if (payload.no_penawaran) {
     let totalLunas = 0;
+    let totalDp = 0;
     const updatedInvValues = sheet.getDataRange().getDisplayValues();
     const updatedInvHeaders = updatedInvValues[0];
     let invNoPenawaranIdx = -1;
     let invStatusIdx = -1;
     let invTerbayarIdx = -1;
     let invGrandTotalIdx = -1;
+    let invPotonganDpIdx = -1;
 
     updatedInvHeaders.forEach((h, idx) => {
       const hl = h.toLowerCase().trim();
@@ -2447,12 +2453,16 @@ function saveInvoice(payload) {
       if (hl === 'status pembayaran') invStatusIdx = idx;
       if (hl === 'terbayar') invTerbayarIdx = idx;
       if (hl === 'grand total' || hl === 'total tagihan') invGrandTotalIdx = idx;
+      if (hl === 'potongan dp' || hl === 'dp') invPotonganDpIdx = idx;
     });
 
-    if (invNoPenawaranIdx !== -1 && invStatusIdx !== -1) {
+    if (invNoPenawaranIdx !== -1) {
       for (let i = 1; i < updatedInvValues.length; i++) {
         if (String(updatedInvValues[i][invNoPenawaranIdx]).trim() === String(payload.no_penawaran).trim()) {
-           if (String(updatedInvValues[i][invStatusIdx]).trim() === 'Lunas') {
+           if (invPotonganDpIdx !== -1) {
+               totalDp += parseFloat(String(updatedInvValues[i][invPotonganDpIdx]).replace(/[^0-9.-]+/g, "")) || 0;
+           }
+           if (invStatusIdx !== -1 && String(updatedInvValues[i][invStatusIdx]).trim() === 'Lunas') {
                let val = 0;
                if (invTerbayarIdx !== -1) val = parseFloat(String(updatedInvValues[i][invTerbayarIdx]).replace(/[^0-9.-]+/g, "")) || 0;
                if (val === 0 && invGrandTotalIdx !== -1) val = parseFloat(String(updatedInvValues[i][invGrandTotalIdx]).replace(/[^0-9.-]+/g, "")) || 0;
@@ -2469,38 +2479,38 @@ function saveInvoice(payload) {
       let poIdIdx = -1;
       let poNoPenawaranIdx = -1;
       let poTotalIdx = -1;
+      let poDpIdx = -1;
       
       poHeaders.forEach((h, idx) => {
          const hl = h.toLowerCase().trim();
          if (hl === 'id po' || hl === 'no po') poIdIdx = idx;
          if (hl === 'no penawaran') poNoPenawaranIdx = idx;
          if (hl === 'total harga' || hl === 'total' || hl === 'grand total') poTotalIdx = idx;
+         if (hl.includes('dp po customer') || hl === 'dp') poDpIdx = idx;
       });
       
-      if (poIdIdx !== -1 && poTotalIdx !== -1) {
+      if (poIdIdx !== -1) {
          let poTotal = 0;
+         let poRowIdx = -1;
          for (let i = 1; i < poValues.length; i++) {
             if (String(poValues[i][poIdIdx]).trim() === String(payload.no_penawaran).trim() || 
                 (poNoPenawaranIdx !== -1 && String(poValues[i][poNoPenawaranIdx]).trim() === String(payload.no_penawaran).trim())) {
-                poTotal = parseFloat(String(poValues[i][poTotalIdx]).replace(/[^0-9.-]+/g, "")) || 0;
+                poRowIdx = i + 1;
+                if (poTotalIdx !== -1) poTotal = parseFloat(String(poValues[i][poTotalIdx]).replace(/[^0-9.-]+/g, "")) || 0;
                 break;
             }
          }
          
-         if (poTotal > 0) {
-            if (totalLunas >= poTotal) {
-               updatePOCustomerStatusByPOId(payload.no_penawaran, 'Selesai');
-            } else {
-               updatePOCustomerStatusByPOId(payload.no_penawaran, 'Proses');
+         if (poRowIdx !== -1) {
+            if (poDpIdx !== -1) {
+               poSheet.getRange(poRowIdx, poDpIdx + 1).setValue(totalDp);
             }
-         } else {
-            updatePOCustomerStatusByPOId(payload.no_penawaran, 'Selesai');
+            if (poTotal > 0 && poTotalIdx !== -1) {
+               if (totalLunas >= poTotal) updatePOCustomerStatusByPOId(payload.no_penawaran, 'Selesai');
+               else updatePOCustomerStatusByPOId(payload.no_penawaran, 'Proses');
+            }
          }
-      } else {
-         updatePOCustomerStatusByPOId(payload.no_penawaran, 'Selesai');
       }
-    } else {
-      updatePOCustomerStatusByPOId(payload.no_penawaran, 'Selesai');
     }
   }
   
@@ -3171,6 +3181,7 @@ function getPettyCash() {
     if (!row.some(String)) continue;
     
     result.push({
+      id: i + 1,
       waktu: tglIdx !== -1 ? row[tglIdx] : (row[0] || ''),
       keterangan: ketIdx !== -1 ? row[ketIdx] : (row[1] || ''),
       jumlah: jmlIdx !== -1 ? row[jmlIdx] : (row[2] || 0),
@@ -3181,4 +3192,29 @@ function getPettyCash() {
   }
   
   return { status: 'success', data: result };
+}
+
+function updatePettyCash(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Petty Cash');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Petty Cash tidak ditemukan.' };
+  
+  if (!payload.id || payload.id <= 1) return { status: 'error', message: 'ID (Row Index) tidak valid.' };
+  
+  sheet.getRange(payload.id, 2).setValue(payload.jenis || 'Keluar');
+  sheet.getRange(payload.id, 3).setValue(payload.keterangan || '');
+  sheet.getRange(payload.id, 4).setValue(payload.jumlah || 0);
+  sheet.getRange(payload.id, 5).setValue(payload.coa || '');
+  
+  return { status: 'success', message: 'Petty cash berhasil diperbarui.' };
+}
+
+function deletePettyCash(payload) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Petty Cash');
+  if (!sheet) return { status: 'error', message: 'Sheet DB Petty Cash tidak ditemukan.' };
+  
+  if (!payload.id || payload.id <= 1) return { status: 'error', message: 'ID (Row Index) tidak valid.' };
+  
+  sheet.deleteRow(payload.id);
+  
+  return { status: 'success', message: 'Petty cash berhasil dihapus.' };
 }

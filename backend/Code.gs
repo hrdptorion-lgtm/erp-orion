@@ -155,6 +155,12 @@ function doPost(e) {
       case 'add_petty_cash':
         response = addPettyCash(payload);
         break;
+      case 'update_petty_cash':
+        response = updatePettyCash(payload);
+        break;
+      case 'delete_petty_cash':
+        response = deletePettyCash(payload);
+        break;
       case 'get_petty_cash':
         response = getPettyCash();
         break;

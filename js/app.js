@@ -782,24 +782,25 @@ window.setupDOMPagination();
                     });
                     
                     let progress = 0;
-                    if (relatedInv.length > 0) {
-                        if (relatedInv.every(i => i.status_pembayaran === 'Lunas')) {
-                            progress = 100;
-                        } else {
-                            progress = 85;
-                        }
+                    const totalTerbayar = relatedInv.reduce((sum, i) => {
+                        if (i.status_pembayaran === 'Lunas') return sum + (parseFloat(i.grand_total) || parseFloat(i.total_tagihan) || 0);
+                        return sum + (parseFloat(i.terbayar) || 0);
+                    }, 0);
+                    const numericTotalHarga = typeof item.total_harga === 'string' ? parseFloat(item.total_harga.replace(/[^0-9]/g, '')) || 0 : parseFloat(item.total_harga) || 0;
+                    if (totalTerbayar >= numericTotalHarga && numericTotalHarga > 0) {
+                         progress = 100;
                     } else if (relatedSJ.length > 0) {
-                        if (relatedSJ.every(s => s.status === 'Selesai (Diterima)')) {
-                            progress = 70;
-                        } else {
-                            progress = 50;
-                        }
+                         if (relatedSJ.every(s => s.status === 'Selesai (Diterima)')) {
+                             progress = relatedInv.length > 0 ? 85 : 70;
+                         } else {
+                             progress = 50;
+                         }
                     } else if (relatedSPK.length > 0) {
-                        if (relatedSPK.every(s => s.status === 'Selesai')) {
-                            progress = 30;
-                        } else {
-                            progress = 15;
-                        }
+                         if (relatedSPK.every(s => s.status === 'Selesai')) {
+                             progress = 30;
+                         } else {
+                             progress = 15;
+                         }
                     }
                     
                     return progress < 100;
@@ -2305,40 +2306,45 @@ window.setupDOMPagination();
                     return false;
                 });
 
-                if (relatedInv.length > 0) {
-                    if (relatedInv.every(i => i.status_pembayaran === 'Lunas')) {
-                        progress = 100;
-                        progressLabel = "Lunas / Selesai";
-                        progressColor = "var(--success)";
-                    } else {
-                        progress = 85;
-                        progressLabel = "Menunggu Pembayaran";
-                        progressColor = "var(--warning)";
-                    }
+                const totalTerbayar = relatedInv.reduce((sum, i) => {
+                    if (i.status_pembayaran === 'Lunas') return sum + (parseFloat(i.grand_total) || parseFloat(i.total_tagihan) || 0);
+                    return sum + (parseFloat(i.terbayar) || 0);
+                }, 0);
+                const numericTotalHarga = typeof item.total_harga === 'string' ? parseFloat(item.total_harga.replace(/[^0-9]/g, '')) || 0 : parseFloat(item.total_harga) || 0;
+                if (totalTerbayar >= numericTotalHarga && numericTotalHarga > 0) {
+                     progress = 100;
+                     progressLabel = "Lunas / Selesai";
+                     progressColor = "#10b981";
                 } else if (relatedSJ.length > 0) {
-                    if (relatedSJ.every(s => s.status === 'Selesai (Diterima)')) {
-                        progress = 70;
-                        progressLabel = "Barang Terkirim";
-                        progressColor = "#6366f1"; // Indigo
-                    } else {
-                        progress = 50;
-                        progressLabel = "Proses Pengiriman";
-                        progressColor = "var(--info)";
-                    }
+                     if (relatedSJ.every(s => s.status === 'Selesai (Diterima)')) {
+                         if (relatedInv.length > 0) {
+                             progress = 85;
+                             progressLabel = "Menunggu Pelunasan";
+                             progressColor = "var(--warning)";
+                         } else {
+                             progress = 70;
+                             progressLabel = "Barang Terkirim";
+                             progressColor = "#6366f1"; // Indigo
+                         }
+                     } else {
+                         progress = 50;
+                         progressLabel = "Proses Pengiriman";
+                         progressColor = "var(--info)";
+                     }
                 } else if (relatedSPK.length > 0) {
-                    if (relatedSPK.every(s => s.status === 'Selesai')) {
-                        progress = 30;
-                        progressLabel = "Produksi Selesai";
-                        progressColor = "#10b981"; // Distinct green
-                    } else {
-                        progress = 15;
-                        progressLabel = "Proses Produksi";
-                        progressColor = "var(--warning)";
-                    }
+                     if (relatedSPK.every(s => s.status === 'Selesai')) {
+                         progress = 30;
+                         progressLabel = "Produksi Selesai";
+                         progressColor = "#10b981"; // Distinct green
+                     } else {
+                         progress = 15;
+                         progressLabel = "Proses Produksi";
+                         progressColor = "var(--warning)";
+                     }
                 } else {
-                    progress = 0;
-                    progressLabel = "Menunggu SPK";
-                    progressColor = "var(--text-muted)";
+                     progress = 0;
+                     progressLabel = totalTerbayar > 0 ? "DP Diterima (Tunggu SPK)" : "Menunggu SPK";
+                     progressColor = "var(--text-muted)";
                 }
 
                 // UI Progress Bar
@@ -2368,7 +2374,7 @@ window.setupDOMPagination();
                 <td style="font-weight: 500;">${item.id_po_customer || '-'}</td>
                 <td><span class="badge badge-info">${item.no_penawaran || '-'}</span></td>
                 <td>${item.nama_customer || '-'}</td>
-                <td>Rp ${window.formatRupiah(item.total_harga || 0)}</td>
+                <td>Rp ${window.formatRupiah(numericTotalHarga)}</td>
                 <td><span class="badge badge-${item.status === 'Selesai' ? 'success' : (item.status === 'Proses' ? 'warning' : 'info')}">${item.status || 'Pending'}</span></td>
                 <td style="white-space: nowrap;">
                     <div style="display: flex; gap: 5px; flex-wrap: nowrap; align-items: center;">
@@ -2392,6 +2398,9 @@ window.setupDOMPagination();
         document.getElementById('poc_file_pdf_link').innerHTML = '';
 
         document.getElementById('poc_id').value = '';
+        if (document.getElementById('poc_dp')) {
+            document.getElementById('poc_dp').value = '0';
+        }
 
         // Set default date to today
         const pocTanggal = document.getElementById('poc_tanggal');
@@ -2594,6 +2603,7 @@ window.setupDOMPagination();
             tanggal_po: document.getElementById('poc_tanggal').value,
             item_po: items,
             ppn: document.getElementById('poc_ppn').value,
+            dp_po_customer: window.parseRupiah(document.getElementById('poc_dp').value),
             total_harga: document.getElementById('poc_total_harga').value,
             status: document.getElementById('poc_status').value
         };
@@ -2873,7 +2883,40 @@ window.setupDOMPagination();
                 } else {
                     if (sjStatusEl) sjStatusEl.innerHTML = `<span class="badge badge-warning" style="background: var(--info); color: #fff;">Sedang Dikirim</span>`;
                 }
-                if (sjDescEl) sjDescEl.innerText = `${relatedSJ.length} Surat Jalan`;
+                if (sjDescEl) {
+                    let sjListHtml = `<div style="margin-top: 8px; color: var(--text-main); font-weight: 500; font-size: 0.9rem; margin-bottom: 5px;">Rincian Surat Jalan:</div>
+                    <div style="overflow-x: auto; margin-top: 5px; border-radius: 5px; border: 1px solid rgba(255,255,255,0.1);">
+                        <table style="width: 100%; min-width: 300px; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                            <thead>
+                                <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                    <th style="padding: 5px 8px; color: var(--text-muted);">No SJ</th>
+                                    <th style="padding: 5px 8px; color: var(--text-muted);">Tanggal</th>
+                                    <th style="padding: 5px 8px; color: var(--text-muted);">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+                    
+                    relatedSJ.forEach(s => {
+                        const no = s.no_surat_jalan || s.no_sj || '-';
+                        const tgl = s.tanggal_kirim || s.tanggal || '-';
+                        let st = s.status || '-';
+                        let badgeColor = 'rgba(255,255,255,0.1)';
+                        let textColor = '#fff';
+                        
+                        if (st === 'Selesai (Diterima)' || st === 'Selesai' || st === 'Terkirim') badgeColor = 'var(--success)';
+                        else if (st === 'Proses Pengiriman' || st === 'Dikirim') { badgeColor = 'var(--info)'; textColor = '#fff'; }
+                        else if (st === 'Batal') badgeColor = 'var(--danger)';
+
+                        sjListHtml += `
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                    <td style="padding: 5px 8px; font-weight: 500;">${no}</td>
+                                    <td style="padding: 5px 8px; white-space: nowrap;">${tgl}</td>
+                                    <td style="padding: 5px 8px; white-space: nowrap;"><span style="background: ${badgeColor}; color: ${textColor}; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">${st}</span></td>
+                                </tr>`;
+                    });
+                    sjListHtml += `</tbody></table></div>`;
+                    sjDescEl.innerHTML = sjListHtml;
+                }
             }
 
             // Invoice Status
@@ -2892,7 +2935,45 @@ window.setupDOMPagination();
                 } else {
                     if (invStatusEl) invStatusEl.innerHTML = `<span class="badge badge-danger">Belum Lunas</span>`;
                 }
-                if (invDescEl) invDescEl.innerText = `${relatedInv.length} Invoice`;
+                if (invDescEl) {
+                    let invListHtml = `<div style="margin-top: 8px; color: var(--text-main); font-weight: 500; font-size: 0.9rem; margin-bottom: 5px;">Rincian Invoice:</div>
+                    <div style="overflow-x: auto; margin-top: 5px; border-radius: 5px; border: 1px solid rgba(255,255,255,0.1);">
+                        <table style="width: 100%; min-width: 300px; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                            <thead>
+                                <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                    <th style="padding: 5px 8px; color: var(--text-muted);">No Invoice</th>
+                                    <th style="padding: 5px 8px; color: var(--text-muted);">Tanggal</th>
+                                    <th style="padding: 5px 8px; text-align: right; color: var(--text-muted);">Grand Total</th>
+                                    <th style="padding: 5px 8px; color: var(--text-muted);">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+                    
+                    relatedInv.forEach(s => {
+                        const no = s.no_invoice || '-';
+                        const tgl = s.tanggal || '-';
+                        const total = s.grand_total || s.total_tagihan || '0';
+                        const totalStr = 'Rp ' + parseFloat(total).toLocaleString('id-ID');
+                        let st = s.status_pembayaran || '-';
+                        let badgeColor = 'rgba(255,255,255,0.1)';
+                        let textColor = '#fff';
+                        
+                        if (st === 'Lunas') badgeColor = 'var(--success)';
+                        else if (st === 'Sebagian') { badgeColor = 'var(--warning)'; textColor = '#000'; }
+                        else if (st === 'Belum Lunas' || st === 'Belum Bayar') { badgeColor = 'var(--danger)'; textColor = '#fff'; }
+                        else if (st === 'Batal') badgeColor = 'var(--danger)';
+
+                        invListHtml += `
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                    <td style="padding: 5px 8px; font-weight: 500;">${no}</td>
+                                    <td style="padding: 5px 8px; white-space: nowrap;">${tgl}</td>
+                                    <td style="padding: 5px 8px; text-align: right; white-space: nowrap;">${totalStr}</td>
+                                    <td style="padding: 5px 8px; white-space: nowrap;"><span style="background: ${badgeColor}; color: ${textColor}; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">${st}</span></td>
+                                </tr>`;
+                    });
+                    invListHtml += `</tbody></table></div>`;
+                    invDescEl.innerHTML = invListHtml;
+                }
             }
 
         } catch (e) {
@@ -3265,18 +3346,29 @@ window.openPOCustomerModal = function (id) {
 
         let tgl = '';
         if (item.tanggal_po) {
-            const parts = item.tanggal_po.split('/');
-            if (parts.length === 3) tgl = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            if (item.tanggal_po.includes('-')) {
+                tgl = item.tanggal_po;
+            } else if (item.tanggal_po.includes('/')) {
+                const parts = item.tanggal_po.split('/');
+                if (parts.length === 3) tgl = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
         }
         document.getElementById('poc_tanggal').value = tgl;
         let tglSelesai = '';
         if (item.tanggal_selesai) {
-            const parts2 = item.tanggal_selesai.split('/');
-            if (parts2.length === 3) tglSelesai = `${parts2[2]}-${parts2[1]}-${parts2[0]}`;
+            if (item.tanggal_selesai.includes('-')) {
+                tglSelesai = item.tanggal_selesai;
+            } else if (item.tanggal_selesai.includes('/')) {
+                const parts2 = item.tanggal_selesai.split('/');
+                if (parts2.length === 3) tglSelesai = `${parts2[2]}-${parts2[1].padStart(2, '0')}-${parts2[0].padStart(2, '0')}`;
+            }
         }
         if (document.getElementById('poc_tanggal_selesai')) document.getElementById('poc_tanggal_selesai').value = tglSelesai;
         document.getElementById('poc_status').value = item.status;
         document.getElementById('poc_ppn').value = item.ppn || 0;
+        if (document.getElementById('poc_dp')) {
+            document.getElementById('poc_dp').value = window.formatRibuan ? window.formatRibuan(item.dp_po_customer || 0) : (item.dp_po_customer || 0);
+        }
 
         let items = [];
         try {
@@ -5964,6 +6056,8 @@ window.openPOCustomerModal = function (id) {
     // Petty Cash Modal
     const pettyCashModal = document.getElementById('petty-cash-modal');
     document.getElementById('btn-add-cash')?.addEventListener('click', () => {
+        const pcIdField = document.getElementById('pc_id');
+        if (pcIdField) pcIdField.value = '';
         document.getElementById('pc_nominal').value = '';
         document.getElementById('pc_keterangan').value = '';
 
@@ -5986,7 +6080,7 @@ window.openPOCustomerModal = function (id) {
     document.getElementById('petty-cash-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const jenis = document.getElementById('pc_jenis').value;
-        const nominal = document.getElementById('pc_nominal').value;
+        const nominal = typeof window.parseRibuan === 'function' ? window.parseRibuan(document.getElementById('pc_nominal').value) : document.getElementById('pc_nominal').value;
         const keterangan = document.getElementById('pc_keterangan').value;
         const coa = document.getElementById('pc_coa').value;
 
@@ -6071,16 +6165,24 @@ window.openPOCustomerModal = function (id) {
             loadFinanceKasirData(); // Re-render Kasir view
         }
 
+        const pcId = document.getElementById('pc_id')?.value;
+        if (pcId) {
+            payload.id = pcId;
+        }
+
         if (typeof showToast !== 'undefined') showToast('Sinkronisasi Kas ke server...', 'info');
 
-        const res = await window.ERPAPI.request('add_petty_cash', payload);
+        const action = pcId ? 'update_petty_cash' : 'add_petty_cash';
+        const res = await window.ERPAPI.request(action, payload);
         if (res.status === 'success') {
-            if (typeof showToast !== 'undefined') showToast('✅ Mutasi kas berhasil disimpan', 'success');
-            // Data asli akan ter-sync saat buka menu lagi atau refetch
+            if (typeof showToast !== 'undefined') showToast('✅ Mutasi kas berhasil ' + (pcId ? 'diperbarui' : 'disimpan'), 'success');
+            if (typeof loadFinanceKasirData === 'function') loadFinanceKasirData();
+            if (typeof loadLaporanKasData === 'function') loadLaporanKasData();
         } else {
             if (typeof showToast !== 'undefined') showToast(res.message, 'error');
             // Revert by refetching
-            loadLaporanKasData(true);
+            if (typeof loadLaporanKasData === 'function') loadLaporanKasData(true);
+            if (typeof loadFinanceKasirData === 'function') loadFinanceKasirData();
         }
     });
 
@@ -7921,6 +8023,7 @@ window.openPOCustomerModal = function (id) {
         const response = await window.ERPAPI.request('get_invoices');
         if (response.status === 'success' && response.data) {
             invoiceData = response.data;
+            window.invoiceData = response.data;
             if (tbody) renderInvoiceTable();
         } else {
             if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--danger);">Gagal memuat data invoice</td></tr>';
@@ -7948,14 +8051,14 @@ window.openPOCustomerModal = function (id) {
 
             if ((inv.status_pembayaran || '').toLowerCase() !== 'lunas') {
                 actionBtns += `<button class="btn btn-selesai-inv" data-idx="${invoiceData.indexOf(inv)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(34, 197, 94, 0.2); color: #22c55e; margin-right: 5px;" title="Selesaikan Invoice"><i class="fa-solid fa-check"></i></button>`;
-                
-                if (inv.grand_total > 0 && inv.sisa_tagihan > 0) {
-                    actionBtns += `<button class="btn btn-sisa-inv" data-idx="${invoiceData.indexOf(inv)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(234, 179, 8, 0.2); color: #eab308; margin-right: 5px;" title="Bayar Sisa (Cicil)"><i class="fa-solid fa-money-bill-wave"></i></button>`;
-                }
             }
 
+            if (inv.status_pembayaran !== 'Lunas') {
+                actionBtns += `
+                    <button class="btn btn-edit-inv" data-idx="${invoiceData.indexOf(inv)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(59, 130, 246, 0.2); color: #3b82f6; margin-right: 5px;" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                `;
+            }
             actionBtns += `
-                <button class="btn btn-edit-inv" data-idx="${invoiceData.indexOf(inv)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(59, 130, 246, 0.2); color: #3b82f6; margin-right: 5px;" title="Edit"><i class="fa-solid fa-pen"></i></button>
                 <button class="btn btn-delete-inv" data-no="${inv.no_invoice}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(239, 68, 68, 0.1); color: var(--danger);" title="Hapus"><i class="fa-solid fa-trash"></i></button>
             `;
 
@@ -8059,24 +8162,26 @@ window.openPOCustomerModal = function (id) {
                             // 1. Update Invoice
                             const invRes = await window.ERPAPI.request('save_invoice', updatedInv);
                             if (invRes.status === 'success') {
-                                showToast('Invoice diselesaikan. Silakan klik "Simpan Mutasi" untuk mencatat uang masuk.', 'success');
+                                showToast('Invoice diselesaikan. Mencatat mutasi kas...', 'info');
                                 loadInvoiceData(true); // reload
                                 
-                                // Buka Form Finance (Petty Cash)
-                                document.getElementById('pc_jenis').value = 'Masuk';
-                                document.getElementById('pc_nominal').value = updatedInv.terbayar;
-                                document.getElementById('pc_keterangan').value = 'Pembayaran Invoice ' + inv.no_invoice + ' (' + inv.customer + ')';
+                                const pcPayload = {
+                                    jenis: 'Masuk',
+                                    jumlah: updatedInv.terbayar,
+                                    keterangan: 'Pembayaran Invoice ' + inv.no_invoice + ' (' + inv.customer + ')',
+                                    coa: selectedCoa,
+                                    user: currentUser
+                                };
                                 
-                                const pcCoa = document.getElementById('pc_coa');
-                                if (pcCoa) pcCoa.value = selectedCoa;
-                                
-                                const displayText = document.getElementById('pc_coa_display_text');
-                                if (displayText) {
-                                    displayText.textContent = selectedCoa;
-                                    displayText.style.color = 'var(--text-main)';
-                                }
-                                
-                                document.getElementById('petty-cash-modal').classList.add('active');
+                                window.ERPAPI.request('add_petty_cash', pcPayload).then(pcRes => {
+                                    if(pcRes && pcRes.status === 'success') {
+                                        showToast('Pembayaran berhasil dan Mutasi Kas tercatat otomatis', 'success');
+                                    } else {
+                                        Swal.fire('Mutasi Kas Gagal', pcRes.message || 'Gagal menyimpan mutasi kas.', 'warning');
+                                    }
+                                }).catch(err => {
+                                    showToast('Gagal mencatat mutasi kas secara otomatis', 'error');
+                                });
                             } else {
                                 Swal.fire('Gagal!', invRes.message, 'error');
                                 btnEl.innerHTML = originalHtml;
@@ -8092,65 +8197,7 @@ window.openPOCustomerModal = function (id) {
             });
         });
 
-        document.querySelectorAll('.btn-sisa-inv').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const idx = e.currentTarget.getAttribute('data-idx');
-                const item = invoiceData[idx];
 
-                let sisa = parseFloat(item.sisa_tagihan);
-                if (isNaN(sisa)) sisa = parseFloat(item.grand_total) || parseFloat(item.total_tagihan) || 0;
-
-                document.getElementById('invoice-form').reset();
-                document.getElementById('inv_no').value = '';
-                const today = new Date();
-                const offset = today.getTimezoneOffset() * 60000;
-                document.getElementById('inv_tanggal').value = new Date(today.getTime() - offset).toISOString().split('T')[0];
-                document.getElementById('inv_jatuh_tempo').value = new Date(today.getTime() - offset + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-                
-                const poSel = document.getElementById('inv_no_penawaran');
-                if (poSel && item.no_penawaran) {
-                    if (!Array.from(poSel.options).some(o => o.value === item.no_penawaran)) {
-                        const opt = document.createElement('option');
-                        opt.value = item.no_penawaran;
-                        opt.textContent = item.no_penawaran;
-                        poSel.appendChild(opt);
-                    }
-                    poSel.value = item.no_penawaran;
-                }
-                
-                document.getElementById('inv_customer').value = item.customer || '';
-                
-                const tbody = document.getElementById('inv-items-tbody');
-                if (tbody) {
-                    tbody.innerHTML = '';
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><input type="text" class="inv-item-desc" list="bom-items-list" value="Tagihan Sisa dari ${item.no_invoice}" style="width: 100%; background: transparent; border: none; color: white;"></td>
-                        <td><input type="number" class="inv-item-qty" value="1" min="1" style="width: 100%; text-align: right;"></td>
-                        <td><input type="text" class="inv-item-price" value="${window.formatRupiah(sisa).replace('Rp ', '')}" min="0" style="width: 100%; text-align: right;" oninput="window.formatCurrencyInput(this); calculateInvoiceTotal()"></td>
-                        <td class="inv-item-subtotal" style="text-align: right;">Rp 0</td>
-                        <td style="text-align: center;"><button type="button" class="btn btn-sm btn-danger btn-remove-inv-item"><i class="fa-solid fa-trash"></i></button></td>
-                    `;
-                    tr.querySelector('.inv-item-qty').addEventListener('input', calculateInvoiceTotal);
-                    tr.querySelector('.inv-item-price').addEventListener('input', calculateInvoiceTotal);
-                    tr.querySelector('.btn-remove-inv-item').addEventListener('click', () => {
-                        tr.remove();
-                        calculateInvoiceTotal();
-                    });
-                    tbody.appendChild(tr);
-                }
-                
-                if (document.getElementById('inv_potongan_dp')) document.getElementById('inv_potongan_dp').value = '0';
-                if (document.getElementById('inv_ppn')) document.getElementById('inv_ppn').value = '0';
-                
-                if (typeof calculateInvoiceTotal === 'function') calculateInvoiceTotal();
-                
-                const sjSelect = document.getElementById('inv_no_sj');
-                if (sjSelect && sjSelect.tomselect) sjSelect.tomselect.clear();
-                
-                document.getElementById('invoice-modal').classList.add('active');
-            });
-        });
 
         document.querySelectorAll('.btn-edit-inv').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -8476,6 +8523,20 @@ window.openPOCustomerModal = function (id) {
         const totalTagihan = subtotal + ppnAmount;
         
         const dpInput = document.getElementById('inv_potongan_dp');
+        
+        if (dpInput && dpInput.dataset.dpRatio && !dpInput.dataset.manuallyEdited) {
+            const ratio = parseFloat(dpInput.dataset.dpRatio) || 0;
+            const sisa = parseFloat(dpInput.dataset.sisaDp) || 0;
+            let propDP = totalTagihan * ratio;
+            if (propDP > sisa) propDP = sisa;
+            
+            if (typeof window.formatRibuan === 'function') {
+                dpInput.value = window.formatRibuan(Math.round(propDP));
+            } else {
+                dpInput.value = Math.round(propDP);
+            }
+        }
+        
         const dpVal = dpInput ? parseFloat(String(dpInput.value).replace(/[^0-9]/g, '') || 0) : 0;
         const grandTotal = totalTagihan - dpVal;
         
@@ -8489,6 +8550,7 @@ window.openPOCustomerModal = function (id) {
             document.getElementById('inv_grand_total').value = window.formatRupiah(grandTotal).replace('Rp ', '');
         }
     }
+    window.calculateInvoiceTotal = calculateInvoiceTotal;
 
     function addInvoiceItemRow(item = {}) {
         const tbody = document.getElementById('inv-items-tbody');
@@ -8769,6 +8831,7 @@ window.openPOCustomerModal = function (id) {
             try {
                 const poRes = await window.ERPAPI.request('get_po_customer');
                 if (poRes.status === 'success' && poRes.data) {
+                    window.poCustomerData = poRes.data;
                     poSelect.innerHTML = '<option value="">-- Pilih PO Customer --</option>';
                     poRes.data.filter(p => p.status !== 'Selesai' && p.status !== 'Lunas' && p.status !== 'Batal').forEach(p => {
                         const poId = p.id_po_customer || p.no_po_customer || p.no_penawaran;
@@ -8834,6 +8897,70 @@ window.openPOCustomerModal = function (id) {
         }
         if (sjSelect) {
             new TomSelect(sjSelect, { plugins: ['remove_button'], placeholder: 'Pilih Surat Jalan...', create: false });
+        }
+        
+        // Auto-calculate DP if a PO is selected
+        if (selectedPo && window.invoiceData) {
+            let selectedPoData = null;
+            if (window.poCustomerData) {
+                selectedPoData = window.poCustomerData.find(p => String(p.id_po_customer).trim() === selectedPo || String(p.no_penawaran).trim() === selectedPo);
+            }
+            
+            let totalDPTerbayar = 0;
+            if (selectedPoData) {
+                const dpKey = Object.keys(selectedPoData).find(k => k.toLowerCase().includes('dp'));
+                if (dpKey && selectedPoData[dpKey]) {
+                    totalDPTerbayar = window.parseRupiah(selectedPoData[dpKey]) || 0;
+                }
+            }
+
+            let dpSudahTerpakai = 0;
+            const currentInvNo = document.getElementById('inv_no')?.value || '';
+            window.invoiceData.forEach(inv => {
+                const sPo = String(inv.no_penawaran || inv.referensi_penawaran || inv.id_po_customer || '').trim();
+                // Count previously USED dp in invoices that are not Batal
+                if (sPo === selectedPo && inv.no_invoice !== currentInvNo && inv.status_pembayaran !== 'Batal') {
+                    dpSudahTerpakai += window.parseRupiah(inv.potongan_dp) || 0;
+                }
+            });
+            
+            let sisaDP = Math.max(0, totalDPTerbayar - dpSudahTerpakai);
+            let dpRatio = 0;
+            let th = 0;
+            if (selectedPoData) {
+                const thKey = Object.keys(selectedPoData).find(k => k.toLowerCase().includes('total_harga') || k.toLowerCase().includes('harga'));
+                if (thKey && selectedPoData[thKey]) {
+                    th = window.parseRupiah(selectedPoData[thKey]) || 0;
+                }
+            }
+            if (selectedPoData && th > 0) {
+                dpRatio = totalDPTerbayar / th;
+            }
+
+            const invPotonganDp = document.getElementById('inv_potongan_dp');
+            if (invPotonganDp) {
+                invPotonganDp.dataset.dpRatio = dpRatio;
+                invPotonganDp.dataset.sisaDp = sisaDP;
+                invPotonganDp.dataset.manuallyEdited = ''; // reset on new PO selection
+                
+                if (dpRatio > 0) {
+                    invPotonganDp.readOnly = true;
+                    invPotonganDp.style.background = 'rgba(255,255,255,0.05)';
+                    invPotonganDp.style.color = '#aaa';
+                    invPotonganDp.title = "DP dihitung otomatis berdasarkan persentase";
+                } else {
+                    invPotonganDp.readOnly = false;
+                    invPotonganDp.style.background = '';
+                    invPotonganDp.style.color = '';
+                    invPotonganDp.title = "";
+                }
+                
+                if (typeof window.calculateInvoiceTotal === 'function') {
+                    window.calculateInvoiceTotal();
+                } else if (typeof calculateInvoiceTotal === 'function') {
+                    calculateInvoiceTotal();
+                }
+            }
         }
     });
 
@@ -8910,7 +9037,8 @@ window.openPOCustomerModal = function (id) {
             catatan: document.getElementById('inv_catatan').value,
             ppn: document.getElementById('inv_ppn') ? document.getElementById('inv_ppn').value : 0,
             items: items,
-            pembuat: typeof currentUser !== 'undefined' ? currentUser : (localStorage.getItem('erp_session') ? JSON.parse(localStorage.getItem('erp_session')).name : 'Admin')
+            pembuat: typeof currentUser !== 'undefined' ? currentUser : (localStorage.getItem('erp_session') ? JSON.parse(localStorage.getItem('erp_session')).name : 'Admin'),
+            penyelesai: typeof currentUser !== 'undefined' ? currentUser : (localStorage.getItem('erp_session') ? JSON.parse(localStorage.getItem('erp_session')).name : 'Admin')
         };
 
         document.getElementById('invoice-modal').classList.remove('active');
@@ -8923,7 +9051,7 @@ window.openPOCustomerModal = function (id) {
             } else {
                 window.invoiceData.unshift(payload);
             }
-            if (typeof applyInvoiceFilter === 'function') applyInvoiceFilter(); // re-render
+            if (typeof renderInvoiceTable === 'function') renderInvoiceTable(); // re-render
         }
         
         // Update SessionStorage Cache
@@ -10451,17 +10579,74 @@ async function loadFinanceKasirData() {
                             <td style="font-weight: bold; text-align: right; color: ${item.jenis === 'Masuk' ? 'var(--success)' : 'var(--danger)'};">
                                 ${item.jenis === 'Masuk' ? '+' : '-'} Rp ${nominal.toLocaleString('id-ID')}
                             </td>
+                            <td style="text-align: center;">
+                                <div style="display: flex; gap: 5px; justify-content: center; align-items: center; flex-wrap: nowrap; min-width: 80px;">
+                                    <button class="btn btn-edit-pc" data-id="${item.id}" data-jenis="${item.jenis}" data-keterangan="${item.keterangan}" data-nominal="${nominal}" data-coa="${item.coa}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: flex; justify-content: center; align-items: center; background: rgba(59, 130, 246, 0.2); color: #3b82f6; border: none; border-radius: 5px; cursor: pointer; flex: 0 0 auto;"><i class="fa-solid fa-pen"></i></button>
+                                    <button class="btn btn-delete-pc" data-id="${item.id}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: flex; justify-content: center; align-items: center; background: rgba(239, 68, 68, 0.2); color: var(--danger); border: none; border-radius: 5px; cursor: pointer; flex: 0 0 auto;"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                            </td>
                         `;
                         tbody.appendChild(tr);
                     });
                 }
             }
         } else {
-            if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Gagal memuat data</td></tr>';
+            if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Gagal memuat data</td></tr>';
         }
     } catch(e) {
         console.error(e);
         const tbody = document.getElementById('table-finance-kasir');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Gagal memuat data</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Gagal memuat data</td></tr>';
     }
 }
+
+document.getElementById('table-finance-kasir')?.addEventListener('click', async (e) => {
+    const btnEdit = e.target.closest('.btn-edit-pc');
+    if (btnEdit) {
+        document.getElementById('pc_id').value = btnEdit.dataset.id;
+        document.getElementById('pc_jenis').value = btnEdit.dataset.jenis;
+        const nominalStr = typeof window.formatRibuan === 'function' ? window.formatRibuan(btnEdit.dataset.nominal) : btnEdit.dataset.nominal;
+        document.getElementById('pc_nominal').value = nominalStr;
+        document.getElementById('pc_keterangan').value = btnEdit.dataset.keterangan;
+        
+        const pcCoa = document.getElementById('pc_coa');
+        if (pcCoa) pcCoa.value = btnEdit.dataset.coa;
+        
+        const displayText = document.getElementById('pc_coa_display_text');
+        if (displayText) {
+            displayText.textContent = btnEdit.dataset.coa || '-- Pilih Pos Akuntansi --';
+            displayText.style.color = btnEdit.dataset.coa ? 'var(--text-main)' : '#999';
+        }
+        
+        document.getElementById('petty-cash-modal').classList.add('active');
+    }
+
+    const btnDelete = e.target.closest('.btn-delete-pc');
+    if (btnDelete) {
+        let proceed = true;
+        if (typeof window.showConfirm === 'function') {
+            proceed = await window.showConfirm({
+                title: 'Hapus Mutasi Kas',
+                message: 'Apakah Anda yakin ingin menghapus mutasi kas ini?<br><span style="font-size:0.82rem;color:rgba(255,255,255,0.4);">Data akan dihapus permanen dan tidak bisa dikembalikan.</span>',
+                confirmText: 'Ya, Hapus',
+                cancelText: 'Batal'
+            });
+        } else {
+            proceed = confirm('Apakah Anda yakin ingin menghapus mutasi kas ini?');
+        }
+        
+        if (!proceed) return;
+        
+        const pcId = btnDelete.dataset.id;
+        showToast('Menghapus mutasi kas...', 'info');
+        
+        const res = await window.ERPAPI.request('delete_petty_cash', { id: pcId });
+        if (res.status === 'success') {
+            showToast('✅ Mutasi kas berhasil dihapus', 'success');
+            if (typeof loadFinanceKasirData === 'function') loadFinanceKasirData();
+            if (typeof loadLaporanKasData === 'function') loadLaporanKasData();
+        } else {
+            showToast('Gagal: ' + res.message, 'error');
+        }
+    }
+});

@@ -853,6 +853,7 @@
                                 <th>COA</th>
                                 <th>KETERANGAN</th>
                                 <th style="text-align: right;">NOMINAL</th>
+                                <th style="text-align: center;">AKSI</th>
                             </tr>
                         </thead>
                         <tbody id="table-finance-kasir">
@@ -1982,6 +1983,13 @@
                             <input type="number" id="poc_ppn" min="0" max="100" value="0"
                                 oninput="if(typeof calculatePOCTotal === 'function') calculatePOCTotal()"
                                 style="width: 80px; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main); text-align: right;">
+                        </div>
+                        <div
+                            style="display: flex; justify-content: flex-end; align-items: center; margin-top: 15px; gap: 10px;">
+                            <label style="margin: 0; font-weight: bold;">Uang Muka / DP (Rp):</label>
+                            <input type="text" id="poc_dp" class="number-format" value="0"
+                                oninput="if(typeof window.formatCurrencyInput === 'function') window.formatCurrencyInput(this)"
+                                style="width: 150px; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main); text-align: right;">
                         </div>
                         <div
                             style="text-align: right; margin-top: 10px; font-weight: bold; color: var(--text-main); font-size: 1.1rem;">
@@ -3192,6 +3200,7 @@
         <div class="login-box" style="max-width: 400px;">
             <h2 style="margin-bottom: 0.8rem;">Mutasi Kas</h2>
             <form id="petty-cash-form">
+                <input type="hidden" id="pc_id" value="">
                 <div class="input-group">
                     <label>Jenis Transaksi</label>
                     <select id="pc_jenis" required
@@ -3202,7 +3211,7 @@
                 </div>
                 <div class="input-group">
                     <label>Nominal (Rp)</label>
-                    <input type="number" id="pc_nominal" required min="1">
+                    <input type="text" id="pc_nominal" class="number-format" required oninput="if(typeof window.formatCurrencyInput==='function') window.formatCurrencyInput(this)">
                 </div>
                 <div class="input-group">
                     <label>Keterangan</label>
@@ -3430,7 +3439,7 @@
                     <div class="input-group" id="inv_potongan_dp_group" style="margin-bottom:0;">
                         <label>Potongan DP (Rp)</label>
                         <input type="text" id="inv_potongan_dp" value="0"
-                            oninput="window.formatCurrencyInput(this); calculateInvoiceTotal()">
+                            oninput="this.dataset.manuallyEdited = 'true'; window.formatCurrencyInput(this); window.calculateInvoiceTotal && window.calculateInvoiceTotal()">
                     </div>
                     <div class="input-group" style="margin-bottom:0;">
                         <label>Grand Total (Rp)</label>
