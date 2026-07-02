@@ -10903,11 +10903,12 @@ async function loadTransaksiGudangData(isBackgroundSync = false) {
             res.data.reverse().forEach(item => {
                 const tr = document.createElement('tr');
                 tr.style.cursor = 'pointer';
-                const badgeClass = item.jenis === 'IN' ? 'badge-success' : 'badge-danger';
+                const jenisVal = item.jenis || item.jenis_in_out || '-';
+                const badgeClass = jenisVal === 'IN' ? 'badge-success' : 'badge-danger';
                 tr.innerHTML = `
                     <td>${item.id_transaksi || '-'}</td>
                     <td>${item.tanggal || '-'}</td>
-                    <td><span class="badge ${badgeClass}">${item.jenis || '-'}</span></td>
+                    <td><span class="badge ${badgeClass}">${jenisVal}</span></td>
                     <td>${item.referensi || '-'}</td>
                     <td style="font-weight: 500;">${item.kode_material || '-'}</td>
                     <td>${item.qty || '-'}</td>
@@ -10929,7 +10930,7 @@ async function loadTransaksiGudangData(isBackgroundSync = false) {
                     if (e.target.closest('button')) return;
                     document.getElementById('td_id').textContent = item.id_transaksi || '-';
                     document.getElementById('td_tanggal').textContent = item.tanggal || '-';
-                    document.getElementById('td_jenis').textContent = item.jenis || '-';
+                    document.getElementById('td_jenis').textContent = item.jenis || item.jenis_in_out || '-';
                     document.getElementById('td_jenis').className = 'badge ' + badgeClass;
                     document.getElementById('td_referensi').textContent = item.referensi || '-';
                     document.getElementById('td_bahan').textContent = item.kode_material || '-';
@@ -10948,7 +10949,7 @@ async function loadTransaksiGudangData(isBackgroundSync = false) {
                     const item = JSON.parse(e.currentTarget.getAttribute('data-item'));
                     
                     document.getElementById('trx_id_transaksi').value = item.id_transaksi;
-                    document.getElementById('trx_jenis').value = item.jenis;
+                    document.getElementById('trx_jenis').value = item.jenis || item.jenis_in_out || 'OUT';
                     document.getElementById('trx_qty').value = item.qty;
                     document.getElementById('trx_referensi').value = item.referensi;
                     document.getElementById('trx_peminta').value = item.peminta || '';
