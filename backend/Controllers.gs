@@ -448,12 +448,60 @@ function importStock(payload) {
   }
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Master Bahan Baku');
   if (!sheet) return { status: 'error', message: 'Sheet DB Master Bahan Baku tidak ditemukan.' };
-  let count = 0;
+  
+  const values = sheet.getDataRange().getDisplayValues();
+  const headers = values[0];
+  const kodeIdx = headers.findIndex(h => /kode/i.test(h));
+  const namaIdx = headers.findIndex(h => /nama/i.test(h));
+  const stokIdx = headers.findIndex(h => /stok|stock/i.test(String(h).trim()));
+  const hargaIdx = headers.findIndex(h => /harga/i.test(h));
+  const satuanIdx = headers.findIndex(h => /satuan/i.test(String(h).trim()) && !/harga/i.test(String(h).trim()));
+  const lokasiIdx = headers.findIndex(h => /lokasi/i.test(h));
+  const spesifikasiIdx = headers.findIndex(h => /spesifikasi/i.test(h));
+
+  let countNew = 0;
+  let countUpdated = 0;
+
   payload.data.forEach(item => {
-    sheet.appendRow([item.kode || '', item.nama || '', item.stok || 0, item.harga || 0, item.satuan || 'pcs']);
-    count++;
+    let foundIdx = -1;
+    if (kodeIdx !== -1 && item.kode) {
+      for (let i = 1; i < values.length; i++) {
+        if (String(values[i][kodeIdx]).trim().toLowerCase() === String(item.kode).trim().toLowerCase()) {
+          foundIdx = i;
+          break;
+        }
+      }
+    }
+
+    if (foundIdx !== -1) {
+      // Update existing
+      const rowNum = foundIdx + 1;
+      if (namaIdx !== -1 && item.nama !== undefined) sheet.getRange(rowNum, namaIdx + 1).setValue(item.nama);
+      if (stokIdx !== -1 && item.stok !== undefined) sheet.getRange(rowNum, stokIdx + 1).setValue(item.stok);
+      if (hargaIdx !== -1 && item.harga !== undefined) sheet.getRange(rowNum, hargaIdx + 1).setValue(item.harga);
+      if (satuanIdx !== -1 && item.satuan !== undefined) sheet.getRange(rowNum, satuanIdx + 1).setValue(item.satuan);
+      if (lokasiIdx !== -1 && item.lokasi !== undefined) sheet.getRange(rowNum, lokasiIdx + 1).setValue(item.lokasi);
+      if (spesifikasiIdx !== -1 && item.spesifikasi !== undefined) sheet.getRange(rowNum, spesifikasiIdx + 1).setValue(item.spesifikasi);
+      countUpdated++;
+    } else {
+      // Append new
+      const newRow = Array(headers.length).fill('');
+      if (kodeIdx !== -1) newRow[kodeIdx] = item.kode || '';
+      if (namaIdx !== -1) newRow[namaIdx] = item.nama || '';
+      if (stokIdx !== -1) newRow[stokIdx] = item.stok || 0;
+      if (hargaIdx !== -1) newRow[hargaIdx] = item.harga || 0;
+      if (satuanIdx !== -1) newRow[satuanIdx] = item.satuan || 'pcs';
+      if (lokasiIdx !== -1) newRow[lokasiIdx] = item.lokasi || '';
+      if (spesifikasiIdx !== -1) newRow[spesifikasiIdx] = item.spesifikasi || '';
+      sheet.appendRow(newRow);
+      countNew++;
+    }
   });
-  return { status: 'success', message: count + ' data berhasil diimport.' };
+
+  let msg = '';
+  if (countNew > 0) msg += `${countNew} data baru ditambahkan. `;
+  if (countUpdated > 0) msg += `${countUpdated} data diperbarui.`;
+  return { status: 'success', message: msg.trim() || 'Tidak ada data yang diproses.' };
 }
 
 // ==========================================
@@ -2967,7 +3015,11 @@ function savePenerimaanBarang(payload) {
   let mapPO = {};
   poItems.forEach(item => {
     const key = item.kode || item.nama;
-    mapPO[key] = { qty_diminta: Number(item.qty), qty_diterima: 0 };
+    mapPO[key] = { 
+        qty_diminta: Number(item.qty), 
+        qty_diterima: 0,
+        harga_satuan: Number(item.harga_aktual || item.harga || 0)
+    };
   });
   
   // Tambahkan yg sudah diterima sebelumnya
@@ -2984,9 +3036,11 @@ function savePenerimaanBarang(payload) {
     const key = item.kode || item.nama;
     const qtyDiterima = Number(item.qty_diterima);
     if (qtyDiterima > 0) {
-      if (!mapPO[key]) return { status: 'error', message: `Barang ${item.nama} tidak ada di PO.` };
+      if (!mapPO[key]) {
+        return { status: 'error', message: 'Item ' + key + ' tidak ada di PO ini.' };
+      }
       if (mapPO[key].qty_diterima + qtyDiterima > mapPO[key].qty_diminta) {
-        return { status: 'error', message: `Qty barang ${item.nama} melebihi permintaan.` };
+        return { status: 'error', message: 'Qty diterima melebihi pesanan untuk item ' + key };
       }
       mapPO[key].qty_diterima += qtyDiterima;
       totalDiterimaSekarang += qtyDiterima;
@@ -2997,7 +3051,7 @@ function savePenerimaanBarang(payload) {
     return { status: 'error', message: 'Tidak ada Qty barang yang diterima.' };
   }
   
-  // Simpan ke GRN
+  // Simpan GRN
   const timestamp = new Date();
   const idGRN = 'GRN-' + timestamp.getTime();
   sheetGRN.appendRow([
@@ -3025,6 +3079,7 @@ function savePenerimaanBarang(payload) {
   let sheetBahan = ss.getSheetByName('DB Master Bahan Baku');
   let bahanData = sheetBahan.getDataRange().getValues();
   let sheetTrx = ss.getSheetByName('DB Transaksi Gudang');
+  
   if (!sheetTrx) {
     sheetTrx = ss.insertSheet('DB Transaksi Gudang');
     sheetTrx.appendRow(['ID Transaksi', 'Tanggal', 'Jenis (IN/OUT)', 'Referensi', 'Kode Material', 'Qty', 'PIC', 'Keterangan']);
@@ -3045,11 +3100,26 @@ function savePenerimaanBarang(payload) {
         'Penerimaan Barang (' + idGRN + ')'
       ]);
       
-      // Update Stok (cari di Bahan Baku)
+      // Update Stok dan Harga (cari di Bahan Baku)
+      const poKey = item.kode || item.nama;
+      const hargaPO = mapPO[poKey] ? mapPO[poKey].harga_satuan : 0;
+
       for (let j = 1; j < bahanData.length; j++) {
-        if (String(bahanData[j][0]) === String(item.kode)) {
+        const dbKode = String(bahanData[j][0] || '').trim().toLowerCase();
+        const dbNama = String(bahanData[j][1] || '').trim().toLowerCase();
+        const itemKode = String(item.kode || '').trim().toLowerCase();
+        const itemNama = String(item.nama || '').trim().toLowerCase();
+
+        if ((itemKode !== '' && dbKode === itemKode) || (itemNama !== '' && dbNama === itemNama) || (dbKode === itemNama) || (dbNama === itemKode)) {
           let currentStok = Number(bahanData[j][3]) || 0;
+          
+          // Update Stok (Kolom 4)
           sheetBahan.getRange(j + 1, 4).setValue(currentStok + Number(item.qty_diterima));
+          
+          // Update Harga (Kolom 6) jika harga dari PO valid
+          if (hargaPO > 0) {
+              sheetBahan.getRange(j + 1, 6).setValue(hargaPO);
+          }
           break;
         }
       }
@@ -3065,6 +3135,28 @@ function savePenerimaanBarang(payload) {
 function getTransaksiGudang() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Transaksi Gudang');
   if (!sheet) return { status: 'success', data: [] };
+  
+  // Format warna otomatis (Conditional Formatting) untuk membedakan IN dan OUT di Google Sheets
+  try {
+    const rules = sheet.getConditionalFormatRules();
+    if (rules.length === 0) {
+      const range = sheet.getRange("C2:C");
+      const ruleIn = SpreadsheetApp.newConditionalFormatRule()
+        .whenTextEqualTo("IN")
+        .setBackground("#d4edda")
+        .setFontColor("#155724")
+        .setRanges([range])
+        .build();
+      const ruleOut = SpreadsheetApp.newConditionalFormatRule()
+        .whenTextEqualTo("OUT")
+        .setBackground("#f8d7da")
+        .setFontColor("#721c24")
+        .setRanges([range])
+        .build();
+      sheet.setConditionalFormatRules([ruleIn, ruleOut]);
+    }
+  } catch(e) {}
+
   const values = sheet.getDataRange().getDisplayValues();
   if (values.length <= 1) return { status: 'success', data: [] };
   

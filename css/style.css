@@ -812,21 +812,142 @@ tbody tr:hover {
 }
 
 @media print {
+  @page {
+    size: A4;
+    margin: 15mm 15mm;
+  }
+
+  html, body, body.print-modal-active {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
+  }
+
   /* Hide unnecessary UI globally in print */
-  .glass-sidebar,
-  .glass-content,
-  .login-overlay,
-  .modal,
-  .btn,
-  .header,
-  .header-wrapper,
-  .sidebar,
-  .view,
-  .main-content,
-  .bottom-nav,
-  .mobile-bottom-sheet,
-  .sheet-overlay {
+  body:not(.print-modal-active) .glass-sidebar,
+  body:not(.print-modal-active) .glass-content,
+  body:not(.print-modal-active) .login-overlay,
+  body:not(.print-modal-active) .modal,
+  body:not(.print-modal-active) .btn,
+  body:not(.print-modal-active) .header,
+  body:not(.print-modal-active) .header-wrapper,
+  body:not(.print-modal-active) .sidebar,
+  body:not(.print-modal-active) .view,
+  body:not(.print-modal-active) .main-content,
+  body:not(.print-modal-active) .bottom-nav,
+  body:not(.print-modal-active) .mobile-bottom-sheet,
+  body:not(.print-modal-active) .sheet-overlay {
     display: none !important;
+  }
+
+  body.print-modal-active,
+  body.print-modal-active * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Failsafe for status badges when Background Graphics is unchecked */
+  body.print-modal-active span[style*="padding: 3px 6px"],
+  body.print-modal-active .badge {
+    color: #000 !important;
+    border: 1px solid #94a3b8 !important;
+  }
+
+  body.print-modal-active * {
+    visibility: hidden;
+  }
+  
+  body.print-modal-active #detail-poc-modal,
+  body.print-modal-active #detail-poc-modal * {
+    visibility: visible;
+  }
+
+  body.print-modal-active .hide-on-print,
+  body.print-modal-active .hide-on-print * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  body.print-modal-active #detail-poc-modal {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: white !important;
+    color: black !important;
+    padding: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  body.print-modal-active .login-box {
+    background: white !important;
+    box-shadow: none !important;
+    border: none !important;
+    color: black !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 20px 35px !important; 
+  }
+
+  /* Prevent ugly page breaks */
+  body.print-modal-active table, 
+  body.print-modal-active tr, 
+  body.print-modal-active .track-spk-desc,
+  body.print-modal-active h3,
+  body.print-modal-active div[style*="background: rgba"] {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  body.print-modal-active #btn-close-detail-poc,
+  body.print-modal-active #detail-poc-actions {
+    display: none !important;
+  }
+
+  body.print-modal-active #detail-poc-print-header {
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  body.print-modal-active table, 
+  body.print-modal-active th, 
+  body.print-modal-active td {
+    border-color: #e2e8f0 !important;
+    color: #1e293b !important;
+    background-color: transparent !important;
+  }
+
+  body.print-modal-active th {
+    background-color: #f8fafc !important; /* Subtle background for table headers */
+    font-weight: bold !important;
+    color: #334155 !important;
+  }
+
+  body.print-modal-active .badge {
+    border: 1px solid currentColor !important;
+    background: transparent !important;
+    padding: 3px 8px !important;
+  }
+  
+  /* Preserve specific badge colors for visual cues */
+  body.print-modal-active .badge-success { color: #16a34a !important; border-color: #16a34a !important; background-color: #dcfce7 !important; }
+  body.print-modal-active .badge-warning { color: #d97706 !important; border-color: #d97706 !important; background-color: #fef3c7 !important; }
+  body.print-modal-active .badge-danger { color: #dc2626 !important; border-color: #dc2626 !important; background-color: #fee2e2 !important; }
+  body.print-modal-active .badge-info { color: #2563eb !important; border-color: #2563eb !important; background-color: #dbeafe !important; }
+
+  body.print-modal-active div[style*="background: rgba"] {
+    background: #f8fafc !important; /* Make sections visible slightly */
+    border: 1px solid #e2e8f0 !important;
+  }
+  
+  /* Fix layout specific headers */
+  body.print-modal-active h3 {
+    color: #0f172a !important;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 5px;
+    margin-top: 15px;
   }
 }
 

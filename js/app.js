@@ -1366,33 +1366,38 @@ window.setupDOMPagination();
     });
 
     document.getElementById('btn-export-stock')?.addEventListener('click', () => {
-        const tbody = document.getElementById('table-bahan-baku');
-        if (!tbody) return;
-        const table = tbody.closest('table');
-
-        let csv = [];
-        const rows = table.querySelectorAll('tr');
-
-        for (let i = 0; i < rows.length; i++) {
-            let row = [], cols = rows[i].querySelectorAll('td, th');
-            if (cols.length === 1 && cols[0].colSpan > 1) continue;
-
-            // Skip last column (Aksi)
-            for (let j = 0; j < cols.length - 1; j++) {
-                let data = cols[j].innerText.replace(/"/g, '""');
-                row.push('"' + data + '"');
-            }
-            csv.push(row.join(','));
+        if (!bahanBakuData || bahanBakuData.length === 0) {
+            window.showToast?.('Tidak ada data untuk diekspor', 'warning');
+            return;
         }
 
-        const csvFile = new Blob([csv.join('\n')], { type: "text/csv" });
-        const downloadLink = document.createElement("a");
-        downloadLink.download = "Data_Bahan_Baku_" + new Date().toISOString().split('T')[0] + ".csv";
-        downloadLink.href = window.URL.createObjectURL(csvFile);
-        downloadLink.style.display = "none";
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
+        if (typeof XLSX === 'undefined') {
+            window.showToast?.('Library Excel belum dimuat. Coba refresh halaman.', 'error');
+            return;
+        }
+
+        const exportData = bahanBakuData.map(item => {
+            return {
+                "KODE MATERIAL": item.kode || '',
+                "NAMA MATERIAL": item.nama || '',
+                "STOK SAAT INI": item.stok || 0,
+                "SATUAN": item.satuan || 'pcs',
+                "HARGA SATUAN": item.harga || 0,
+                "LOKASI GUDANG": item.lokasi || '',
+                "SPESIFIKASI": item.spesifikasi || ''
+            };
+        });
+
+        try {
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Bahan Baku");
+            XLSX.writeFile(wb, `Data_Bahan_Baku_${new Date().toISOString().slice(0,10)}.xlsx`);
+            window.showToast?.('Data berhasil diekspor ke Excel', 'success');
+        } catch(e) {
+            console.error('Export error:', e);
+            window.showToast?.('Gagal mengekspor data', 'error');
+        }
     });
 
     document.getElementById('file-import-stock')?.addEventListener('change', async (e) => {
@@ -1416,16 +1421,36 @@ window.setupDOMPagination();
                 const items = json.map(row => {
                     const getVal = (keys) => {
                         for (let key in row) {
-                            if (keys.some(k => key.toLowerCase().replace(/[^a-z0-9]/g, '').includes(k))) return row[key];
+                            const cleanKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+                            
+                            const matchedKey = keys.find(k => {
+                                if (cleanKey === k || cleanKey === k + 'material' || (k === 'stok' && cleanKey === 'stoksaatini') || cleanKey.startsWith(k)) {
+                                    if (k === 'satuan' && cleanKey.includes('harga')) return false;
+                                    return true;
+                                }
+                                return false;
+                            });
+
+                            if (matchedKey) return row[key];
                         }
                         return "";
                     };
+                    
+                    let rawStok = String(getVal(['stok', 'qty', 'jumlah']));
+                    let rawHarga = String(getVal(['harga', 'price']));
+                    
+                    // Ekstrak satuan dari stok jika formatnya "47 Liter"
+                    let parsedSatuan = getVal(['satuan', 'unit']);
+                    if (!parsedSatuan && rawStok.match(/[a-zA-Z]+/)) {
+                        parsedSatuan = rawStok.replace(/[0-9.\s-]/g, '').trim();
+                    }
+                    
                     return {
                         kode: getVal(['kode']),
                         nama: getVal(['nama', 'material', 'bahan']),
-                        stok: parseInt(getVal(['stok', 'qty', 'jumlah'])) || 0,
-                        satuan: getVal(['satuan', 'unit']),
-                        harga: parseInt(getVal(['harga', 'price'])) || 0,
+                        stok: parseInt(rawStok.replace(/[^0-9-]/g, '')) || 0,
+                        satuan: parsedSatuan,
+                        harga: parseInt(rawHarga.replace(/[^0-9-]/g, '')) || 0,
                         lokasi: getVal(['lokasi', 'rak', 'zona']),
                         spesifikasi: getVal(['spesifikasi', 'spek', 'desc'])
                     };
@@ -1434,15 +1459,19 @@ window.setupDOMPagination();
                 if (items.length > 0) {
                     const session = localStorage.getItem('erp_session');
                     const user = session ? JSON.parse(session) : {};
-                    const res = await window.ERPAPI.request('import_stock', { items, username: user.username, user_nama: user.nama });
-                    alert(res.message);
-                    if (res.status === 'success') loadPurchasingData(true);
+                    const res = await window.ERPAPI.request('import_stock', { data: items, username: user.username, user_nama: user.nama });
+                    if (res.status === 'success') {
+                        window.showToast?.(res.message, 'success');
+                        loadPurchasingData(true);
+                    } else {
+                        window.showToast?.(res.message, 'error');
+                    }
                 } else {
-                    alert('Tidak ada data valid yang bisa diimpor. Pastikan ada kolom Kode dan Nama Material.');
+                    window.showToast?.('Tidak ada data valid yang bisa diimpor. Pastikan ada kolom Kode dan Nama Material.', 'warning');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Terjadi kesalahan saat memproses file.');
+                window.showToast?.('Terjadi kesalahan saat memproses file.', 'error');
             }
             btnImport.innerHTML = oldHtml;
             btnImport.disabled = false;
@@ -1756,7 +1785,7 @@ window.setupDOMPagination();
                 <td style="padding:0.5rem; text-align:right;">${it.qty} ${it.satuan || 'pcs'}</td>
                 <td style="padding:0.5rem; text-align:right;">Rp ${parseInt(it.harga || 0).toLocaleString('id-ID')}</td>
                 <td style="padding:0.5rem; text-align:right; color:var(--info);">Rp ${parseInt(it.harga_aktual || 0).toLocaleString('id-ID')}</td>
-                <td style="padding:0.5rem; text-align:right; font-weight:600;">Rp ${(parseInt(it.qty || 0) * parseInt(it.harga || 0)).toLocaleString('id-ID')}</td>
+                <td style="padding:0.5rem; text-align:right; font-weight:600;">Rp ${(parseInt(it.qty || 0) * parseInt(it.harga_aktual || it.harga || 0)).toLocaleString('id-ID')}</td>
             </tr>
         `).join('');
 
@@ -1942,6 +1971,20 @@ window.setupDOMPagination();
     document.getElementById('btn-close-po-modal')?.addEventListener('click', () => poModal.classList.remove('active'));
     document.getElementById('btn-close-po-modal-footer')?.addEventListener('click', () => poModal.classList.remove('active'));
     document.getElementById('btn-close-po-detail')?.addEventListener('click', () => document.getElementById('po-detail-modal').classList.remove('active'));
+
+    document.getElementById('po_to')?.addEventListener('input', function() {
+        if (!supplierData || supplierData.length === 0) return;
+        const val = this.value.trim().toLowerCase();
+        const sup = supplierData.find(s => {
+            const displayStr = s.id_supplier ? `${s.id_supplier} - ${s.nama_supplier}` : s.nama_supplier;
+            return displayStr.trim().toLowerCase() === val || String(s.nama_supplier || '').trim().toLowerCase() === val;
+        });
+        if (sup) {
+            document.getElementById('po_alamat').value = sup.alamat || '';
+            const kontak = sup.kontak___telepon || sup['kontak_/_telepon'] || sup.kontak || '';
+            document.getElementById('po_attn').value = kontak;
+        }
+    });
 
     poForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -2369,6 +2412,21 @@ window.setupDOMPagination();
                         }
                     }
                 };
+                let pdfUrl = '';
+                for (let key in item) {
+                    if (key.toLowerCase().includes('pdf') || key.toLowerCase().includes('file')) {
+                        if (typeof item[key] === 'string' && item[key].startsWith('http')) {
+                            pdfUrl = item[key];
+                            break;
+                        }
+                    }
+                }
+                
+                let btnPdfHtml = '';
+                if (pdfUrl) {
+                    btnPdfHtml = `<button class="btn btn-print" title="Lihat Dokumen PDF" onclick="window.open('${pdfUrl}', '_blank'); event.stopPropagation();" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--info);"><i class="fa-solid fa-file-pdf"></i></button>`;
+                }
+
                 tr.innerHTML = `
                 <td style="vertical-align: middle;">${progressHtml}</td>
                 <td style="font-weight: 500;">${item.id_po_customer || '-'}</td>
@@ -2378,9 +2436,9 @@ window.setupDOMPagination();
                 <td><span class="badge badge-${item.status === 'Selesai' ? 'success' : (item.status === 'Proses' ? 'warning' : 'info')}">${item.status || 'Pending'}</span></td>
                 <td style="white-space: nowrap;">
                     <div style="display: flex; gap: 5px; flex-wrap: nowrap; align-items: center;">
-                        <button class="btn btn-print" title="Cetak PO" onclick="printPOCustomer('${item.id_po_customer}')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--info);"><i class="fa-solid fa-print"></i></button>
-                        <button class="btn btn-edit" title="Edit" onclick="openPOCustomerModal('${item.id_po_customer}')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--primary);"><i class="fa-solid fa-edit"></i></button>
-                        <button class="btn btn-delete" title="Hapus" onclick="deletePOCustomer('${item.id_po_customer}')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger);"><i class="fa-solid fa-trash"></i></button>
+                        ${btnPdfHtml}
+                        <button class="btn btn-edit" title="Edit" onclick="openPOCustomerModal('${item.id_po_customer}'); event.stopPropagation();" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--primary);"><i class="fa-solid fa-edit"></i></button>
+                        <button class="btn btn-delete" title="Hapus" onclick="deletePOCustomer('${item.id_po_customer}'); event.stopPropagation();" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger);"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </td>
             `;
@@ -2390,6 +2448,119 @@ window.setupDOMPagination();
             tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--danger);">Gagal memuat data.</td></tr>';
         }
     }
+
+    document.getElementById('btn-export-poc-excel')?.addEventListener('click', async () => {
+        if (!window.poCustomerData || window.poCustomerData.length === 0) {
+            window.showToast?.('Tidak ada data untuk diekspor', 'warning');
+            return;
+        }
+
+        if (typeof XLSX === 'undefined') {
+            window.showToast?.('Library Excel belum dimuat. Coba refresh halaman.', 'error');
+            return;
+        }
+
+        // Get unique customers for the dropdown
+        const uniqueCustomers = [...new Set(window.poCustomerData.map(item => item.nama_customer).filter(Boolean))].sort();
+        let customerOptions = '<option value="">-- Semua Toko / Customer --</option>';
+        uniqueCustomers.forEach(c => {
+            customerOptions += `<option value="${c}">${c}</option>`;
+        });
+
+        const result = await Swal.fire({
+            title: 'Filter Ekspor Excel',
+            html: `
+                <div style="text-align: left; margin-top: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Pilih Customer / Toko:</label>
+                    <select id="export-poc-customer" class="form-control" style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main); margin-bottom: 15px;">
+                        ${customerOptions}
+                    </select>
+
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Pilih Status PO:</label>
+                    <select id="export-poc-status" class="form-control" style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--bg-main); color: var(--text-main);">
+                        <option value="">-- Semua Status --</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Proses">Proses</option>
+                        <option value="Selesai">Selesai</option>
+                        <option value="Batal">Batal</option>
+                    </select>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa-solid fa-download"></i> Unduh Excel',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#22c55e',
+            background: '#1e293b',
+            color: '#fff',
+            preConfirm: () => {
+                return {
+                    customer: document.getElementById('export-poc-customer').value,
+                    status: document.getElementById('export-poc-status').value
+                }
+            }
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const filters = result.value;
+                let filteredData = window.poCustomerData;
+
+                if (filters.customer) {
+                    filteredData = filteredData.filter(item => item.nama_customer === filters.customer);
+                }
+                if (filters.status) {
+                    filteredData = filteredData.filter(item => item.status === filters.status);
+                }
+
+                if (filteredData.length === 0) {
+                    window.showToast?.('Tidak ada data yang sesuai dengan filter tersebut.', 'warning');
+                    return;
+                }
+
+                const exportData = filteredData.map(item => {
+                    let numericTotalHarga = parseFloat(String(item.total_harga || 0).replace(/[^0-9-]/g, '')) || 0;
+                    
+                    let itemNames = [];
+                    try {
+                        let parsed = item.item_po;
+                        if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+                        if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+                        if (Array.isArray(parsed)) {
+                            itemNames = parsed.map(p => `${p.nama || p.part_name || p.item || ''} (${p.qty} ${p.satuan || ''})`);
+                        }
+                    } catch(e) {}
+
+                    return {
+                        "ID PO Customer": item.id_po_customer || '',
+                        "No Penawaran Ref": item.no_penawaran || '',
+                        "Nama Customer": item.nama_customer || '',
+                        "Tanggal PO": item.tanggal_po || '',
+                        "Total Harga": numericTotalHarga,
+                        "PPN (%)": item.ppn || 0,
+                        "DP": item.dp_po_customer || 0,
+                        "Status": item.status || 'Pending',
+                        "Tanggal Selesai": item.tanggal_selesai || '',
+                        "Rincian Barang": itemNames.join(', ')
+                    };
+                });
+
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "PO Customer");
+                
+                let filename = `Laporan_PO_Customer_${new Date().toISOString().slice(0,10)}`;
+                if (filters.customer) filename += `_${filters.customer.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                if (filters.status) filename += `_${filters.status}`;
+                filename += `.xlsx`;
+                
+                XLSX.writeFile(wb, filename);
+                window.showToast?.('Data berhasil diekspor ke Excel', 'success');
+            } catch(e) {
+                console.error('Export error:', e);
+                window.showToast?.('Gagal mengekspor data', 'error');
+            }
+        }
+    });
 
     document.getElementById('btn-add-po-customer')?.addEventListener('click', async () => {
         document.getElementById('po-customer-modal').classList.add('active'); // Open immediately
@@ -2623,18 +2794,57 @@ window.setupDOMPagination();
 
     window.openDetailPOCustomer = async function (item) {
         window.currentDetailPOC = item;
+
+        // Disable print button temporarily while loading
+        const btnPrint = document.getElementById('btn-detail-act-print');
+        if (btnPrint) {
+            btnPrint.style.opacity = '0.5';
+            btnPrint.style.cursor = 'not-allowed';
+            btnPrint.style.pointerEvents = 'none';
+        }
+
+        // Format Date to DD-MM-YYYY
+        let rawDate = item.tanggal_po || item.tanggal || '-';
+        let formattedDate = rawDate;
+        if (rawDate !== '-' && rawDate.includes('-')) {
+            // Handle if there's time appended (e.g., '2026-06-17 12:00:00')
+            const datePart = rawDate.split(' ')[0];
+            const parts = datePart.split('-');
+            if (parts.length === 3 && parts[0].length === 4) {
+                formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+        }
+
         // 1. Set Basic Info
         const infoDiv = document.getElementById('detail-poc-info');
         if (infoDiv) {
             infoDiv.innerHTML = `
-                <div><strong>No PO Customer:</strong> ${item.id_po_customer || '-'}</div>
-                <div><strong>No Penawaran:</strong> ${item.no_penawaran || '-'}</div>
-                <div><strong>Customer:</strong> ${item.nama_customer || item.customer || '-'}</div>
-                <div><strong>Tanggal:</strong> ${item.tanggal_po || '-'}</div>
-                <div><strong>Status:</strong> ${item.status || '-'}</div>
-                <div><strong>Total Harga:</strong> Rp ${window.formatRupiah(item.total_harga || 0)}</div>
+                <div style="flex: 1; min-width: 250px;">
+                    <p style="margin: 5px 0;"><strong>No PO Customer:</strong> ${item.id_po_customer || '-'}</p>
+                    <p style="margin: 5px 0;"><strong>Customer:</strong> ${item.nama_customer || item.customer || '-'}</p>
+                    <p style="margin: 5px 0;"><strong>Status:</strong> ${item.status || 'Pending'}</p>
+                </div>
+                <div style="flex: 1; min-width: 250px;">
+                    <p style="margin: 5px 0;"><strong>No Penawaran:</strong> ${item.no_penawaran || '-'}</p>
+                    <p style="margin: 5px 0;"><strong>Tanggal:</strong> ${formattedDate}</p>
+                    <p style="margin: 5px 0;"><strong>Total Harga:</strong> ${window.formatRupiah ? window.formatRupiah(item.total_harga || 0) : 'Rp ' + Number(item.total_harga || 0).toLocaleString('id-ID')}</p>
+                </div>
             `;
         }
+
+        // Set Print Header Info
+        const printCust = document.getElementById('print-header-customer-name');
+        if (printCust) printCust.textContent = item.nama_customer || item.customer || '-';
+        const printPo = document.getElementById('print-header-po-no');
+        if (printPo) printPo.textContent = item.id_po_customer || '-';
+        const printPenawaran = document.getElementById('print_poc_penawaran');
+        if (printPenawaran) printPenawaran.textContent = item.no_penawaran || '-';
+        const printDate = document.getElementById('print_poc_date');
+        if (printDate) printDate.textContent = formattedDate;
+        const printStatus = document.getElementById('print_poc_status');
+        if (printStatus) printStatus.textContent = item.status || 'Pending';
+        const printTotal = document.getElementById('print_poc_total');
+        if (printTotal) printTotal.textContent = window.formatRupiah ? window.formatRupiah(item.total_harga || 0) : 'Rp ' + Number(item.total_harga || 0).toLocaleString('id-ID');
 
         // 2. Set Items
         const itemsTbody = document.getElementById('detail-poc-items-tbody');
@@ -2659,25 +2869,36 @@ window.setupDOMPagination();
 
         document.getElementById('detail-poc-modal').classList.add('active');
 
-        // 3. Shortage Analysis
+        // 3. Data Fetching & Shortage Analysis
         try {
-            const [resBom, resStock, resInv] = await Promise.all([
+            const [resBom, resStock, resInv, resProduksi, resSJ, resInvoices] = await Promise.all([
                 window.ERPAPI.request('get_bom'),
                 window.ERPAPI.request('get_stock'),
-                window.ERPAPI.request('get_inventory')
+                window.ERPAPI.request('get_inventory'),
+                window.ERPAPI.request('get_produksi'),
+                window.ERPAPI.request('get_surat_jalan'),
+                window.ERPAPI.request('get_invoices')
             ]);
             const boms = resBom.data || [];
             const stocks = resStock.data || [];
             const inventory = resInv.data || [];
             window.stockData = stocks;
 
+            const spkList = resProduksi.data || [];
+            const sjList = resSJ.data || [];
+            const invList = resInvoices.data || [];
+
+            // Find related records based on no_penawaran or id_po_customer
+            const relatedSPK = spkList.filter(s => s.referensi_po === item.no_penawaran || s.referensi_po === item.id_po_customer || s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer || s.kode_po_customer === item.id_po_customer);
+            const relatedSJ = sjList.filter(s => [s.no_penawaran, s.id_po_customer, s.referensi_penawaran].some(val => val && (val === item.no_penawaran || val === item.id_po_customer)));
+            const relatedInv = invList.filter(s => [s.no_penawaran, s.id_po_customer, s.referensi_penawaran].some(val => val && (val === item.no_penawaran || val === item.id_po_customer)));
+
             let totalShortageData = {};
 
             if (Array.isArray(rincian)) {
                 rincian.forEach(poItem => {
-                    const itemName = String(poItem.nama || poItem.nama_barang).trim().toLowerCase();
+                    const itemName = String(poItem.nama || poItem.nama_barang || poItem.part_name).trim().toLowerCase();
                     const orderedQty = parseFloat(poItem.qty || poItem.moq_pcs || 1);
-                    const deliveredQty = parseFloat(poItem.qty_delivered || 0);
                     
                     let fgStock = 0;
                     const fgMatch = inventory.find(b => {
@@ -2688,10 +2909,45 @@ window.setupDOMPagination();
                         fgStock = parseFloat(String(fgMatch.stok || fgMatch.qty || 0).replace(/[^0-9-]/g, '')) || 0;
                     }
                     
+                    let deliveredQty = 0;
+                    relatedSJ.forEach(sj => {
+                        if (sj.status !== 'Batal') {
+                            try {
+                                const itemsArr = typeof sj.items === 'string' ? JSON.parse(sj.items) : (sj.items || []);
+                                itemsArr.forEach(sjItem => {
+                                    const sjItemName = String(sjItem.nama || sjItem.item || '').trim().toLowerCase();
+                                    const poItemName = String(itemName).trim().toLowerCase();
+                                    if (sjItemName === poItemName || sjItemName.includes(poItemName) || poItemName.includes(sjItemName)) {
+                                        deliveredQty += parseFloat(sjItem.qty || 0);
+                                    }
+                                });
+                            } catch(e) {}
+                        }
+                    });
+                    if (deliveredQty === 0 && poItem.qty_delivered) {
+                        deliveredQty = parseFloat(poItem.qty_delivered || 0);
+                    }
+
                     let belumTerkirim = orderedQty - deliveredQty;
                     if (belumTerkirim < 0) belumTerkirim = 0;
                     
-                    let sisaKekurangan = belumTerkirim - fgStock;
+                    let sisaTable = belumTerkirim - fgStock;
+                    if (sisaTable < 0) sisaTable = 0;
+                    
+                    let producedQty = 0;
+                    relatedSPK.forEach(spk => {
+                        if (spk.status !== 'Batal') {
+                            const spkName = String(spk.kode_barang_jadi || spk.kode_barang || spk.barang_jadi || '').trim().toLowerCase();
+                            // Compare using exact match or includes to catch resolved names vs code
+                            if (spkName === itemName || itemName.includes(spkName) || spkName.includes(itemName) || spkName === String(poItem.part_number).trim().toLowerCase()) {
+                                producedQty += parseFloat(spk.qty_produksi || spk.qty || 0);
+                            }
+                        }
+                    });
+
+                    // Logika BOM: Kita hanya butuh bahan baku untuk kekurangan pesanan (sisaTable)
+                    // yang BELUM dibuatkan SPK-nya (producedQty).
+                    let sisaKekurangan = sisaTable - producedQty;
                     if (sisaKekurangan < 0) sisaKekurangan = 0;
 
                     if (sisaKekurangan > 0) {
@@ -2758,30 +3014,8 @@ window.setupDOMPagination();
                     });
                 }
             }
-        } catch (e) {
-            console.error(e);
-            if (shortageTbody) {
-                shortageTbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--danger);">Gagal menghitung kebutuhan material.</td></tr>';
-            }
-        }
 
-        // 4. End-to-End Tracking
-        try {
-            const [resProduksi, resSJ, resInv] = await Promise.all([
-                window.ERPAPI.request('get_produksi'),
-                window.ERPAPI.request('get_surat_jalan'),
-                window.ERPAPI.request('get_invoices')
-            ]);
-
-            const spkList = resProduksi.data || [];
-            const sjList = resSJ.data || [];
-            const invList = resInv.data || [];
-
-            // Find related records based on no_penawaran or id_po_customer
-            const relatedSPK = spkList.filter(s => s.referensi_po === item.no_penawaran || s.referensi_po === item.id_po_customer || s.no_penawaran === item.no_penawaran || s.no_penawaran === item.id_po_customer || s.kode_po_customer === item.id_po_customer);
-            const relatedSJ = sjList.filter(s => [s.no_penawaran, s.id_po_customer, s.referensi_penawaran].some(val => val && (val === item.no_penawaran || val === item.id_po_customer)));
-            const relatedInv = invList.filter(s => [s.no_penawaran, s.id_po_customer, s.referensi_penawaran].some(val => val && (val === item.no_penawaran || val === item.id_po_customer)));
-
+            // 4. End-to-End Tracking
             // Populate Items Table with SPK Progress
             if (itemsTbody) {
                 itemsTbody.innerHTML = '';
@@ -2793,7 +3027,25 @@ window.setupDOMPagination();
                     rincian.forEach(poItem => {
                         const itemName = poItem.nama || poItem.part_name || poItem.nama_barang || '-';
                         const orderedQty = parseInt(poItem.qty || poItem.moq_pcs || 1);
-                        const deliveredQty = parseInt(poItem.qty_delivered || 0);
+                        let deliveredQty = 0;
+                        relatedSJ.forEach(sj => {
+                            if (sj.status !== 'Batal') {
+                                try {
+                                    const itemsArr = typeof sj.items === 'string' ? JSON.parse(sj.items) : (sj.items || []);
+                                    itemsArr.forEach(sjItem => {
+                                        const sjItemName = String(sjItem.nama || sjItem.item || '').trim().toLowerCase();
+                                        const poItemName = String(itemName).trim().toLowerCase();
+                                        if (sjItemName === poItemName || sjItemName.includes(poItemName) || poItemName.includes(sjItemName)) {
+                                            deliveredQty += parseInt(sjItem.qty || 0);
+                                        }
+                                    });
+                                } catch(e) {}
+                            }
+                        });
+                        // Fallback to static if dynamic calculation fails or is empty, but static might be outdated
+                        if (deliveredQty === 0 && poItem.qty_delivered) {
+                            deliveredQty = parseInt(poItem.qty_delivered || 0);
+                        }
                         
                         let producedQty = 0;
                         relatedSPK.forEach(spk => {
@@ -3141,6 +3393,14 @@ window.setupDOMPagination();
             if (document.getElementById('track-spk-status')) document.getElementById('track-spk-status').innerHTML = errBadge;
             if (document.getElementById('track-sj-status')) document.getElementById('track-sj-status').innerHTML = errBadge;
             if (document.getElementById('track-inv-status')) document.getElementById('track-inv-status').innerHTML = errBadge;
+        }
+
+        // Re-enable print button after loading finishes
+        const btnPrintEl = document.getElementById('btn-detail-act-print');
+        if (btnPrintEl) {
+            btnPrintEl.style.opacity = '1';
+            btnPrintEl.style.cursor = 'pointer';
+            btnPrintEl.style.pointerEvents = 'auto';
         }
     };
 
@@ -3500,8 +3760,22 @@ window.openPOCustomerModal = function (id) {
         if (!item) return;
 
         document.getElementById('po-customer-form').reset();
-        document.getElementById('poc_file_pdf_existing').value = '';
-        document.getElementById('poc_file_pdf_link').innerHTML = '';
+        
+        let pdfUrl = '';
+        for (let key in item) {
+            if (key.toLowerCase().includes('pdf') || key.toLowerCase().includes('file')) {
+                if (typeof item[key] === 'string' && item[key].startsWith('http')) {
+                    pdfUrl = item[key];
+                    break;
+                }
+            }
+        }
+        document.getElementById('poc_file_pdf_existing').value = pdfUrl;
+        if (pdfUrl) {
+            document.getElementById('poc_file_pdf_link').innerHTML = `<a href="${pdfUrl}" target="_blank" style="color:var(--primary);"><i class="fa-solid fa-file-pdf"></i> Lihat File PDF Saat Ini</a>`;
+        } else {
+            document.getElementById('poc_file_pdf_link').innerHTML = '';
+        }
 
         document.getElementById('poc_id').value = item.id_po_customer;
         document.getElementById('po-customer-modal-title').innerText = 'Edit PO Customer';
@@ -3564,6 +3838,33 @@ window.openPOCustomerModal = function (id) {
 
         document.getElementById('po-customer-modal').classList.add('active');
     };
+    window.printPOCustomerRekap = async function (id) {
+        if (!window.poCustomerData) return;
+        const item = window.poCustomerData.find(d => d.id_po_customer === id);
+        if (!item) {
+            window.showToast?.('Data tidak ditemukan', 'error');
+            return;
+        }
+
+        // Buka modal detail untuk memuat semua data end-to-end
+        await window.openDetailPOCustomer(item);
+
+        // Tambahkan delay sedikit untuk memastikan BOM dan AJAX selesai di-render (terutama tabel DOM)
+        setTimeout(() => {
+            // Tambahkan class khusus print modal ke body
+            document.body.classList.add('print-modal-active');
+            
+            // Lakukan print
+            window.print();
+            
+            // Hapus class setelah print selesai / dibatalkan
+            document.body.classList.remove('print-modal-active');
+            
+            // Tutup modal secara otomatis
+            document.getElementById('btn-close-detail-poc')?.click();
+        }, 1000); // Tunggu 1 detik agar animasi dan render 100% selesai
+    };
+
 
     window.deletePOCustomer = async function (id, btn) {
         if (!confirm('Hapus PO Customer ini?')) return;
@@ -10616,7 +10917,7 @@ async function loadTransaksiGudangData(isBackgroundSync = false) {
                     <td>${item.keterangan || '-'}</td>
                     <td>
                         <div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">
-                            ${(!item.pemberi || item.pemberi.trim() === '') ? `<button class="btn btn-approve-transaksi" data-id="${item.id_transaksi}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--secondary);" title="Setujui/Berikan Barang"><i class="fa-solid fa-check"></i></button>` : ''}
+                            ${(item.jenis === 'OUT' && (!item.pemberi || item.pemberi.trim() === '')) ? `<button class="btn btn-approve-transaksi" data-id="${item.id_transaksi}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--secondary);" title="Setujui/Berikan Barang"><i class="fa-solid fa-check"></i></button>` : ''}
                             <button class="btn btn-edit-transaksi" data-item='${JSON.stringify(item).replace(/'/g, "&#39;")}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex;" title="Edit Transaksi"><i class="fa-solid fa-pen"></i></button>
                             <button class="btn btn-del-transaksi" data-id="${item.id_transaksi}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--danger);" title="Hapus Transaksi"><i class="fa-solid fa-trash"></i></button>
                         </div>
