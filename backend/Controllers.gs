@@ -745,27 +745,8 @@ function createPOInternal(payload) {
     po_validity: payload.po_validity || ''
   };
 
-  // Auto-register new supplier
-  if (payload.po_to && payload.po_to.trim() !== '') {
-    let suppSheet = ss.getSheetByName('DB Supplier');
-    if (!suppSheet) {
-      suppSheet = ss.insertSheet('DB Supplier');
-      suppSheet.appendRow(['ID Supplier', 'Nama Supplier', 'Kontak / Telepon', 'Alamat', 'Tanggal Terdaftar']);
-      suppSheet.getRange(1, 1, 1, 5).setFontWeight('bold');
-    }
-    const suppValues = suppSheet.getDataRange().getDisplayValues();
-    let found = false;
-    for (let i = 1; i < suppValues.length; i++) {
-      if (String(suppValues[i][1]).trim().toLowerCase() === String(payload.po_to).trim().toLowerCase()) {
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
-      const newSuppId = 'SUPP-' + Date.now();
-      suppSheet.appendRow([newSuppId, payload.po_to.trim(), '-', '-', new Date().toLocaleDateString('id-ID')]);
-    }
-  }
+  // Auto-register new supplier logic has been removed as requested.
+  
   
   sheet.appendRow([
     noPO,

@@ -7558,7 +7558,7 @@ window.openPOCustomerModal = function (id) {
             const canDelete = window.checkPermission('supplier', 'delete');
             const canEdit = window.checkPermission('supplier', 'edit');
             let actionBtns = '';
-            if (canEdit) actionBtns += `<button class=\"btn btn-edit-supplier\" data-id=\"${s.id_supplier}\" data-nama=\"${s.nama_supplier}\" data-kontak=\"${s.kontak___telepon || s['kontak_/_telepon'] || ''}\" data-alamat=\"${s.alamat || ''}\" style=\"padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: rgba(99, 102, 241, 0.1); color: var(--primary);\"><i class=\"fa-solid fa-pen\"></i></button>`;
+            if (canEdit) actionBtns += `<button class="btn btn-edit-supplier" data-id="${s.id_supplier}" data-nama="${s.nama_supplier}" data-kontak="${s.kontak___telepon || s['kontak_/_telepon'] || ''}" data-alamat="${s.alamat || s.alamat___keterangan || s.alamat_keterangan || s['alamat_/_keterangan'] || ''}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: rgba(99, 102, 241, 0.1); color: var(--primary);"><i class="fa-solid fa-pen"></i></button>`;
             if (canDelete) {
                 actionBtns += `<button class="btn btn-delete-supplier btn-del" data-id="${s.id_supplier}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i class="fa-solid fa-trash"></i></button>`;
             }
@@ -7567,7 +7567,7 @@ window.openPOCustomerModal = function (id) {
             <td>${s.id_supplier}</td>
             <td style="font-weight: 600;">${s.nama_supplier}</td>
             <td>${s.kontak___telepon || s['kontak_/_telepon'] || '-'}</td>
-            <td>${s.alamat || '-'}</td>
+            <td>${s.alamat || s.alamat___keterangan || s.alamat_keterangan || s['alamat_/_keterangan'] || '-'}</td>
             <td>${s.tanggal_terdaftar || '-'}</td>
             <td><div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">${actionBtns}</div></td>
         `;
@@ -7616,7 +7616,7 @@ window.openPOCustomerModal = function (id) {
             if (s.nama_supplier) {
                 const option = document.createElement('option');
                 option.value = s.id_supplier ? `${s.id_supplier} - ${s.nama_supplier}` : s.nama_supplier;
-                option.setAttribute('data-alamat', s.alamat || '');
+                option.setAttribute('data-alamat', s.alamat || s.alamat___keterangan || s.alamat_keterangan || s['alamat_/_keterangan'] || '');
                 dataList.appendChild(option);
             }
         });
