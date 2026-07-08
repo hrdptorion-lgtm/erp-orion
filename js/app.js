@@ -4760,6 +4760,9 @@ window.openPOCustomerModal = function (id) {
             document.getElementById('set_bank_holder').value = cachedSettings['BANK_HOLDER'] || '';
         }
     }
+    
+    // Panggil saat inisialisasi agar data setting (NAMA PERUSAHAAN dll) langsung tersedia untuk keperluan print
+    loadSettingsData();
 
     document.getElementById('settings-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();

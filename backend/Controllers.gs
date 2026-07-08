@@ -3064,8 +3064,8 @@ function savePenerimaanBarang(payload) {
   
   if (!sheetTrx) {
     sheetTrx = ss.insertSheet('DB Transaksi Gudang');
-    sheetTrx.appendRow(['ID Transaksi', 'Tanggal', 'Jenis (IN/OUT)', 'Referensi', 'Kode Material', 'Qty', 'PIC', 'Keterangan']);
-    sheetTrx.getRange(1, 1, 1, 8).setFontWeight("bold").setBackground("#d9edf7");
+    sheetTrx.appendRow(['ID Transaksi', 'Tanggal', 'Jenis (IN/OUT)', 'Referensi', 'Kode Material', 'Qty', 'PIC', 'Keterangan', 'Peminta', 'Pemberi']);
+    sheetTrx.getRange(1, 1, 1, 10).setFontWeight("bold").setBackground("#d9edf7");
   }
   
   for (let item of payload.items) {
@@ -3079,7 +3079,9 @@ function savePenerimaanBarang(payload) {
         item.kode || item.nama || '-',
         Number(item.qty_diterima),
         payload.penerima,
-        'Penerimaan Barang (' + idGRN + ')'
+        'Penerimaan Barang (' + idGRN + ')',
+        payload.penerima,
+        ''
       ]);
       
       // Update Stok dan Harga (cari di Bahan Baku)
