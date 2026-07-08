@@ -10460,12 +10460,13 @@ window.openGRNDetail = function (no_po) {
     if (historyPO.length > 0) {
         riwayatHTML += `<h5 style="text-align:left; margin-top:15px; margin-bottom:5px;">Riwayat Penerimaan:</h5>`;
         riwayatHTML += `<table style="width:100%; border-collapse:collapse; font-size:0.8rem; text-align:left;">`;
-        riwayatHTML += `<tr style="border-bottom:1px solid #ccc;"><th>Tgl</th><th>Penerima</th><th>Catatan</th><th>Item (Qty)</th></tr>`;
+        riwayatHTML += `<tr style="border-bottom:1px solid #ccc;"><th>Tgl</th><th>Penerima</th><th>No. SJ</th><th>Catatan</th><th>Item (Qty)</th></tr>`;
         historyPO.forEach(g => {
             let itemsStr = (g.daftar_item_parsed || []).map(i => `${i.nama} (${i.qty_diterima || i.qty_terima || 0})`).join(', ');
             riwayatHTML += `<tr style="border-bottom:1px solid #eee;">
                 <td style="padding:4px 0;">${g.tanggal || '-'}</td>
                 <td>${g.penerima || '-'}</td>
+                <td>${g.nomor_sj || '-'}</td>
                 <td>${g.catatan || '-'}</td>
                 <td>${itemsStr}</td>
             </tr>`;
@@ -10568,6 +10569,7 @@ document.getElementById('grn-penerimaan-form')?.addEventListener('submit', async
 
     const no_po = document.getElementById('grn_penerimaan_no_po').value;
     const penerima = document.getElementById('grn_penerima').value;
+    const no_sj = document.getElementById('grn_no_sj').value;
     const catatan = document.getElementById('grn_catatan').value;
 
     const kodes = document.getElementsByName('grn_item_kode');
@@ -10595,7 +10597,7 @@ document.getElementById('grn-penerimaan-form')?.addEventListener('submit', async
         btnSubmit.disabled = true;
 
         const result = await window.ERPAPI.request('save_penerimaan_barang', {
-            no_po, penerima, catatan, items
+            no_po, penerima, no_sj, catatan, items
         });
 
         if (result.status === 'success') {

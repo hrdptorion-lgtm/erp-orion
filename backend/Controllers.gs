@@ -2934,8 +2934,8 @@ function getPenerimaanBarang() {
   
   if (!sheet) {
     sheet = ss.insertSheet('DB Penerimaan Barang');
-    sheet.appendRow(['ID Penerimaan', 'Tanggal', 'No PO', 'Daftar Item (JSON)', 'Penerima', 'Catatan']);
-    sheet.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#d9edf7");
+    sheet.appendRow(['ID Penerimaan', 'Tanggal', 'No PO', 'Daftar Item (JSON)', 'Penerima', 'Catatan', 'Nomor SJ']);
+    sheet.getRange(1, 1, 1, 7).setFontWeight("bold").setBackground("#d9edf7");
   }
   
   const values = sheet.getDataRange().getDisplayValues();
@@ -2964,8 +2964,8 @@ function savePenerimaanBarang(payload) {
   let sheetGRN = ss.getSheetByName('DB Penerimaan Barang');
   if (!sheetGRN) {
     sheetGRN = ss.insertSheet('DB Penerimaan Barang');
-    sheetGRN.appendRow(['ID Penerimaan', 'Tanggal', 'No PO', 'Daftar Item (JSON)', 'Penerima', 'Catatan']);
-    sheetGRN.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#d9edf7");
+    sheetGRN.appendRow(['ID Penerimaan', 'Tanggal', 'No PO', 'Daftar Item (JSON)', 'Penerima', 'Catatan', 'Nomor SJ']);
+    sheetGRN.getRange(1, 1, 1, 7).setFontWeight("bold").setBackground("#d9edf7");
   }
   
   let sheetPO = ss.getSheetByName('DB PO Internal');
@@ -3041,7 +3041,8 @@ function savePenerimaanBarang(payload) {
     payload.no_po,
     JSON.stringify(payload.items),
     payload.penerima,
-    payload.catatan || ''
+    payload.catatan || '',
+    payload.no_sj || ''
   ]);
   
   // Cek Status PO

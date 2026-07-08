@@ -6,6 +6,7 @@ function setupDatabase() {
     { name: 'DB Master Barang Jadi', cols: ['Kode Barang', 'Nama Barang', 'Stok', 'Harga Jual', 'Lokasi Gudang'] },
     { name: 'DB BOM', cols: ['Kode Barang Jadi', 'Nama Barang', 'Rincian Material', 'Total Biaya Material', 'Rincian Proses', 'Gambar'] },
     { name: 'DB PO Supplier', cols: ['No PO', 'Tanggal', 'Item', 'Qty Pesanan', 'Status Penerimaan (GRN)'] },
+    { name: 'DB Penerimaan Barang', cols: ['ID Penerimaan', 'Tanggal', 'No PO', 'Daftar Item (JSON)', 'Penerima', 'Catatan', 'Nomor SJ'] },
     { name: 'DB SPK Produksi', cols: ['No SPK', 'Tanggal', 'Kode Barang Jadi', 'Qty Produksi', 'Peminta', 'Pemberi', 'Status', 'Bahan Baku (JSON)'] },
     { name: 'DB Penawaran', cols: ['No Penawaran', 'Tanggal', 'Customer', 'Rincian Item', 'Total Harga', 'Down Payment', 'Status', 'Narasi', 'Info Tambahan'] },
     { name: 'DB Surat Jalan', cols: ['No Surat Jalan', 'Referensi Penawaran', 'Tanggal Kirim', 'Item', 'Qty', 'Sisa Outstanding PO'] },
