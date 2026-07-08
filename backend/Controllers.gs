@@ -1430,14 +1430,18 @@ function saveSettings(payload) {
   const values = sheet.getDataRange().getDisplayValues();
   Object.keys(payload).forEach(key => {
     let found = false;
+    let val = payload[key];
+    if (typeof val === 'string' && val.match(/^0\d+$/)) {
+      val = "'" + val; // Prevent Google Sheets from removing leading zero
+    }
     for (let i = 0; i < values.length; i++) {
       if (values[i][0] === key) {
-        sheet.getRange(i + 1, 2).setValue(payload[key]);
+        sheet.getRange(i + 1, 2).setValue(val);
         found = true;
         break;
       }
     }
-    if (!found) sheet.appendRow([key, payload[key]]);
+    if (!found) sheet.appendRow([key, val]);
   });
   return { status: 'success', message: 'Settings berhasil disimpan.' };
 }
