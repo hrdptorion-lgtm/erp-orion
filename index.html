@@ -378,24 +378,9 @@
                                 <th>Status</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="dashboard-recent-activity">
                             <tr>
-                                <td>INV-20260601-01</td>
-                                <td>Finance</td>
-                                <td>1 Jun 2026</td>
-                                <td><span class="badge badge-warning">Pending</span></td>
-                            </tr>
-                            <tr>
-                                <td>SPK-20260602-05</td>
-                                <td>Produksi</td>
-                                <td>2 Jun 2026</td>
-                                <td><span class="badge badge-success">Selesai</span></td>
-                            </tr>
-                            <tr>
-                                <td>PO-20260605-02</td>
-                                <td>Purchasing</td>
-                                <td>5 Jun 2026</td>
-                                <td><span class="badge badge-warning">Proses</span></td>
+                                <td colspan="4" style="text-align: center;">Memuat data...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1771,7 +1756,7 @@
                             class="fa-solid fa-times"></i></button>
                 </div>
 
-                <div
+                <div id="ubah-status-container"
                     style="display: flex; gap: 10px; align-items: center; background: var(--bg-glass); padding: 10px; border-radius: 8px; margin-bottom: 0.8rem; border: 1px solid var(--glass-border);">
                     <label style="margin: 0; font-weight: bold; width: 120px;">Ubah Status:</label>
                     <select id="detail_status"
@@ -3828,17 +3813,17 @@
                 </div>
                 <form id="grn-penerimaan-form">
                     <input type="hidden" id="grn_penerimaan_no_po">
-                    <div class="form-group">
-                        <label>Penerima (PIC)</label>
-                        <input type="text" id="grn_penerima" required placeholder="Nama penerima barang">
+                    <div class="input-group">
+                        <label>Penerima (PIC) <span style="color:var(--danger)">*</span></label>
+                        <input type="text" id="grn_penerima" required placeholder="Nama penerima barang" readonly style="background: rgba(255,255,255,0.05); cursor: not-allowed; opacity: 0.8;">
                     </div>
-                    <div class="form-group">
-                        <label>Nomor Surat Jalan (DO)</label>
+                    <div class="input-group">
+                        <label>Nomor Surat Jalan (DO) <span style="color:var(--danger)">*</span></label>
                         <input type="text" id="grn_no_sj" required placeholder="Nomor Surat Jalan dari Supplier">
                     </div>
-                    <div class="form-group">
-                        <label>Catatan</label>
-                        <input type="text" id="grn_catatan" placeholder="Kondisi barang, dll">
+                    <div class="input-group">
+                        <label>Catatan <span style="color:var(--danger)">*</span></label>
+                        <input type="text" id="grn_catatan" required placeholder="Kondisi barang, dll">
                     </div>
 
                     <h4 style="margin: 20px 0 10px; color: var(--text-dark);">Daftar Barang Diterima</h4>

@@ -763,6 +763,7 @@ window.setupDOMPagination();
                 const sjList = sjReq.status === 'fulfilled' ? (sjReq.value.data || []) : [];
                 const invList = invReq.status === 'fulfilled' ? (invReq.value.data || []) : [];
 
+                let unfinishedPOs = [];
                 const poOut = poReq.value.data.filter(item => {
                     if (String(item.status).toUpperCase() === 'BATAL' || String(item.status).toUpperCase() === 'DITOLAK') return false;
                     
@@ -803,11 +804,38 @@ window.setupDOMPagination();
                          }
                     }
                     
-                    return progress < 100;
+                    if (progress < 100) {
+                        unfinishedPOs.push({...item, progress});
+                        return true;
+                    }
+                    return false;
                 }).length;
 
                 const poEl = document.getElementById('dashboard-po');
                 if (poEl) poEl.textContent = poOut;
+                
+                const activityTbody = document.getElementById('dashboard-recent-activity');
+                if (activityTbody) {
+                    if (unfinishedPOs.length === 0) {
+                        activityTbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Tidak ada PO berjalan</td></tr>`;
+                    } else {
+                        // Urutkan dari yang terbaru
+                        unfinishedPOs.sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
+                        // Ambil 10 teratas
+                        const topPOs = unfinishedPOs.slice(0, 10);
+                        let html = '';
+                        topPOs.forEach(po => {
+                            let badgeClass = po.progress === 0 ? 'badge-danger' : (po.progress < 50 ? 'badge-warning' : 'badge-primary');
+                            html += `<tr>
+                                <td>${po.id_po_customer || '-'}</td>
+                                <td>PO Customer</td>
+                                <td>${po.tanggal ? new Date(po.tanggal).toLocaleDateString('id-ID') : '-'}</td>
+                                <td><span class="badge ${badgeClass}">${po.progress}%</span></td>
+                            </tr>`;
+                        });
+                        activityTbody.innerHTML = html;
+                    }
+                }
             }
 
             if (rmReq.status === 'fulfilled' && rmReq.value.status === 'success' && rmReq.value.data) {
@@ -7705,6 +7733,12 @@ window.openPOCustomerModal = function (id) {
 
         document.getElementById('detail-modal-title').textContent = 'Detail Penawaran: ' + (item.no_penawaran || '-');
         document.getElementById('detail_status').value = item.status || 'Penawaran';
+        
+        const statusContainer = document.getElementById('ubah-status-container');
+        if (statusContainer) {
+            statusContainer.style.display = (item.status === 'Approved') ? 'none' : 'flex';
+        }
+
 
         document.getElementById('detail_customer').textContent = item.customer || '-';
         document.getElementById('detail_tanggal').textContent = item.tanggal || '-';
