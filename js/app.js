@@ -8208,6 +8208,7 @@ window.openPOCustomerModal = function (id) {
                     
                     custSelect.innerHTML = '<option value="">-- Pilih Customer --</option>';
                     if (custRes.status === 'success' && custRes.data) {
+                        window._sj_loadedCustomers = custRes.data;
                         custRes.data.forEach(c => {
                             const opt = document.createElement('option');
                             opt.value = c.nama_perusahaan || c.nama;
@@ -8269,10 +8270,19 @@ window.openPOCustomerModal = function (id) {
                     }
                 });
                 
+                document.getElementById('sj_alamat_penerima').value = (typeof item !== 'undefined' ? item.alamat_penerima : '') || '';
                 new TomSelect('#sj_customer', {
                     create: true,
                     sortField: { field: 'text', direction: 'asc' },
-                    maxOptions: 50
+                    maxOptions: 50,
+                    onChange: function(value) {
+                        if (window._sj_loadedCustomers) {
+                            const cust = window._sj_loadedCustomers.find(c => (c.nama_perusahaan || c.nama) === value);
+                            if (cust) {
+                                document.getElementById('sj_alamat_penerima').value = cust.alamat || '';
+                            }
+                        }
+                    }
                 });
             }; // End of openDetailSJ
 
@@ -8393,6 +8403,7 @@ window.openPOCustomerModal = function (id) {
         }
         
         document.getElementById('print_sj_customer').textContent = customerName || '-';
+        document.getElementById('print_sj_alamat_penerima').textContent = item.alamat_penerima || '';
         document.getElementById('print_sj_no').textContent = sjNo;
         document.getElementById('print_sj_date').textContent = sjTanggal;
         document.getElementById('print_sj_po').textContent = sjPenawaran;
@@ -8481,6 +8492,7 @@ window.openPOCustomerModal = function (id) {
             
             custSelect.innerHTML = '<option value="">-- Pilih Customer --</option>';
             if (custRes.status === 'success' && custRes.data) {
+                window._sj_loadedCustomers = custRes.data;
                 custRes.data.forEach(c => {
                     const opt = document.createElement('option');
                     opt.value = c.nama_perusahaan || c.nama;
@@ -8531,10 +8543,19 @@ window.openPOCustomerModal = function (id) {
             }
         });
         
+        document.getElementById('sj_alamat_penerima').value = '';
         new TomSelect('#sj_customer', {
             create: true,
             sortField: { field: 'text', direction: 'asc' },
-            maxOptions: 50
+            maxOptions: 50,
+            onChange: function(value) {
+                if (window._sj_loadedCustomers) {
+                    const cust = window._sj_loadedCustomers.find(c => (c.nama_perusahaan || c.nama) === value);
+                    if (cust) {
+                        document.getElementById('sj_alamat_penerima').value = cust.alamat || '';
+                    }
+                }
+            }
         });
     });
 
@@ -8592,6 +8613,7 @@ window.openPOCustomerModal = function (id) {
             tanggal: document.getElementById('sj_tanggal').value,
             no_penawaran: document.getElementById('sj_no_penawaran').value,
             customer: document.getElementById('sj_customer').value,
+            alamat_penerima: document.getElementById('sj_alamat_penerima').value,
             supir: document.getElementById('sj_supir').value,
             plat_nomor: document.getElementById('sj_plat').value,
             status: document.getElementById('sj_status').value,

@@ -3346,6 +3346,10 @@
                             <option value="" disabled selected>Memuat data customer...</option>
                         </select>
                     </div>
+                    <div class="input-group" style="grid-column: 1 / -1; margin-bottom:0;">
+                        <label>Alamat Penerima</label>
+                        <textarea id="sj_alamat_penerima" placeholder="Akan terisi otomatis atau ketik manual..." rows="2" style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border); resize: vertical;"></textarea>
+                    </div>
                     <div class="input-group" style="margin-bottom:0;">
                         <label>Supir</label>
                         <input type="text" id="sj_supir">
@@ -3535,7 +3539,8 @@
                 <td
                     style="width: 50%; padding: 10px; vertical-align: top; border-right: 1px solid #000; border-top: 1px solid #000; border-bottom: 1px solid #000; border-left: 1px solid #000;">
                     Kepada:<br>
-                    <strong id="print_sj_customer"></strong>
+                    <strong id="print_sj_customer"></strong><br>
+                    <span id="print_sj_alamat_penerima" style="font-weight:normal; font-size:12px; white-space:pre-wrap;"></span>
                 </td>
                 <td
                     style="width: 50%; padding: 10px; vertical-align: top; border-top: 1px solid #000; border-bottom: 1px solid #000; border-right: 1px solid #000;">

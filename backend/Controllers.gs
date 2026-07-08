@@ -2299,16 +2299,16 @@ function adjustSJStockAndPO(items, isRevert, poNo, noSJ, user) {
 function saveSuratJalan(payload) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName('DB Surat Jalan');
-  const defaultHeaders = ['No SJ', 'Tanggal', 'No Penawaran', 'Customer', 'Supir', 'Plat Nomor', 'Status', 'Catatan', 'Items'];
+  const defaultHeaders = ['No SJ', 'Tanggal', 'No Penawaran', 'Customer', 'Alamat Penerima', 'Supir', 'Plat Nomor', 'Status', 'Catatan', 'Items'];
   if (!sheet) {
     sheet = ss.insertSheet('DB Surat Jalan');
     sheet.appendRow(defaultHeaders);
-    sheet.getRange(1, 1, 1, 9).setFontWeight('bold');
+    sheet.getRange(1, 1, 1, 10).setFontWeight('bold');
   } else {
     // Check if empty
     if (sheet.getLastRow() === 0) {
       sheet.appendRow(defaultHeaders);
-      sheet.getRange(1, 1, 1, 9).setFontWeight('bold');
+      sheet.getRange(1, 1, 1, 10).setFontWeight('bold');
     }
   }
   
@@ -2337,12 +2337,14 @@ function saveSuratJalan(payload) {
           if (hl === 'items') hMap['items'] = idx;
           if (hl === 'qty' || hl === 'total qty') hMap['qty'] = idx;
           if (hl === 'item') hMap['item'] = idx;
-          if (hl.includes('penerima')) hMap['penerima'] = idx;
+          if (hl.includes('alamat')) hMap['alamat'] = idx;
+          else if (hl.includes('penerima')) hMap['penerima'] = idx;
         });
         
         if (hMap['tanggal'] !== undefined && payload.tanggal) sheet.getRange(i + 1, hMap['tanggal'] + 1).setValue(payload.tanggal);
         if (hMap['penawaran'] !== undefined && payload.no_penawaran !== undefined) sheet.getRange(i + 1, hMap['penawaran'] + 1).setValue(payload.no_penawaran);
         if (hMap['customer'] !== undefined && payload.customer !== undefined) sheet.getRange(i + 1, hMap['customer'] + 1).setValue(payload.customer);
+        if (hMap['alamat'] !== undefined && payload.alamat_penerima !== undefined) sheet.getRange(i + 1, hMap['alamat'] + 1).setValue(payload.alamat_penerima);
         if (hMap['supir'] !== undefined && payload.supir !== undefined) sheet.getRange(i + 1, hMap['supir'] + 1).setValue(payload.supir);
         if (hMap['plat'] !== undefined && payload.plat_nomor !== undefined) sheet.getRange(i + 1, hMap['plat'] + 1).setValue(payload.plat_nomor);
         if (hMap['status'] !== undefined && payload.status !== undefined) sheet.getRange(i + 1, hMap['status'] + 1).setValue(payload.status);
@@ -2385,6 +2387,7 @@ function saveSuratJalan(payload) {
       if (hl.includes('tanggal')) return payload.tanggal || Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy');
       if (hl.includes('penawaran') || hl.includes('po customer')) return payload.no_penawaran || '';
       if (hl.includes('customer')) return payload.customer || '';
+      if (hl.includes('alamat')) return payload.alamat_penerima || '';
       if (hl.includes('supir')) return payload.supir || '';
       if (hl.includes('plat')) return payload.plat_nomor || '';
       if (hl === 'status') return payload.status || 'Dikirim';
