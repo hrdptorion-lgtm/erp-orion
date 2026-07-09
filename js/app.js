@@ -3571,6 +3571,25 @@ window.setupDOMPagination();
 
     document.getElementById('btn-detail-act-sj')?.addEventListener('click', async () => {
         if (!window.currentDetailPOC) return;
+        
+        // Ensure barangJadiData is loaded
+        if (!window.barangJadiData || window.barangJadiData.length === 0) {
+            const resBJ = await window.ERPAPI.request('get_barang_jadi');
+            if (resBJ && resBJ.status === 'success' && resBJ.data) {
+                window.barangJadiData = resBJ.data;
+            } else {
+                window.lastBjError = resBJ ? resBJ.message : 'Unknown error';
+            }
+        }
+        
+        // Ensure suratJalanData is loaded to calculate deliveredQty properly
+        if (!window.suratJalanData || window.suratJalanData.length === 0) {
+            const resSJ = await window.ERPAPI.request('get_surat_jalan');
+            if (resSJ && resSJ.status === 'success' && resSJ.data) {
+                window.suratJalanData = resSJ.data;
+            }
+        }
+
 
         let isKosong = false;
         try {
@@ -3665,15 +3684,7 @@ window.setupDOMPagination();
             if (tbody) {
                 tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat Data Barang...</td></tr>';
                 
-                // Ensure barangJadiData is loaded
-                if (!window.barangJadiData || window.barangJadiData.length === 0) {
-                    const resBJ = await window.ERPAPI.request('get_barang_jadi');
-                    if (resBJ && resBJ.status === 'success' && resBJ.data) {
-                        window.barangJadiData = resBJ.data;
-                    } else {
-                        window.lastBjError = resBJ ? resBJ.message : 'Unknown error';
-                    }
-                }
+                // Data is already ensured to be loaded at the start of click event
 
                 tbody.innerHTML = '';
                 try {
@@ -3719,7 +3730,7 @@ window.setupDOMPagination();
                                 <td style="text-align: right;">${qty.toLocaleString('id-ID')}</td>
                                 <td style="text-align: right; color: var(--success);">${terkirim.toLocaleString('id-ID')}</td>
                                 <td>
-                                    <input type="number" class="sj-item-qty" min="0" max="${Math.max(0, st)}" value="${defaultQty}" style="width: 100%; padding: 0.4rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 4px;">
+                                    <input type="number" class="sj-item-qty" min="0" max="${Math.min(sisa, Math.max(0, st))}" value="${defaultQty}" style="width: 100%; padding: 0.4rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 4px;">
                                 </td>
                             `;
                             tbody.appendChild(tr);
@@ -8189,10 +8200,14 @@ window.openPOCustomerModal = function (id) {
                 
                 let loadedPOs = [];
                 try {
-                    const [poRes, custRes] = await Promise.all([
+                    const [poRes, custRes, bjRes, sjRes] = await Promise.all([
                         window.ERPAPI.request('get_po_customer'),
-                        window.ERPAPI.request('get_customer')
+                        window.ERPAPI.request('get_customer'),
+                        window.ERPAPI.request('get_barang_jadi'),
+                        window.ERPAPI.request('get_surat_jalan')
                     ]);
+                    if (bjRes && bjRes.status === 'success' && bjRes.data) window.barangJadiData = bjRes.data;
+                    if (sjRes && sjRes.status === 'success' && sjRes.data) window.suratJalanData = sjRes.data;
                     
                     poRefSelect.innerHTML = '<option value="">-- Pilih PO Customer --</option>';
                     if (poRes.status === 'success' && poRes.data) {
@@ -8246,7 +8261,7 @@ window.openPOCustomerModal = function (id) {
                             // Or we just overwrite it when user manually changes it.
                             if (value !== sjPenawaran) {
                                 let poItems = [];
-                                try { poItems = typeof po.items === 'string' ? JSON.parse(po.items) : (po.items || []); } catch(e) {}
+                                try { poItems = typeof po.item_po === 'string' ? JSON.parse(po.item_po) : (po.item_po || []); } catch(e) {}
                                 const tbody = document.getElementById('sj-items-tbody');
                                 tbody.innerHTML = '';
                                 if (poItems.length === 0) {
@@ -8254,13 +8269,53 @@ window.openPOCustomerModal = function (id) {
                                 } else {
                                     poItems.forEach(it => {
                                         const iname = String(it.nama || it.item || '').trim();
-                                        const qty = parseInt(it.sisa_qty ?? it.qty ?? 0);
+                                        
+                                        const fg = (window.barangJadiData || []).find(b => {
+                                            let bNameRaw = '';
+                                            const nameKey = Object.keys(b).find(k => k.includes('nama') || k.includes('deskripsi') || k.includes('item'));
+                                            if (nameKey) bNameRaw = String(b[nameKey]);
+                                            else bNameRaw = String(b.nama_barang || b.nama || b.deskripsi || '');
+                                            return bNameRaw.trim().toLowerCase() === iname.toLowerCase();
+                                        });
+                                        let rawStok = 0;
+                                        if (fg) {
+                                            const stokKey = Object.keys(fg).find(k => k.includes('stok') || k.includes('qty') || k.includes('jumlah'));
+                                            if (stokKey) rawStok = fg[stokKey];
+                                        }
+                                        const st = fg ? parseInt(String(rawStok).replace(/[^0-9-]/g, '') || 0) : 0;
+                                        
+                                        let deliveredQty = 0;
+                                        if (window.suratJalanData) {
+                                            window.suratJalanData.forEach(sj => {
+                                                if (sj.status === 'Batal' || sj.no_sj === document.getElementById('sj_no').value) return;
+                                                const sjPo = sj.no_penawaran || sj.referensi_penawaran || sj.id_po_customer || '';
+                                                if (sjPo === po.id_po_customer || sjPo === po.no_penawaran) {
+                                                    let sjIt = [];
+                                                    try { sjIt = typeof sj.items === 'string' ? JSON.parse(sj.items) : (sj.items || []); } catch(e){}
+                                                    sjIt.forEach(sItem => {
+                                                        if (String(sItem.nama || sItem.item || '').trim().toLowerCase() === iname.toLowerCase()) {
+                                                            deliveredQty += parseInt(sItem.qty || 0);
+                                                        }
+                                                    });
+                                                }
+                                            });
+                                        }
+                                        
+                                        const qty = parseInt(it.qty || it.moq_pcs || 0);
+                                        const sisa = Math.max(0, qty - deliveredQty);
+                                        const defaultQty = Math.min(sisa, Math.max(0, st));
+                                        const maxAllowed = Math.min(sisa, Math.max(0, st));
+
                                         const tr2 = document.createElement('tr');
                                         tr2.innerHTML = `
-                                            <td>${iname}<input type="hidden" class="sj-item-name" value="${iname}"></td>
-                                            <td>${parseInt(it.qty || 0).toLocaleString('id-ID')}</td>
-                                            <td>${parseInt((it.qty || 0) - qty).toLocaleString('id-ID')}</td>
-                                            <td><input type="number" class="sj-item-qty" value="${qty}" max="${qty}" min="0" style="width:80px; padding:0.3rem; border-radius:5px; border:1px solid var(--glass-border); background:var(--bg-main); color:var(--text-main);"></td>
+                                            <td>
+                                                ${iname}<br>
+                                                <span style="font-size:0.75rem; color:var(--text-muted)">Stok Tersedia: <strong style="color: ${st > 0 ? 'var(--success)' : 'var(--danger)'}">${st.toLocaleString('id-ID')}</strong></span>
+                                                <input type="hidden" class="sj-item-name" value="${iname}">
+                                            </td>
+                                            <td style="text-align: right;">${qty.toLocaleString('id-ID')}</td>
+                                            <td style="text-align: right; color: var(--success);">${deliveredQty.toLocaleString('id-ID')}</td>
+                                            <td><input type="number" class="sj-item-qty" value="${defaultQty}" max="${maxAllowed}" min="0" style="width:100%; padding:0.4rem; border-radius:4px; border:1px solid var(--glass-border); background:var(--bg-main); color:var(--text-main);"></td>
                                         `;
                                         tbody.appendChild(tr2);
                                     });
@@ -8474,10 +8529,14 @@ window.openPOCustomerModal = function (id) {
         
         let loadedPOs = [];
         try {
-            const [poRes, custRes] = await Promise.all([
+            const [poRes, custRes, bjRes, sjRes] = await Promise.all([
                 window.ERPAPI.request('get_po_customer'),
-                window.ERPAPI.request('get_customer')
+                window.ERPAPI.request('get_customer'),
+                window.ERPAPI.request('get_barang_jadi'),
+                window.ERPAPI.request('get_surat_jalan')
             ]);
+            if (bjRes && bjRes.status === 'success' && bjRes.data) window.barangJadiData = bjRes.data;
+            if (sjRes && sjRes.status === 'success' && sjRes.data) window.suratJalanData = sjRes.data;
             
             poRefSelect.innerHTML = '<option value="">-- Pilih PO Customer --</option>';
             if (poRes.status === 'success' && poRes.data) {
@@ -8520,7 +8579,7 @@ window.openPOCustomerModal = function (id) {
                     }
                     
                     let poItems = [];
-                    try { poItems = typeof po.items === 'string' ? JSON.parse(po.items) : (po.items || []); } catch(e) {}
+                    try { poItems = typeof po.item_po === 'string' ? JSON.parse(po.item_po) : (po.item_po || []); } catch(e) {}
                     const tbody = document.getElementById('sj-items-tbody');
                     tbody.innerHTML = '';
                     if (poItems.length === 0) {
@@ -8528,13 +8587,53 @@ window.openPOCustomerModal = function (id) {
                     } else {
                         poItems.forEach(it => {
                             const iname = String(it.nama || it.item || '').trim();
-                            const qty = parseInt(it.sisa_qty ?? it.qty ?? 0);
+                            
+                            const fg = (window.barangJadiData || []).find(b => {
+                                let bNameRaw = '';
+                                const nameKey = Object.keys(b).find(k => k.includes('nama') || k.includes('deskripsi') || k.includes('item'));
+                                if (nameKey) bNameRaw = String(b[nameKey]);
+                                else bNameRaw = String(b.nama_barang || b.nama || b.deskripsi || '');
+                                return bNameRaw.trim().toLowerCase() === iname.toLowerCase();
+                            });
+                            let rawStok = 0;
+                            if (fg) {
+                                const stokKey = Object.keys(fg).find(k => k.includes('stok') || k.includes('qty') || k.includes('jumlah'));
+                                if (stokKey) rawStok = fg[stokKey];
+                            }
+                            const st = fg ? parseInt(String(rawStok).replace(/[^0-9-]/g, '') || 0) : 0;
+                            
+                            let deliveredQty = 0;
+                            if (window.suratJalanData) {
+                                window.suratJalanData.forEach(sj => {
+                                    if (sj.status === 'Batal' || sj.no_sj === document.getElementById('sj_no').value) return;
+                                    const sjPo = sj.no_penawaran || sj.referensi_penawaran || sj.id_po_customer || '';
+                                    if (sjPo === po.id_po_customer || sjPo === po.no_penawaran) {
+                                        let sjIt = [];
+                                        try { sjIt = typeof sj.items === 'string' ? JSON.parse(sj.items) : (sj.items || []); } catch(e){}
+                                        sjIt.forEach(sItem => {
+                                            if (String(sItem.nama || sItem.item || '').trim().toLowerCase() === iname.toLowerCase()) {
+                                                deliveredQty += parseInt(sItem.qty || 0);
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                            
+                            const qty = parseInt(it.qty || it.moq_pcs || 0);
+                            const sisa = Math.max(0, qty - deliveredQty);
+                            const defaultQty = Math.min(sisa, Math.max(0, st));
+                            const maxAllowed = Math.min(sisa, Math.max(0, st));
+
                             const tr2 = document.createElement('tr');
                             tr2.innerHTML = `
-                                <td>${iname}<input type="hidden" class="sj-item-name" value="${iname}"></td>
-                                <td>${parseInt(it.qty || 0).toLocaleString('id-ID')}</td>
-                                <td>${parseInt((it.qty || 0) - qty).toLocaleString('id-ID')}</td>
-                                <td><input type="number" class="sj-item-qty" value="${qty}" max="${qty}" min="0" style="width:80px; padding:0.3rem; border-radius:5px; border:1px solid var(--glass-border); background:var(--bg-main); color:var(--text-main);"></td>
+                                <td>
+                                    ${iname}<br>
+                                    <span style="font-size:0.75rem; color:var(--text-muted)">Stok Tersedia: <strong style="color: ${st > 0 ? 'var(--success)' : 'var(--danger)'}">${st.toLocaleString('id-ID')}</strong></span>
+                                    <input type="hidden" class="sj-item-name" value="${iname}">
+                                </td>
+                                <td style="text-align: right;">${qty.toLocaleString('id-ID')}</td>
+                                <td style="text-align: right; color: var(--success);">${deliveredQty.toLocaleString('id-ID')}</td>
+                                <td><input type="number" class="sj-item-qty" value="${defaultQty}" max="${maxAllowed}" min="0" style="width:100%; padding:0.4rem; border-radius:4px; border:1px solid var(--glass-border); background:var(--bg-main); color:var(--text-main);"></td>
                             `;
                             tbody.appendChild(tr2);
                         });
