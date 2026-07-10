@@ -1,5 +1,5 @@
 // Replace with the actual URL from Google Apps Script deployment
-const API_URL = 'https://script.google.com/macros/s/AKfycbx0AdWdrzVmorW5wJNs4C4Ctgvw5oVzAD5F9ArSjVnAoqO1gDJsC-mx86VY7vRwAqRA7g/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzre0bIZGUHMaXZpEDwduRnDrtYbb6zprcGYsjxXPdovLq1lGm_lA5bZPK6c2HnlIU/exec';
 
 let activeRequests = 0;
 function toggleSyncIcon(isSyncing) {
