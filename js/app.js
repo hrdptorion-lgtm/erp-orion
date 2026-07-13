@@ -4913,6 +4913,7 @@ window.openPOCustomerModal = function (id) {
         // Initialize Tom Select
         new TomSelect(inputName, {
             create: true,
+            dropdownParent: 'body',
             sortField: {
                 field: 'text',
                 direction: 'asc'
