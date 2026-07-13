@@ -454,6 +454,18 @@ window.setupDOMPagination();
                 return;
             }
 
+            if (item.id === 'menu-finance-toggle') {
+                const hasFinanceAccess = window.checkPermission('finance', 'view') || window.checkPermission('invoice', 'view') || window.checkPermission('laporan-kas', 'view') || window.checkPermission('coa', 'view');
+                item.style.display = hasFinanceAccess ? 'flex' : 'none';
+                return;
+            }
+
+            if (item.id === 'menu-produk-toggle') {
+                const hasProdukAccess = window.checkPermission('purchasing', 'view') || window.checkPermission('po-internal', 'view') || window.checkPermission('grn', 'view') || window.checkPermission('transaksi-gudang', 'view') || window.checkPermission('bom', 'view') || window.checkPermission('barang-jadi', 'view') || window.checkPermission('produksi', 'view');
+                item.style.display = hasProdukAccess ? 'flex' : 'none';
+                return;
+            }
+
             // Gunakan RBAC helper
             item.style.display = window.checkPermission(target, 'view') ? 'flex' : 'none';
         });
