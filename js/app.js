@@ -5440,7 +5440,7 @@ window.openPOCustomerModal = function (id) {
         div.innerHTML = `
             <input type="text" class="mat-kode" placeholder="Kode Mat" value="${kode}" style="flex: 1; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;" readonly>
             <input type="text" list="bom-bahan-baku-list" class="mat-nama" placeholder="Nama Material" value="${nama}" required style="flex: 2; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
-            <input type="text" class="mat-qty number-format" placeholder="Qty" value="${qty ? window.formatRibuan(qty) : '1'}" required style="flex: 0.8; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            <input type="number" step="any" class="mat-qty" placeholder="Qty" value="${qty || '1'}" required style="flex: 0.8; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
             <input type="text" class="mat-harga-satuan number-format" placeholder="Harga Satuan" value="" style="flex: 1.2; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;" readonly>
             <input type="text" class="mat-harga number-format" placeholder="Total" value="${hargaTotalLama ? window.formatRibuan(hargaTotalLama) : ''}" required style="flex: 1.2; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--accent); font-weight: bold;" readonly>
             <button type="button" class="btn btn-remove-row" style="background: var(--danger); padding: 0.6rem;"><i class="fa-solid fa-trash"></i></button>
@@ -5453,7 +5453,7 @@ window.openPOCustomerModal = function (id) {
         const kodeInput = div.querySelector('.mat-kode');
 
         const updateRowTotal = () => {
-            const q = window.parseRupiah(qtyInput.value) || 0;
+            const q = parseFloat(qtyInput.value) || 0;
             const hs = window.parseRupiah(hargaSatuanInput.value) || 0;
             const tot = q * hs;
             totalHargaInput.value = window.formatRibuan(tot);
@@ -5651,7 +5651,7 @@ window.openPOCustomerModal = function (id) {
         materialsContainer.querySelectorAll('div').forEach(div => {
             const kode = div.querySelector('.mat-kode')?.value;
             const nama = div.querySelector('.mat-nama')?.value;
-            const qty = parseInt(String(div.querySelector('.mat-qty')?.value).replace(/\D/g, '')) || 0;
+            const qty = parseFloat(div.querySelector('.mat-qty')?.value) || 0;
             const harga = parseInt(String(div.querySelector('.mat-harga')?.value).replace(/\D/g, '')) || 0;
             if (nama) materials.push({ kode: kode || '', nama, qty: qty || 1, harga: harga || 0 });
         });
