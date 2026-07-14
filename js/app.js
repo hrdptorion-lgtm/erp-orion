@@ -10631,14 +10631,16 @@ window.openGRNDetail = function (no_po) {
     if (historyPO.length > 0) {
         riwayatHTML += `<h5 style="text-align:left; margin-top:15px; margin-bottom:5px;">Riwayat Penerimaan:</h5>`;
         riwayatHTML += `<table style="width:100%; border-collapse:collapse; font-size:0.8rem; text-align:left;">`;
-        riwayatHTML += `<tr style="border-bottom:1px solid #ccc;"><th>Tgl</th><th>Penerima</th><th>No. SJ</th><th>Catatan</th><th>Item (Qty)</th></tr>`;
+        riwayatHTML += `<tr style="border-bottom:1px solid #ccc;"><th>Tgl</th><th>Penerima</th><th>No. SJ</th><th>Catatan</th><th>Bukti</th><th>Item (Qty)</th></tr>`;
         historyPO.forEach(g => {
             let itemsStr = (g.daftar_item_parsed || []).map(i => `${i.nama} (${i.qty_diterima || i.qty_terima || 0})`).join(', ');
+            let gambarHTML = g.gambar ? `<img src="${g.gambar}" style="max-height: 30px; border-radius: 4px; cursor: pointer;" onclick="window.open(this.src)" title="Klik untuk memperbesar" />` : '-';
             riwayatHTML += `<tr style="border-bottom:1px solid #eee;">
                 <td style="padding:4px 0;">${g.tanggal || '-'}</td>
                 <td>${g.penerima || '-'}</td>
                 <td>${g.nomor_sj || '-'}</td>
                 <td>${g.catatan || '-'}</td>
+                <td>${gambarHTML}</td>
                 <td>${itemsStr}</td>
             </tr>`;
             
@@ -10764,11 +10766,23 @@ document.getElementById('grn-penerimaan-form')?.addEventListener('submit', async
     }
 
     try {
+        const fileInput = document.getElementById('grn_gambar');
+        let gambarBase64 = '';
+        if (fileInput && fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            gambarBase64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+
         btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
         btnSubmit.disabled = true;
 
         const result = await window.ERPAPI.request('save_penerimaan_barang', {
-            no_po, penerima, no_sj, catatan, items
+            no_po, penerima, no_sj, catatan, items, gambar: gambarBase64
         });
 
         if (result.status === 'success') {
