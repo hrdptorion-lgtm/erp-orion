@@ -10634,7 +10634,8 @@ window.openGRNDetail = function (no_po) {
         riwayatHTML += `<tr style="border-bottom:1px solid #ccc;"><th>Tgl</th><th>Penerima</th><th>No. SJ</th><th>Catatan</th><th>Bukti</th><th>Item (Qty)</th></tr>`;
         historyPO.forEach(g => {
             let itemsStr = (g.daftar_item_parsed || []).map(i => `${i.nama} (${i.qty_diterima || i.qty_terima || 0})`).join(', ');
-            let gambarHTML = g.gambar ? `<img src="${g.gambar}" style="max-height: 30px; border-radius: 4px; cursor: pointer;" onclick="window.open(this.src)" title="Klik untuk memperbesar" />` : '-';
+            let swalFunc = `Swal.fire({imageUrl: this.src, imageAlt: 'Bukti', width: 'auto', showConfirmButton: false, showCloseButton: true, background: 'transparent', backdrop: 'rgba(0,0,0,0.85)'})`;
+            let gambarHTML = g.gambar ? `<img src="${g.gambar}" style="max-height: 30px; border-radius: 4px; cursor: zoom-in;" onclick="${swalFunc}" title="Klik untuk memperbesar" />` : '-';
             riwayatHTML += `<tr style="border-bottom:1px solid #eee;">
                 <td style="padding:4px 0;">${g.tanggal || '-'}</td>
                 <td>${g.penerima || '-'}</td>
