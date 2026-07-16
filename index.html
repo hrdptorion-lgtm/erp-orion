@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="css/style.css?v=62">
+    <link rel="stylesheet" href="css/style.css?v=63">
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Tom Select for Smart Dropdowns -->
@@ -145,10 +145,6 @@
                     <i class="fa-solid fa-file-signature"></i>
                     <span>PO Customer</span>
                 </li>
-                <li class="nav-item" data-target="surat-jalan">
-                    <i class="fa-solid fa-truck-fast"></i>
-                    <span>Surat Jalan (DO)</span>
-                </li>
                 <!-- Submenu Produk -->
                 <li class="nav-item has-submenu" id="menu-produk-toggle">
                     <i class="fa-solid fa-box-open"></i>
@@ -156,6 +152,10 @@
                     <i class="fa-solid fa-chevron-down submenu-icon"></i>
                 </li>
                 <ul class="submenu" id="submenu-produk">
+                    <li class="nav-item" data-target="surat-jalan">
+                        <i class="fa-solid fa-truck-fast"></i>
+                        <span>Surat Jalan (DO)</span>
+                    </li>
                     <li class="nav-item" data-target="purchasing">
                         <i class="fa-solid fa-cart-shopping"></i>
                         <span>Bahan Baku</span>
@@ -203,7 +203,21 @@
                         <i class="fa-solid fa-chart-line"></i>
                         <span>Laporan Kas</span>
                     </li>
+                    <li class="nav-item admin-only" data-target="coa">
+                        <i class="fa-solid fa-file-invoice"></i>
+                        <span>Kategori COA</span>
+                    </li>
                 </ul>
+                <!-- Standalone Master Menus -->
+                <li class="nav-item" data-target="customer" style="border-top: 1px solid var(--glass-border); margin-top: 10px; padding-top: 15px;">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Master Customer</span>
+                </li>
+                <li class="nav-item" data-target="supplier">
+                    <i class="fa-solid fa-truck-field"></i>
+                    <span>Data Supplier</span>
+                </li>
+
                 <!-- Submenu Pengaturan -->
                 <li class="nav-item has-submenu admin-only" data-target="pengaturan" id="menu-pengaturan-toggle"
                     style="display: none; border-top: 1px solid var(--glass-border); margin-top: 10px; padding-top: 15px;">
@@ -216,29 +230,13 @@
                         <i class="fa-solid fa-building"></i>
                         <span>Profil Perusahaan</span>
                     </li>
-                    <li class="nav-item admin-only" data-target="coa">
-                        <i class="fa-solid fa-file-invoice"></i>
-                        <span>Kategori COA</span>
-                    </li>
-                    <li class="nav-item admin-only" data-target="customer">
-                        <i class="fa-solid fa-users"></i>
-                        <span>Master Customer</span>
-                    </li>
-                    <li class="nav-item admin-only" data-target="supplier">
-                        <i class="fa-solid fa-truck-field"></i>
-                        <span>Data Supplier</span>
-                    </li>
-                    <li class="nav-item super-admin-only" data-target="approval">
-                        <i class="fa-solid fa-diagram-project"></i>
-                        <span>Alur Approval</span>
+                    <li class="nav-item super-admin-only" data-target="lisensi">
+                        <i class="fa-solid fa-key"></i>
+                        <span>Lisensi Aplikasi</span>
                     </li>
                     <li class="nav-item admin-only" data-target="admin">
                         <i class="fa-solid fa-users-gear" style="width: 20px; text-align: center;"></i> Manajemen
                         User
-                    </li>
-                    <li class="nav-item super-admin-only" data-target="rbac">
-                        <i class="fa-solid fa-shield-halved" style="width: 20px; text-align: center;"></i> Hak Akses
-                        (RBAC)
                     </li>
                 </ul>
             </ul>
@@ -922,11 +920,12 @@
                                 <th>Kategori COA</th>
                                 <th>Keterangan</th>
                                 <th>Nominal</th>
+                                <th style="text-align: center;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="table-laporan-kas">
                             <tr>
-                                <td colspan="6" style="text-align: center;">Pilih filter dan klik Cari untuk menampilkan
+                                <td colspan="7" style="text-align: center;">Pilih filter dan klik Cari untuk menampilkan
                                     data</td>
                             </tr>
                         </tbody>
@@ -1445,12 +1444,8 @@
                         <select id="u_role"
                             style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border);">
                             <option value="Admin" style="color: #000;">Admin</option>
-                            <option value="Marketing" style="color: #000;">Marketing</option>
-                            <option value="Finance / Accounting" style="color: #000;">Finance / Accounting</option>
-                            <option value="Produksi" style="color: #000;">Produksi</option>
-                            <option value="Gudang" style="color: #000;">Gudang</option>
-                            <option value="Purchasing" style="color: #000;">Purchasing</option>
-                            <option value="Management" style="color: #000;">Management</option>
+                            <option value="Supervisor" style="color: #000;">Supervisor</option>
+                            <option value="User" style="color: #000;">User</option>
                         </select>
                     </div>
 
@@ -1494,7 +1489,7 @@
                     </div>
                     <div class="input-group">
                         <label>Lokasi (Rak/Zona)</label>
-                        <input type="text" id="f_lokasi" list="lokasi-list" placeholder="Rak A1">
+                        <select id="f_lokasi" placeholder="Ketik atau pilih lokasi..."></select>
                     </div>
                     <div class="input-group">
                         <label>Spesifikasi</label>
@@ -1570,86 +1565,31 @@
             </div>
         </div>
 
-        <!-- View: Alur Approval -->
-        <div id="view-approval" class="view">
-            <div class="data-section" style="margin-bottom: 2rem;">
-
-                <div
-                    style="display: flex; gap: 10px; margin-bottom: 0.8rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; overflow-x: auto;">
-                    <button id="btn-tab-diagram" class="btn" style="background: var(--primary); white-space: nowrap;"><i
-                            class="fa-solid fa-diagram-project"></i> Diagram Struktur</button>
-                    <button id="btn-tab-flow" class="btn admin-only"
-                        style="background: var(--bg-glass); display: none; white-space: nowrap;"><i
-                            class="fa-solid fa-sliders"></i> Pengaturan Rute</button>
-                    <button id="btn-tab-jabatan" class="btn admin-only"
-                        style="background: var(--bg-glass); display: none; white-space: nowrap;"><i
-                            class="fa-solid fa-users-gear"></i> Daftar Jabatan</button>
-                </div>
-
-                <!-- Tab Diagram -->
-                <div id="tab-diagram">
-                    <div
-                        style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--primary); padding: 1rem; border-radius: 8px; margin-bottom: 0.8rem;">
-                        <strong>Penjelasan Diagram:</strong><br>
-                        <span style="color: var(--text-muted); font-size: 0.9rem;">Diagram di bawah ini menggambarkan
-                            hierarki dan urutan persetujuan. Panah (&#8594;) menunjukkan arah eskalasi pengajuan (Rute
-                            biru menandakan rute personal Anda).</span>
-                    </div>
-                    <div id="mermaidContainer"
-                        style="overflow: auto; min-height: 50vh; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid var(--glass-border); padding: 20px; text-align: center;">
-                        <div style="color: var(--text-muted); padding-top: 10vh;">Memuat diagram...</div>
+        <!-- View: Lisensi Aplikasi -->
+        <div id="view-lisensi" class="view">
+            <div class="data-section">
+                <div class="section-header" style="justify-content: space-between; display: flex;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <h2 style="margin: 0; color: var(--primary);"><i class="fa-solid fa-key"></i> Lisensi & Berlangganan</h2>
                     </div>
                 </div>
-
-                <!-- Tab Flow Builder -->
-                <div id="tab-flow" style="display: none;">
-                    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-                        <!-- List Tipe Pengajuan -->
-                        <div style="flex: 1; min-width: 250px; max-width: 350px;">
-                            <div
-                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                                <h3>Tipe Pengajuan</h3>
-                                <button class="btn" id="btn-add-kategori"
-                                    style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: none;"><i
-                                        class="fa-solid fa-plus"></i> Baru</button>
-                            </div>
-                            <div id="kategoriListGroup" style="display: flex; flex-direction: column; gap: 8px;">
-                                <!-- Item Kategori -->
-                            </div>
+                <div style="background: var(--bg-glass); border-radius: 10px; border: 1px solid var(--glass-border); padding: 2rem; text-align: center;">
+                    <i class="fa-solid fa-shield-check" style="font-size: 4rem; color: #4CAF50; margin-bottom: 1rem;"></i>
+                    <h3 style="color: var(--text-main); margin-bottom: 0.5rem;">Aplikasi Aktif</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 2rem;">Lisensi aplikasi ERPORION Anda saat ini aktif dan berlaku seumur hidup (Lifetime).</p>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; text-align: left;">
+                        <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--glass-border);">
+                            <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px;">Tipe Lisensi</div>
+                            <div style="font-size: 1.2rem; font-weight: bold; color: var(--text-main);">Enterprise Lifetime</div>
                         </div>
-
-                        <!-- Builder Area -->
-                        <div
-                            style="flex: 2; min-width: 300px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px;">
-                            <div id="flowBuilderEmpty"
-                                style="height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
-                                <span>Pilih tipe pengajuan di sebelah kiri untuk mengatur rutenya.</span>
-                            </div>
-                            <div id="flowBuilderActive" style="display: none;">
-                                <h3 style="margin-bottom: 20px;">Rute Approval: <span id="activeKategoriTitle"
-                                        style="color: var(--primary);"></span></h3>
-                                <div id="flowBuilderCards"
-                                    style="display: flex; flex-wrap: wrap; align-items: center; gap: 15px;">
-                                    <!-- Cards diinjeksi via JS -->
-                                </div>
-                            </div>
+                        <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--glass-border);">
+                            <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px;">Batas User</div>
+                            <div style="font-size: 1.2rem; font-weight: bold; color: var(--text-main);">Unlimited</div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Tab Daftar Jabatan -->
-                <div id="tab-jabatan" style="display: none;">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
-                        <h3>Daftar Jabatan Perusahaan</h3>
-                        <button class="btn" id="btn-add-jabatan" style="display: none;"><i class="fa-solid fa-plus"></i>
-                            Tambah Jabatan</button>
-                    </div>
-                    <div
-                        style="background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px;">
-                        <div id="masterJabatanList"
-                            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
-                            <!-- List Jabatan Master dari JS -->
+                        <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--glass-border);">
+                            <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px;">Versi Aplikasi</div>
+                            <div style="font-size: 1.2rem; font-weight: bold; color: var(--text-main);">v2.4.0 (Stable)</div>
                         </div>
                     </div>
                 </div>
@@ -2044,6 +1984,8 @@
                         </div>
                     </div>
                 </div>
+
+
 
                 <div
                     style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px; margin-bottom: 20px;" class="hide-on-print">
@@ -2657,6 +2599,16 @@
                         </div>
                     </div>
                 </div>
+                <div class="nav-item admin-only" data-target="coa"
+                    style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
+                    <div class="stat-card hover-lift"
+                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
+                        <i class="fa-solid fa-file-invoice"
+                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Kategori COA
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -2674,23 +2626,14 @@
                         </div>
                     </div>
                 </div>
-                <div class="nav-item admin-only" data-target="coa"
+
+                <div class="nav-item super-admin-only" data-target="lisensi"
                     style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
                     <div class="stat-card hover-lift"
                         style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
-                        <i class="fa-solid fa-file-invoice"
+                        <i class="fa-solid fa-key"
                             style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Kategori COA
-                        </div>
-                    </div>
-                </div>
-                <div class="nav-item super-admin-only" data-target="approval"
-                    style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
-                    <div class="stat-card hover-lift"
-                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
-                        <i class="fa-solid fa-diagram-project"
-                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Alur Approval
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Lisensi Aplikasi
                         </div>
                     </div>
                 </div>
@@ -2701,16 +2644,6 @@
                         <i class="fa-solid fa-users-gear"
                             style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Manajemen User
-                        </div>
-                    </div>
-                </div>
-                <div class="nav-item super-admin-only" data-target="rbac"
-                    style="flex: 0 0 calc(50% - 0.5rem); max-width: calc(50% - 0.5rem);">
-                    <div class="stat-card hover-lift"
-                        style="text-align: center; cursor: pointer; padding: 2rem 1rem; height: 100%;">
-                        <i class="fa-solid fa-user-shield"
-                            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; display: block;"></i>
-                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Hak Akses (RBAC)
                         </div>
                     </div>
                 </div>
@@ -3884,7 +3817,7 @@
     </datalist>
 
     <script src="js/api.js?v=34"></script>
-    <script src="js/app.js?v=82"></script>
+    <script src="js/app.js?v=83"></script>
 </body>
 
 </html>    <div id="image-viewer-modal" class="login-overlay" style="z-index: 99999; display: none; justify-content: center; align-items: center; background: rgba(0,0,0,0.9);" onclick="this.style.display='none'">

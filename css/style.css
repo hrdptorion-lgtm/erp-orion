@@ -1527,4 +1527,4 @@ body.light-mode input[type="date"]::-webkit-calendar-picker-indicator {
 /* Force action columns to never wrap globally */
 td:has(.btn) {
     white-space: nowrap !important;
-}
+}.ts-dropdown { z-index: 99999 !important; }

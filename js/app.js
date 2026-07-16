@@ -369,23 +369,31 @@ window.setupDOMPagination();
             const session = localStorage.getItem('erp_session');
             if (!session) return false;
             const user = JSON.parse(session);
+            const role = (user.role || '').toLowerCase();
             
-            // Super Admin always has full access
-            const isSuperAdmin = ['super admin'].some(r => (user.role || '').toLowerCase().includes(r));
-            if (isSuperAdmin) return true;
+            const isSuperAdmin = role === 'super admin' || role === 'superadmin';
+            const isAdmin = role === 'admin' || isSuperAdmin; // Super admin has all admin rights
+            const isSupervisor = role === 'supervisor';
+            const isUser = role === 'user';
             
-            // If permissions not set for this menu, fallback to Admin-only for safety
-            if (!user.permissions || !user.permissions[menuTarget]) {
-                const isAdmin = ['direktur', 'admin', 'management'].some(r => (user.role || '').toLowerCase().includes(r));
-                return isAdmin;
+            // Super Admin and Admin can access everything
+            if (isAdmin) return true;
+            
+            // Supervisor can access everything EXCEPT user management and settings
+            if (isSupervisor) {
+                if (menuTarget === 'admin' || menuTarget === 'rbac' || menuTarget === 'profil' || menuTarget === 'pengaturan') return false;
+                return true;
             }
             
-            const perm = user.permissions[menuTarget];
-            if (action === 'view') return perm.can_view === true;
-            if (action === 'add') return perm.can_add === true;
-            if (action === 'edit') return perm.can_edit === true;
-            if (action === 'delete') return perm.can_delete === true;
+            // Regular User can access everything EXCEPT user management, finance, and settings
+            if (isUser) {
+                if (menuTarget === 'admin' || menuTarget === 'rbac' || menuTarget === 'profil' || menuTarget === 'pengaturan') return false;
+                const financeMenus = ['finance', 'invoice', 'laporan-kas', 'coa'];
+                if (financeMenus.includes(menuTarget)) return false;
+                return true;
+            }
             
+            // Fallback
             return false;
         } catch (e) {
             console.error('RBAC Check Error:', e);
@@ -426,14 +434,10 @@ window.setupDOMPagination();
 
         // Role-based Access Control Fallback
         const userRole = (user.role || '').toLowerCase();
-        const isPurchasing = userRole.includes('purchasing');
-        const isProduksi = userRole.includes('produksi') || userRole.includes('gudang');
-        const isFinance = userRole.includes('finance') || userRole.includes('accounting');
-        const isSales = userRole.includes('marketing');
-        const isAdmin = ['direktur', 'admin', 'management'].some(r => userRole.includes(r));
-        const isSuperAdmin = ['super admin'].some(r => userRole.includes(r));
+        const isSuperAdmin = userRole === 'super admin' || userRole === 'superadmin';
+        const isAdmin = userRole === 'admin' || isSuperAdmin;
 
-        const hasPermissions = user.permissions && Object.keys(user.permissions).length > 0;
+        const hasPermissions = true; // Legacy fallback
 
         navItems.forEach(item => {
             const target = item.getAttribute('data-target');
@@ -445,7 +449,7 @@ window.setupDOMPagination();
             // Tampilkan pengaturan wrapper jika isinya ada yang visible (diatur oleh CSS/submenu, tapi secara default kita tampilkan saja kalau admin/punya akses salah satu).
             // Tapi untuk amannya, biarkan checkPermission menangani semuanya kecuali special cases.
             if (target === 'pengaturan') {
-                item.style.display = window.checkPermission('profil', 'view') || window.checkPermission('coa', 'view') || window.checkPermission('customer', 'view') || window.checkPermission('supplier', 'view') || isSuperAdmin ? 'flex' : 'none';
+                item.style.display = window.checkPermission('pengaturan', 'view') ? 'flex' : 'none';
                 return;
             }
 
@@ -534,8 +538,9 @@ window.setupDOMPagination();
         const session = localStorage.getItem('erp_session');
         if (!session) return;
         const user = JSON.parse(session);
-        const isAdmin = ['direktur', 'admin', 'management'].some(r => user.role.toLowerCase().includes(r));
-        const isSuperAdmin = ['super admin'].some(r => user.role.toLowerCase().includes(r));
+        const role = (user.role || '').toLowerCase();
+        const isSuperAdmin = role === 'super admin' || role === 'superadmin';
+        const isAdmin = role === 'admin' || isSuperAdmin;
 
         document.querySelectorAll('.admin-only:not(.nav-item)').forEach(el => {
             el.style.display = isAdmin ? '' : 'none';
@@ -1153,14 +1158,21 @@ window.setupDOMPagination();
         const response = await window.ERPAPI.request('get_stock');
 
         if (response.status === 'success' && response.data) {
-            const lokasiList = document.getElementById('lokasi-list');
-            if (lokasiList) {
-                lokasiList.innerHTML = '';
+            const fLokasi = document.getElementById('f_lokasi');
+            if (fLokasi) {
+                if (fLokasi.tomselect) fLokasi.tomselect.destroy();
+                fLokasi.innerHTML = '<option value="">Pilih atau Ketik Lokasi...</option>';
                 const uniqueLokasi = [...new Set(response.data.map(item => item.lokasi).filter(Boolean))];
                 uniqueLokasi.forEach(lok => {
                     const option = document.createElement('option');
                     option.value = lok;
-                    lokasiList.appendChild(option);
+                    option.textContent = lok;
+                    fLokasi.appendChild(option);
+                });
+                new TomSelect('#f_lokasi', {
+                    create: true,
+                    createOnBlur: true,
+                    sortField: { field: 'text', direction: 'asc' }
                 });
             }
 
@@ -1343,12 +1355,24 @@ window.setupDOMPagination();
 
     function openDataModal(title, data = null) {
         document.getElementById('modal-title').textContent = title;
-        document.getElementById('f_kode').value = data ? data.kode : '';
+        document.getElementById('f_kode').value = data ? data.kode : ('RM-' + Math.floor(1000 + Math.random() * 9000));
         document.getElementById('f_kode').readOnly = !!data; // readonly if editing
         document.getElementById('f_nama').value = data ? data.nama : '';
         document.getElementById('f_stok').value = data && data.stok ? window.formatRibuan(data.stok) : '';
         document.getElementById('f_satuan').value = data && data.satuan ? data.satuan : '';
-        document.getElementById('f_lokasi').value = data ? data.lokasi : '';
+        const lokasiVal = data ? data.lokasi : '';
+        const fLokasi = document.getElementById('f_lokasi');
+        if (fLokasi && fLokasi.tomselect) {
+            if (lokasiVal) {
+                fLokasi.tomselect.addOption({value: lokasiVal, text: lokasiVal});
+                fLokasi.tomselect.setValue(lokasiVal);
+            } else {
+                fLokasi.tomselect.clear();
+            }
+        } else if (fLokasi) {
+            fLokasi.value = lokasiVal;
+        }
+        
         document.getElementById('f_harga').value = data && data.harga ? window.formatRibuan(data.harga) : '';
         document.getElementById('f_spesifikasi').value = data && data.spesifikasi && data.spesifikasi !== 'undefined' ? data.spesifikasi : '';
 
@@ -4530,6 +4554,7 @@ window.openPOCustomerModal = function (id) {
             document.querySelectorAll('.btn-delete-penawaran').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const no_penawaran = e.currentTarget.getAttribute('data-no');
+                    const tr = e.currentTarget.closest('tr');
                     const ok = await showConfirm({
                         title: 'Hapus Penawaran',
                         message: `Yakin ingin menghapus penawaran <strong style="color:#fff">${no_penawaran}</strong>?<br><span style="font-size:0.82rem;color:rgba(255,255,255,0.4);">Data akan dihapus permanen.</span>`,
@@ -4540,15 +4565,13 @@ window.openPOCustomerModal = function (id) {
 
                     if (ok) {
                         // Optimistic Delete
-                        const tr = e.currentTarget.closest('tr');
-                        if (tr) tr.style.display = 'none'; // Hide immediately
+                        if (tr) tr.remove(); // Remove immediately
                         if (typeof showToast !== 'undefined') showToast('Menghapus penawaran di background...', 'info', 2000);
 
                         // Run async background sync without await blocking
-                        window.ERPAPI.request('delete_penawaran', { no_penawaran }).then(res => {
+                        window.ERPAPI.request('delete_penawaran', { id: no_penawaran }).then(res => {
                             if (res.status === 'success') {
                                 if (typeof showToast !== 'undefined') showToast('✅ Penawaran berhasil dihapus', 'success', 2000);
-                                loadPenawaranData(true);
                             } else {
                                 alert('Gagal hapus: ' + res.message);
                                 loadPenawaranData(true); // Revert table to show the row again
@@ -4860,15 +4883,29 @@ window.openPOCustomerModal = function (id) {
         div.style.marginBottom = '10px';
         div.style.alignItems = 'center';
 
-        const list = document.getElementById('bom-items-list');
         let optionsHtml = '<option value="">Ketik Nama Produk / Item...</option>';
         let found = false;
-        if (list) {
-            Array.from(list.options).forEach(opt => {
-                const isSelected = opt.value === pName;
+        
+        // Coba ambil dari cache BOM terlebih dahulu agar lebih akurat
+        const cachedBom = window.ERPAPI?.getCached('get_bom');
+        if (cachedBom && cachedBom.data && cachedBom.data.length > 0) {
+            cachedBom.data.forEach(b => {
+                const val = b.nama_barang;
+                const isSelected = val === pName;
                 if (isSelected) found = true;
-                optionsHtml += `<option value="${opt.value}" data-harga="${opt.getAttribute('data-harga') || 0}" ${isSelected ? 'selected' : ''}>${opt.value}</option>`;
+                const hg = b.total_biaya || 0;
+                optionsHtml += `<option value="${val}" data-harga="${hg}" ${isSelected ? 'selected' : ''}>${val}</option>`;
             });
+        } else {
+            // Fallback ke list HTML jika belum ada cache (jarang terjadi)
+            const list = document.getElementById('bom-items-list');
+            if (list) {
+                Array.from(list.options).forEach(opt => {
+                    const isSelected = opt.value === pName;
+                    if (isSelected) found = true;
+                    optionsHtml += `<option value="${opt.value}" data-harga="${opt.getAttribute('data-harga') || 0}" ${isSelected ? 'selected' : ''}>${opt.value}</option>`;
+                });
+            }
         }
         if (pName && !found) {
             optionsHtml += `<option value="${pName}" selected>${pName}</option>`;
@@ -4920,9 +4957,23 @@ window.openPOCustomerModal = function (id) {
             },
             maxOptions: 50,
             onChange: function (value) {
-                const listOpt = Array.from(document.getElementById('bom-items-list')?.options || []).find(o => o.value === value);
-                if (listOpt && listOpt.getAttribute('data-harga')) {
-                    const hg = parseInt(listOpt.getAttribute('data-harga')) || 0;
+                let hg = 0;
+                // Cek dari cache BOM
+                const cachedBom = window.ERPAPI?.getCached('get_bom');
+                if (cachedBom && cachedBom.data) {
+                    const b = cachedBom.data.find(item => item.nama_barang === value);
+                    if (b) hg = b.total_biaya || 0;
+                }
+                
+                // Fallback
+                if (!hg) {
+                    const listOpt = Array.from(document.getElementById('bom-items-list')?.options || []).find(o => o.value === value);
+                    if (listOpt && listOpt.getAttribute('data-harga')) {
+                        hg = parseInt(listOpt.getAttribute('data-harga')) || 0;
+                    }
+                }
+                
+                if (hg) {
                     div.querySelector('.pi-price').value = window.formatRibuan(hg);
                     div.querySelector('.pi-currency').value = 'IDR';
                     calculatePenawaranTotal();
@@ -4936,7 +4987,21 @@ window.openPOCustomerModal = function (id) {
 
     document.getElementById('btn-add-p-item')?.addEventListener('click', () => addPenawaranItemRow());
 
-    document.getElementById('btn-add-penawaran')?.addEventListener('click', () => {
+    document.getElementById('btn-add-penawaran')?.addEventListener('click', async () => {
+        const btn = document.getElementById('btn-add-penawaran');
+        const originalText = btn.innerHTML;
+        
+        // Pastikan cache BOM tersedia sebelum merender row pertama
+        if (!window.ERPAPI?.getCached('get_bom')) {
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading...';
+            btn.style.pointerEvents = 'none';
+            try {
+                await window.ERPAPI.request('get_bom');
+            } catch (e) {}
+            btn.innerHTML = originalText;
+            btn.style.pointerEvents = 'auto';
+        }
+
         document.getElementById('penawaran-form').reset();
         document.getElementById('penawaran-modal-title').textContent = 'Buat Penawaran Baru';
 
@@ -7478,6 +7543,7 @@ window.openPOCustomerModal = function (id) {
             btn.addEventListener('click', async e => {
                 const id = e.currentTarget.getAttribute('data-id');
                 const nama = e.currentTarget.getAttribute('data-nama');
+                const tr = e.currentTarget.closest('tr');
                 const ok = await showConfirm({
                     title: 'Hapus Customer',
                     message: `Yakin ingin menghapus customer <strong>${nama}</strong>?<br><span style="font-size:0.8rem; color:rgba(255,255,255,0.5);">Aksi ini tidak dapat dibatalkan.</span>`,
@@ -7485,7 +7551,6 @@ window.openPOCustomerModal = function (id) {
                 });
                 if (ok) {
                     // Optimistic Delete
-                    const tr = e.currentTarget.closest('tr');
                     if (tr) tr.style.display = 'none';
 
                     if (typeof showToast !== 'undefined') showToast('Menghapus Customer di background...', 'info');
@@ -10333,7 +10398,7 @@ function renderRBACTable() {
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    const roles = ['Admin', 'Super Admin', 'Gudang', 'Produksi', 'Purchasing', 'Marketing', 'Finance', 'Management', 'Direktur']; // Dari DB Users
+    const roles = ['Admin', 'Supervisor', 'User'];
 
     roles.forEach(role => {
         const safeRole = role.replace(/\s+/g, '-');
@@ -10480,26 +10545,7 @@ document.getElementById('btn-save-rbac')?.addEventListener('click', async () => 
 });
 
 window.checkRBACAction = function (action, menuId) {
-    const session = localStorage.getItem('erp_session');
-    if (!session) return false;
-    const user = JSON.parse(session);
-
-    const userRole = (user.role || '').toLowerCase();
-    // Fallback: Admin can do anything
-    const isAdmin = ['direktur', 'admin', 'management', 'super admin'].some(r => userRole.includes(r));
-
-    // Map sub-menus to main menus for permissions
-    if (menuId === 'invoice' || menuId === 'laporan-kas' || menuId === 'coa') {
-        menuId = 'finance';
-    } else if (menuId === 'po-customer' || menuId === 'surat-jalan') {
-        menuId = 'sales';
-    }
-
-    if (user.permissions && user.permissions[menuId]) {
-        return user.permissions[menuId][action] === true;
-    }
-
-    return isAdmin;
+    return window.checkPermission(menuId, action);
 };
 
 window.applyRBACToButtons = function (menuId, container) {
@@ -11007,7 +11053,7 @@ function renderLaporanKasTable(data) {
     if (!tbody) return;
 
     if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Tidak ada data kas pada periode/filter tersebut.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Tidak ada data kas pada periode/filter tersebut.</td></tr>';
         document.getElementById('summary-kas-masuk').textContent = 'Rp 0';
         document.getElementById('summary-kas-keluar').textContent = 'Rp 0';
         return;
@@ -11040,6 +11086,12 @@ function renderLaporanKasTable(data) {
             <td>${item.keterangan || '-'}</td>
             <td style="font-weight: bold; color: ${item.jenis === 'Masuk' ? 'var(--success)' : 'var(--danger)'};">
                 ${item.jenis === 'Masuk' ? '+' : '-'} Rp ${nominal.toLocaleString('id-ID')}
+            </td>
+            <td style="text-align: center;">
+                <div style="display: flex; gap: 5px; justify-content: center; align-items: center; flex-wrap: nowrap; min-width: 80px;">
+                    <button class="btn btn-edit-pc" data-id="${item.id}" data-jenis="${item.jenis}" data-keterangan="${item.keterangan}" data-nominal="${nominal}" data-coa="${item.coa}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: flex; justify-content: center; align-items: center; background: rgba(59, 130, 246, 0.2); color: #3b82f6; border: none; border-radius: 5px; cursor: pointer; flex: 0 0 auto;"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn btn-delete-pc" data-id="${item.id}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: flex; justify-content: center; align-items: center; background: rgba(239, 68, 68, 0.2); color: var(--danger); border: none; border-radius: 5px; cursor: pointer; flex: 0 0 auto;"><i class="fa-solid fa-trash"></i></button>
+                </div>
             </td>
         `;
         tbody.appendChild(tr);
@@ -11424,7 +11476,8 @@ async function loadFinanceKasirData() {
     }
 }
 
-document.getElementById('table-finance-kasir')?.addEventListener('click', async (e) => {
+['table-finance-kasir', 'table-laporan-kas'].forEach(tableId => {
+document.getElementById(tableId)?.addEventListener('click', async (e) => {
     const btnEdit = e.target.closest('.btn-edit-pc');
     if (btnEdit) {
         document.getElementById('pc_id').value = btnEdit.dataset.id;
@@ -11473,4 +11526,5 @@ document.getElementById('table-finance-kasir')?.addEventListener('click', async 
             showToast('Gagal: ' + res.message, 'error');
         }
     }
+});
 });
