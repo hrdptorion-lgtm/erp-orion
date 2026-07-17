@@ -1,4 +1,95 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Override window.print on Mobile to provide a Download PDF option
+    const originalPrint = window.print;
+    window.print = function() {
+        if (window.innerWidth <= 768 && typeof html2pdf !== 'undefined') {
+            // Aktifkan mode preview print manual via class CSS
+            document.body.classList.add('html2pdf-printing');
+            
+            if (!document.getElementById('mobile-pdf-fab')) {
+                const fabContainer = document.createElement('div');
+                fabContainer.id = 'mobile-pdf-fab';
+                fabContainer.style.cssText = 'position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999999; display: flex; gap: 10px; background: rgba(0,0,0,0.8); padding: 10px 20px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);';
+                
+                const btnDownload = document.createElement('button');
+                btnDownload.innerHTML = '<i class="fa-solid fa-download"></i> Download PDF';
+                btnDownload.style.cssText = 'background: #10b981; color: white; border: none; padding: 10px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px;';
+                
+                const btnClose = document.createElement('button');
+                btnClose.innerHTML = '<i class="fa-solid fa-xmark"></i> Tutup';
+                btnClose.style.cssText = 'background: #ef4444; color: white; border: none; padding: 10px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px;';
+                
+                btnDownload.onclick = function() {
+                    let target = null;
+                    if (document.body.classList.contains('printing-sj')) target = document.getElementById('print-sj-container');
+                    else if (document.body.classList.contains('printing-po')) target = document.getElementById('print-area');
+                    else if (document.body.classList.contains('printing-inv')) {
+                        if (document.getElementById('print-proforma-container') && document.getElementById('print-proforma-container').innerHTML.trim() !== '') {
+                            target = document.getElementById('print-proforma-container');
+                        } else {
+                            target = document.getElementById('print-inv-container');
+                        }
+                    } else if (document.body.classList.contains('print-modal-active')) {
+                        // Cari modal yang sedang aktif (tidak display none)
+                        const modals = document.querySelectorAll('.modal');
+                        for(let i=0; i<modals.length; i++) {
+                            if(modals[i].style.display === 'flex' || modals[i].style.display === 'block') {
+                                target = modals[i].querySelector('.modal-content') || modals[i];
+                                break;
+                            }
+                        }
+                        if(!target) target = document.querySelector('.data-section');
+                    }
+                    
+                    if (target) {
+                        btnDownload.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
+                        const opt = {
+                            margin:       0.5,
+                            filename:     'Dokumen_ERPORION.pdf',
+                            image:        { type: 'jpeg', quality: 0.98 },
+                            html2canvas:  { scale: 2, useCORS: true },
+                            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+                        };
+                        const originalCss = target.style.cssText;
+                        target.style.cssText += '; display: block !important; visibility: visible !important; position: relative !important; width: 100% !important; background: white !important; padding: 10px !important;';
+                        
+                        // Sembunyikan FAB agar tidak ikut tercetak di PDF
+                        fabContainer.style.display = 'none';
+                        
+                        html2pdf().set(opt).from(target).save().then(() => {
+                            fabContainer.style.display = 'flex';
+                            target.style.cssText = originalCss;
+                            btnDownload.innerHTML = '<i class="fa-solid fa-download"></i> Download PDF';
+                            showToast('PDF berhasil diunduh', 'success', 3000);
+                        }).catch(() => {
+                            fabContainer.style.display = 'flex';
+                            target.style.cssText = originalCss;
+                            btnDownload.innerHTML = '<i class="fa-solid fa-download"></i> Download PDF';
+                        });
+                    } else {
+                        showToast('Target tidak ditemukan', 'error', 3000);
+                    }
+                };
+                
+                btnClose.onclick = function() {
+                    document.body.classList.remove('html2pdf-printing', 'print-modal-active', 'printing-sj', 'printing-po', 'printing-inv');
+                    fabContainer.style.display = 'none';
+                };
+                
+                fabContainer.appendChild(btnDownload);
+                fabContainer.appendChild(btnClose);
+                document.body.appendChild(fabContainer);
+            }
+            document.getElementById('mobile-pdf-fab').style.display = 'flex';
+            
+            return; // STOP execution, do not open native print dialog!
+        }
+        if(typeof originalPrint === 'function') originalPrint.apply(window);
+    };
+
+    // Override window.print on Mobile to provide a Download PDF option
+        
+
 
 window.paginationStates = {};
 
@@ -369,9 +460,9 @@ window.setupDOMPagination();
             const session = localStorage.getItem('erp_session');
             if (!session) return false;
             const user = JSON.parse(session);
-            const role = (user.role || '').toLowerCase();
+            const role = (user.role || '').toLowerCase().trim();
             
-            const isSuperAdmin = role === 'super admin' || role === 'superadmin';
+            const isSuperAdmin = role === 'super admin' || role === 'superadmin' || role === 'super_admin';
             const isAdmin = role === 'admin' || isSuperAdmin; // Super admin has all admin rights
             const isSupervisor = role === 'supervisor';
             const isUser = role === 'user';
@@ -433,8 +524,8 @@ window.setupDOMPagination();
         userAvatarInitial.textContent = userNama.charAt(0).toUpperCase();
 
         // Role-based Access Control Fallback
-        const userRole = (user.role || '').toLowerCase();
-        const isSuperAdmin = userRole === 'super admin' || userRole === 'superadmin';
+        const userRole = (user.role || '').toLowerCase().trim();
+        const isSuperAdmin = userRole === 'super admin' || userRole === 'superadmin' || userRole === 'super_admin';
         const isAdmin = userRole === 'admin' || isSuperAdmin;
 
         const hasPermissions = true; // Legacy fallback
@@ -538,8 +629,8 @@ window.setupDOMPagination();
         const session = localStorage.getItem('erp_session');
         if (!session) return;
         const user = JSON.parse(session);
-        const role = (user.role || '').toLowerCase();
-        const isSuperAdmin = role === 'super admin' || role === 'superadmin';
+        const role = (user.role || '').toLowerCase().trim();
+        const isSuperAdmin = role === 'super admin' || role === 'superadmin' || role === 'super_admin';
         const isAdmin = role === 'admin' || isSuperAdmin;
 
         document.querySelectorAll('.admin-only:not(.nav-item)').forEach(el => {
@@ -656,7 +747,6 @@ window.setupDOMPagination();
         'admin': { title: 'Manajemen Pengguna', sub: 'Pengaturan Role Akses Aplikasi.' },
         'profil': { title: 'Profil Perusahaan', sub: 'Informasi dasar identitas perusahaan.' },
         'coa': { title: 'Kategori COA & Akuntansi', sub: 'Master data pos biaya akuntansi.' },
-        'approval': { title: 'Alur Approval', sub: 'Pengaturan hierarki dan rute persetujuan.' },
         'barang-jadi': { title: 'Inventori Barang Jadi', sub: 'Stok produk jadi siap kirim / jual.' },
         'customer': { title: 'Master Customer', sub: 'Database referensi klien / customer perusahaan.' },
         'po-customer': { title: 'PO Customer', sub: 'Purchase Order dari Customer.' },
@@ -1169,7 +1259,7 @@ window.setupDOMPagination();
                     option.textContent = lok;
                     fLokasi.appendChild(option);
                 });
-                new TomSelect('#f_lokasi', {
+                new TomSelect('#f_lokasi', { dropdownParent: 'body',
                     create: true,
                     createOnBlur: true,
                     sortField: { field: 'text', direction: 'asc' }
@@ -2678,7 +2768,7 @@ window.setupDOMPagination();
         }
 
         if (custSel) {
-            new TomSelect('#poc_customer_select', {
+            new TomSelect('#poc_customer_select', { dropdownParent: 'body',
                 create: false,
                 onChange: function (value) {
                     if (sel.tomselect) sel.tomselect.destroy();
@@ -2692,7 +2782,7 @@ window.setupDOMPagination();
                         opt.dataset.items = JSON.stringify(p.rincian_item || []);
                         sel.appendChild(opt);
                     });
-                    new TomSelect('#poc_no_penawaran', {
+                    new TomSelect('#poc_no_penawaran', { dropdownParent: 'body',
                         create: false,
                         onChange: function (val) {
                             const option = this.getOption(val);
@@ -2728,7 +2818,7 @@ window.setupDOMPagination();
             custSel.closest('.input-group').style.display = 'block';
         }
 
-        if (sel) new TomSelect('#poc_no_penawaran', { create: false });
+        if (sel) new TomSelect('#poc_no_penawaran', { dropdownParent: 'body', create: false });
     });
 
     document.getElementById('poc_no_penawaran')?.addEventListener('change', (e) => {
@@ -3862,7 +3952,7 @@ window.openPOCustomerModal = function (id) {
         if (custSel) {
             if (custSel.tomselect) custSel.tomselect.destroy();
             custSel.innerHTML = `<option value="${item.nama_customer}">${item.nama_customer}</option>`;
-            new TomSelect('#poc_customer_select', { create: false });
+            new TomSelect('#poc_customer_select', { dropdownParent: 'body', create: false });
             custSel.tomselect.disable();
             custSel.closest('.input-group').style.display = 'block';
             custSel.required = false;
@@ -3870,7 +3960,7 @@ window.openPOCustomerModal = function (id) {
 
         if (sel && sel.tomselect) sel.tomselect.destroy();
         if (sel) sel.innerHTML = `<option value="${item.no_penawaran}">${item.no_penawaran}</option>`;
-        if (sel) new TomSelect('#poc_no_penawaran', { create: false });
+        if (sel) new TomSelect('#poc_no_penawaran', { dropdownParent: 'body', create: false });
 
         document.getElementById('poc_customer').value = item.nama_customer || '';
 
@@ -4018,7 +4108,7 @@ window.openPOCustomerModal = function (id) {
                     selectKode.value = partNames || ('Custom-' + (item.no_penawaran || item.id_po_customer));
                 }
 
-                new TomSelect('#spk_kode_jadi', {
+                new TomSelect('#spk_kode_jadi', { dropdownParent: 'body',
                     create: true,
                     sortField: {
                         field: 'text',
@@ -4282,7 +4372,7 @@ window.openPOCustomerModal = function (id) {
                     customerSelect.appendChild(option);
                 });
 
-                new TomSelect('#p_customer', {
+                new TomSelect('#p_customer', { dropdownParent: 'body',
                     create: true,
                     sortField: { field: 'text', direction: 'asc' },
                     maxOptions: 50,
@@ -4636,7 +4726,7 @@ window.openPOCustomerModal = function (id) {
                             selectKode.value = partNames || ('Custom-' + item.no_penawaran);
                         }
 
-                        new TomSelect('#spk_kode_jadi', {
+                        new TomSelect('#spk_kode_jadi', { dropdownParent: 'body',
                             create: true,
                             sortField: {
                                 field: 'text',
@@ -4948,7 +5038,7 @@ window.openPOCustomerModal = function (id) {
         });
 
         // Initialize Tom Select
-        new TomSelect(inputName, {
+        new TomSelect(inputName, { dropdownParent: 'body',
             create: true,
             dropdownParent: 'body',
             sortField: {
@@ -5318,7 +5408,7 @@ window.openPOCustomerModal = function (id) {
 
         // Handle print finish globally
         window.addEventListener('afterprint', () => {
-            document.body.classList.remove('printing-sj', 'printing-inv', 'printing-po');
+            document.body.classList.remove('print-modal-active', 'printing-sj', 'printing-inv', 'printing-po');
         });
 
         // Fetch Stock for datalist concurrently
@@ -6044,7 +6134,7 @@ window.openPOCustomerModal = function (id) {
                     if (select.tomselect) {
                         select.tomselect.destroy();
                     }
-                    new TomSelect('#spk_pemberi', {
+                    new TomSelect('#spk_pemberi', { dropdownParent: 'body',
                         create: false,
                         placeholder: 'Pilih Kru Gudang (Penyetuju)',
                         maxItems: null,
@@ -6112,7 +6202,7 @@ window.openPOCustomerModal = function (id) {
             });
         }
 
-        new TomSelect('#spk_po_customer', {
+        new TomSelect('#spk_po_customer', { dropdownParent: 'body',
             create: false,
             sortField: { field: 'text', direction: 'asc' },
             maxOptions: 50
@@ -6171,7 +6261,7 @@ window.openPOCustomerModal = function (id) {
             poSelect.appendChild(opt);
         });
 
-        new TomSelect('#spk_po_customer', {
+        new TomSelect('#spk_po_customer', { dropdownParent: 'body',
             create: false,
             sortField: { field: 'text', direction: 'asc' },
             maxOptions: 50
@@ -6253,7 +6343,7 @@ window.openPOCustomerModal = function (id) {
             select.appendChild(opt);
         });
 
-        new TomSelect('#spk_kode_jadi', {
+        new TomSelect('#spk_kode_jadi', { dropdownParent: 'body',
             create: true,
             sortField: { field: 'text', direction: 'asc' },
             maxOptions: 50
@@ -7954,8 +8044,8 @@ window.openPOCustomerModal = function (id) {
         }
     });
 
-    // Global event listener for table row clicks to trigger detail/edit actions
-    document.addEventListener('click', (e) => {
+    // Global Event Delegation untuk Baris Tabel dinonaktifkan (karena sering salah klik/tumpang tindih di mobile)
+    /* document.addEventListener('click', (e) => {
         const tr = e.target.closest('tbody tr');
         if (!tr) return;
 
@@ -7969,7 +8059,7 @@ window.openPOCustomerModal = function (id) {
         if (actionBtn) {
             actionBtn.click();
         }
-    });
+    }); */
 
     // === DETAIL MODALS FUNCTIONS ===
     function openStockDetail(item) {
@@ -8321,7 +8411,7 @@ window.openPOCustomerModal = function (id) {
                 poRefSelect.value = sjPenawaran;
                 custSelect.value = sjCustomer;
                 
-                new TomSelect('#sj_no_penawaran', {
+                new TomSelect('#sj_no_penawaran', { dropdownParent: 'body',
                     create: false,
                     sortField: { field: 'text', direction: 'asc' },
                     maxOptions: 50,
@@ -8404,7 +8494,7 @@ window.openPOCustomerModal = function (id) {
                 });
                 
                 document.getElementById('sj_alamat_penerima').value = (typeof item !== 'undefined' ? item.alamat_penerima : '') || '';
-                new TomSelect('#sj_customer', {
+                new TomSelect('#sj_customer', { dropdownParent: 'body',
                     create: true,
                     sortField: { field: 'text', direction: 'asc' },
                     maxOptions: 50,
@@ -8642,7 +8732,7 @@ window.openPOCustomerModal = function (id) {
             custSelect.innerHTML = '<option value="" disabled>Gagal memuat customer</option>';
         }
         
-        new TomSelect('#sj_no_penawaran', {
+        new TomSelect('#sj_no_penawaran', { dropdownParent: 'body',
             create: false,
             sortField: { field: 'text', direction: 'asc' },
             maxOptions: 50,
@@ -8721,7 +8811,7 @@ window.openPOCustomerModal = function (id) {
         });
         
         document.getElementById('sj_alamat_penerima').value = '';
-        new TomSelect('#sj_customer', {
+        new TomSelect('#sj_customer', { dropdownParent: 'body',
             create: true,
             sortField: { field: 'text', direction: 'asc' },
             maxOptions: 50,
@@ -9686,7 +9776,7 @@ window.openPOCustomerModal = function (id) {
                             sjSelect.appendChild(opt);
                         }
                     });
-                    new TomSelect(sjSelect, {
+                    new TomSelect(sjSelect, { dropdownParent: 'body',
                         plugins: ['remove_button'],
                         placeholder: 'Pilih Surat Jalan...',
                         create: false
@@ -9767,7 +9857,7 @@ window.openPOCustomerModal = function (id) {
             });
         }
         if (sjSelect) {
-            new TomSelect(sjSelect, { plugins: ['remove_button'], placeholder: 'Pilih Surat Jalan...', create: false });
+            new TomSelect(sjSelect, { dropdownParent: 'body', plugins: ['remove_button'], placeholder: 'Pilih Surat Jalan...', create: false });
         }
         
         // Auto-calculate DP if a PO is selected
@@ -11211,7 +11301,7 @@ async function loadTransaksiGudangData(isBackgroundSync = false) {
                     }
                     
                     select.value = item.kode_material;
-                    new TomSelect('#trx_kode_material', {
+                    new TomSelect('#trx_kode_material', { dropdownParent: 'body',
                         create: false,
                         sortField: { field: 'text', direction: 'asc' }
                     });
@@ -11300,7 +11390,7 @@ document.getElementById('btn-add-transaksi')?.addEventListener('click', async ()
         });
     }
     
-    new TomSelect('#trx_kode_material', {
+    new TomSelect('#trx_kode_material', { dropdownParent: 'body',
         create: false,
         sortField: { field: 'text', direction: 'asc' }
     });

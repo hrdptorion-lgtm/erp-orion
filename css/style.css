@@ -1528,3 +1528,51 @@ body.light-mode input[type="date"]::-webkit-calendar-picker-indicator {
 td:has(.btn) {
     white-space: nowrap !important;
 }.ts-dropdown { z-index: 99999 !important; }
+
+/* Custom Preview for Mobile PDF Download */
+body.html2pdf-printing {
+  height: auto !important;
+  min-height: 100% !important;
+  overflow: visible !important;
+  background: white !important;
+}
+
+body.html2pdf-printing .glass-sidebar,
+body.html2pdf-printing .glass-content,
+body.html2pdf-printing .login-overlay,
+body.html2pdf-printing .modal,
+body.html2pdf-printing .btn,
+body.html2pdf-printing .header,
+body.html2pdf-printing .header-wrapper,
+body.html2pdf-printing .sidebar,
+body.html2pdf-printing .view,
+body.html2pdf-printing .main-content,
+body.html2pdf-printing .bottom-nav,
+body.html2pdf-printing .mobile-bottom-sheet,
+body.html2pdf-printing .sheet-overlay {
+  display: none !important;
+}
+
+body.html2pdf-printing .print-only, 
+body.html2pdf-printing .print-only * {
+  visibility: visible !important;
+}
+
+body.html2pdf-printing .print-only {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block !important;
+  background: white;
+  width: 100%;
+  padding: 15mm;
+  box-sizing: border-box;
+}
+
+/* Specific elements to show depending on printing-* class */
+body.html2pdf-printing:not(.printing-po) #print-area,
+body.html2pdf-printing:not(.printing-sj) #print-sj-container,
+body.html2pdf-printing:not(.printing-inv) #print-inv-container,
+body.html2pdf-printing:not(.printing-proforma) #print-proforma-container {
+  display: none !important;
+}
