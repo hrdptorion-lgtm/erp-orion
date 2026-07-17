@@ -644,6 +644,12 @@ window.setupDOMPagination();
 
     // --- Number Format Utility ---
     window.formatRibuan = function (numStr) {
+        if (numStr === null || numStr === undefined || numStr === '') return '';
+        // Jika input murni angka (dari hasil kalkulasi JS), bulatkan dan format
+        if (typeof numStr === 'number') {
+            return Math.round(numStr).toLocaleString('id-ID');
+        }
+        // Jika input dari field teks (mengandung pemisah ribuan), bersihkan karakter non-digit
         let clean = String(numStr).replace(/\D/g, '');
         if (!clean) return '';
         return parseInt(clean, 10).toLocaleString('id-ID');
