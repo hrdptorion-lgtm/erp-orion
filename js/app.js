@@ -8050,22 +8050,24 @@ window.openPOCustomerModal = function (id) {
         }
     });
 
-    // Global Event Delegation untuk Baris Tabel dinonaktifkan (karena sering salah klik/tumpang tindih di mobile)
-    /* document.addEventListener('click', (e) => {
+    // Global Event Delegation untuk Baris Tabel (Diaktifkan HANYA untuk tabel BOM sesuai request)
+    document.addEventListener('click', (e) => {
         const tr = e.target.closest('tbody tr');
         if (!tr) return;
+
+        // HANYA berlaku untuk tabel BOM
+        if (tr.closest('tbody')?.id !== 'table-bom') return;
 
         // Ignore if clicking a button, input, link, or badge (like status badges)
         if (e.target.closest('button, .btn, input, select, textarea, a, .badge')) return;
 
         // Find the primary action button in this row
-        // Prioritize Detail buttons over Edit buttons
-        const actionBtn = tr.querySelector('.btn-detail-po, .btn-detail-bom, .btn-detail-penawaran, .btn-detail-invoice');
+        const actionBtn = tr.querySelector('.btn-detail-bom');
 
         if (actionBtn) {
             actionBtn.click();
         }
-    }); */
+    });
 
     // === DETAIL MODALS FUNCTIONS ===
     function openStockDetail(item) {
