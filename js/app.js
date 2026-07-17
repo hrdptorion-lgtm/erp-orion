@@ -8054,7 +8054,7 @@ window.openPOCustomerModal = function (id) {
 
         // Find the primary action button in this row
         // Prioritize Detail buttons over Edit buttons
-        const actionBtn = tr.querySelector('.btn-detail-po, .btn-detail-bom, .btn-detail-penawaran');
+        const actionBtn = tr.querySelector('.btn-detail-po, .btn-detail-bom, .btn-detail-penawaran, .btn-detail-invoice');
 
         if (actionBtn) {
             actionBtn.click();
