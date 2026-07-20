@@ -4822,8 +4822,8 @@ window.openPOCustomerModal = function (id) {
                     let custAddress = '-';
                     if (window.ERPAPI.getCached('get_customers')) {
                         const custData = window.ERPAPI.getCached('get_customers').data;
-                        const cMatch = custData.find(c => String(c.nama).toLowerCase() === String(item.customer).toLowerCase());
-                        if (cMatch) custAddress = cMatch.alamat || '-';
+                        const cMatch = custData.find(c => String(c.nama_customer || c.nama || '').toLowerCase() === String(item.customer).toLowerCase());
+                        if (cMatch) custAddress = cMatch.alamat_keterangan || cMatch['alamat_/_keterangan'] || cMatch.alamat || '-';
                     }
                     document.getElementById('print_to_address').textContent = custAddress;
 
