@@ -5125,26 +5125,34 @@ window.openPOCustomerModal = function (id) {
         if (pRevDate) pRevDate.value = todayStr;
 
         // Auto suggest No Penawaran Base
-        const [year, month, day] = todayStr.split('-');
-        const dateFormatted = `${day}${month}${year}`;
         const pNoPenawaran = document.getElementById('p_no_penawaran');
-        pNoPenawaran.value = `OKS-CUSTOMER-${dateFormatted}-REV00`;
-        pNoPenawaran.readOnly = false;
-
         const custSelect = document.getElementById('p_customer');
+
         const updateNoPenawaran = () => {
             if (document.getElementById('penawaran-modal-title').textContent === 'Buat Penawaran Baru') {
                 const currentVal = pNoPenawaran.value;
                 if (currentVal.startsWith('OKS-') && currentVal.includes('-REV00')) {
                     const custName = custSelect.value ? custSelect.value.replace(/\s+/g, '').toUpperCase() : 'CUSTOMER';
+                    const dateStr = pRevDate && pRevDate.value ? pRevDate.value : new Date().toISOString().split('T')[0];
+                    const [year, month, day] = dateStr.split('-');
+                    const dateFormatted = `${day}${month}${year}`;
                     pNoPenawaran.value = `OKS-${custName}-${dateFormatted}-REV00`;
                 }
             }
         };
 
+        const [year, month, day] = todayStr.split('-');
+        const dateFormattedInit = `${day}${month}${year}`;
+        pNoPenawaran.value = `OKS-CUSTOMER-${dateFormattedInit}-REV00`;
+        pNoPenawaran.readOnly = false;
+
         if (custSelect && !custSelect.dataset.listenerAddedForSuggest) {
             custSelect.addEventListener('change', updateNoPenawaran);
             custSelect.dataset.listenerAddedForSuggest = 'true';
+        }
+        if (pRevDate && !pRevDate.dataset.listenerAddedForSuggest) {
+            pRevDate.addEventListener('change', updateNoPenawaran);
+            pRevDate.dataset.listenerAddedForSuggest = 'true';
         }
 
         // Set default Remarks template
