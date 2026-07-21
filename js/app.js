@@ -645,14 +645,31 @@ window.setupDOMPagination();
     // --- Number Format Utility ---
     window.formatRibuan = function (numStr) {
         if (numStr === null || numStr === undefined || numStr === '') return '';
-        // Jika input murni angka (dari hasil kalkulasi JS), bulatkan dan format
         if (typeof numStr === 'number') {
-            return Math.round(numStr).toLocaleString('id-ID');
+            return numStr.toLocaleString('id-ID', { maximumFractionDigits: 5 });
         }
-        // Jika input dari field teks (mengandung pemisah ribuan), bersihkan karakter non-digit
-        let clean = String(numStr).replace(/\D/g, '');
-        if (!clean) return '';
-        return parseInt(clean, 10).toLocaleString('id-ID');
+        
+        let str = String(numStr);
+        let parts = str.split(',');
+        let integerPart = parts[0].replace(/\D/g, ''); 
+        let decimalPart = parts.length > 1 ? parts[1].replace(/\D/g, '') : null;
+        
+        if (!integerPart && decimalPart === null) return '';
+        if (!integerPart) integerPart = '0';
+        
+        let formattedInt = parseInt(integerPart, 10).toLocaleString('id-ID');
+        
+        if (decimalPart !== null) {
+            return formattedInt + ',' + decimalPart;
+        }
+        return formattedInt;
+    };
+
+    window.parseFloatIndo = function(str) {
+        if (!str) return 0;
+        if (typeof str === 'number') return str;
+        let clean = String(str).replace(/\./g, '').replace(/,/g, '.').replace(/[^\d.-]/g, '');
+        return parseFloat(clean) || 0;
     };
 
     window.formatRupiah = function (num) {
@@ -1363,7 +1380,7 @@ window.setupDOMPagination();
         } else {
             paginatedData.forEach(item => {
                 const tr = document.createElement('tr');
-                const isKritis = item.stok < 10;
+                const isKritis = window.parseFloatIndo(item.stok) < 10;
                 let actionBtns = `<button class="btn btn-edit-stock" data-kode="${item.kode}" data-nama="${item.nama}" data-stok="${item.stok}" data-satuan="${item.satuan || ''}" data-lokasi="${item.lokasi}" data-harga="${item.harga || 0}" data-spesifikasi="${item.spesifikasi || ''}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;" title="Edit Bahan Baku"><i class="fa-solid fa-pen"></i></button>`;
 
                 const session = localStorage.getItem('erp_session');
@@ -1378,7 +1395,7 @@ window.setupDOMPagination();
                     <td>${item.kode}</td>
                     <td style="font-weight: 500;">${item.nama}</td>
                     <td style="white-space: nowrap !important;">
-                        <span class="badge ${isKritis ? 'badge-warning' : 'badge-success'}">${parseInt(item.stok || 0).toLocaleString('id-ID')} ${item.satuan || ''}</span>
+                        <span class="badge ${isKritis ? 'badge-warning' : 'badge-success'}">${window.parseFloatIndo(item.stok || 0).toLocaleString('id-ID', { maximumFractionDigits: 5 })} ${item.satuan || ''}</span>
                     </td>
                     <td style="white-space: nowrap !important;">Rp ${parseInt(item.harga || 0).toLocaleString('id-ID')}</td>
                     <td>${item.lokasi}</td>
@@ -1486,7 +1503,7 @@ window.setupDOMPagination();
         const payload = {
             kode: document.getElementById('f_kode').value,
             nama: document.getElementById('f_nama').value,
-            stok: parseInt(String(document.getElementById('f_stok').value).replace(/\D/g, '')) || 0,
+            stok: window.parseFloatIndo(document.getElementById('f_stok').value),
             satuan: document.getElementById('f_satuan').value,
             lokasi: document.getElementById('f_lokasi').value,
             harga: parseInt(String(document.getElementById('f_harga').value).replace(/\D/g, '')) || 0,
@@ -1608,7 +1625,7 @@ window.setupDOMPagination();
                     return {
                         kode: getVal(['kode']),
                         nama: getVal(['nama', 'material', 'bahan']),
-                        stok: parseInt(rawStok.replace(/[^0-9-]/g, '')) || 0,
+                        stok: window.parseFloatIndo(rawStok),
                         satuan: parsedSatuan,
                         harga: parseInt(rawHarga.replace(/[^0-9-]/g, '')) || 0,
                         lokasi: getVal(['lokasi', 'rak', 'zona']),
@@ -2252,7 +2269,7 @@ window.setupDOMPagination();
 
             response.data.forEach(item => {
                 const tr = document.createElement('tr');
-                const isKritis = parseInt(item.stok) < 5;
+                const isKritis = window.parseFloatIndo(item.stok) < 5;
 
                 let actionBtns = '';
                 if (isAdmin) {
@@ -2268,7 +2285,7 @@ window.setupDOMPagination();
                     <td style="font-weight: 500;">${item.kode_barang || item.kode || '-'}</td>
                     <td>${item.nama_barang || item.nama || '-'}</td>
                     <td>
-                        <span class="badge ${isKritis ? 'badge-warning' : 'badge-success'}">${parseInt(item.stok || 0).toLocaleString('id-ID')}</span>
+                        <span class="badge ${isKritis ? 'badge-warning' : 'badge-success'}">${window.parseFloatIndo(item.stok || 0).toLocaleString('id-ID', { maximumFractionDigits: 5 })}</span>
                     </td>
                     <td>${item.lokasi_gudang || item.lokasi || '-'}</td>
                     <td><div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">${actionBtns}</div></td>
@@ -8072,12 +8089,12 @@ window.openPOCustomerModal = function (id) {
     // === DETAIL MODALS FUNCTIONS ===
     function openStockDetail(item) {
         const content = document.getElementById('stock-detail-content');
-        const isKritis = item.stok < 10;
+        const isKritis = window.parseFloatIndo(item.stok) < 10;
         content.innerHTML = `
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; padding:1rem; background:rgba(255,255,255,0.04); border-radius:10px;">
             <div><div style="font-size:0.75rem; color:var(--text-muted);">KODE</div><div style="font-weight:600;">${item.kode || '-'}</div></div>
             <div><div style="font-size:0.75rem; color:var(--text-muted);">NAMA BARANG</div><div style="font-weight:600;">${item.nama || '-'}</div></div>
-            <div><div style="font-size:0.75rem; color:var(--text-muted);">STOK</div><div><span class="badge ${isKritis ? 'badge-warning' : 'badge-success'}">${parseInt(item.stok || 0).toLocaleString('id-ID')} ${item.satuan || ''}</span></div></div>
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">STOK</div><div><span class="badge ${isKritis ? 'badge-warning' : 'badge-success'}">${window.parseFloatIndo(item.stok || 0).toLocaleString('id-ID', { maximumFractionDigits: 5 })} ${item.satuan || ''}</span></div></div>
             <div><div style="font-size:0.75rem; color:var(--text-muted);">LOKASI GUDANG</div><div style="font-weight:600;">${item.lokasi || '-'}</div></div>
             <div style="grid-column:1/-1;"><div style="font-size:0.75rem; color:var(--text-muted);">SPESIFIKASI</div><div>${item.spesifikasi || '-'}</div></div>
         </div>
@@ -8106,12 +8123,12 @@ window.openPOCustomerModal = function (id) {
 
     function openBarangJadiDetail(item) {
         const content = document.getElementById('barang-jadi-detail-content');
-        const isKritis = parseInt(item.stok) < 5;
+        const isKritis = window.parseFloatIndo(item.stok) < 5;
         content.innerHTML = `
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; padding:1rem; background:rgba(255,255,255,0.04); border-radius:10px;">
             <div><div style="font-size:0.75rem; color:var(--text-muted);">KODE BARANG</div><div style="font-weight:600;">${item.kode_barang || item.kode || '-'}</div></div>
             <div><div style="font-size:0.75rem; color:var(--text-muted);">NAMA BARANG</div><div style="font-weight:600;">${item.nama_barang || item.nama || '-'}</div></div>
-            <div><div style="font-size:0.75rem; color:var(--text-muted);">STOK</div><div><span class="badge ${isKritis ? 'badge-warning' : 'badge-success'}">${parseInt(item.stok || 0).toLocaleString('id-ID')}</span></div></div>
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">STOK</div><div><span class="badge ${isKritis ? 'badge-warning' : 'badge-success'}">${window.parseFloatIndo(item.stok || 0).toLocaleString('id-ID', { maximumFractionDigits: 5 })}</span></div></div>
             <div><div style="font-size:0.75rem; color:var(--text-muted);">HARGA JUAL</div><div style="font-weight:600; color:var(--primary);">Rp ${parseInt(item.harga_jual || 0).toLocaleString('id-ID')}</div></div>
             <div style="grid-column:1/-1;"><div style="font-size:0.75rem; color:var(--text-muted);">LOKASI GUDANG</div><div style="font-weight:600;">${item.lokasi_gudang || item.lokasi || '-'}</div></div>
         </div>
