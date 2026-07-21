@@ -5613,9 +5613,9 @@ window.openPOCustomerModal = function (id) {
         let total = 0;
         const prices = materialsContainer.querySelectorAll('.mat-harga');
         prices.forEach(input => {
-            total += parseInt(String(input.value).replace(/\D/g, '')) || 0;
+            total += window.parseFloatIndo(input.value);
         });
-        totalBiayaDisplay.textContent = total.toLocaleString('id-ID');
+        totalBiayaDisplay.textContent = total.toLocaleString('id-ID', { maximumFractionDigits: 5 });
     }
 
     function addMaterialRow(kode = '', nama = '', qty = '1', hargaTotalLama = '') {
@@ -5640,7 +5640,7 @@ window.openPOCustomerModal = function (id) {
 
         const updateRowTotal = () => {
             const q = parseFloat(qtyInput.value) || 0;
-            const hs = window.parseRupiah(hargaSatuanInput.value) || 0;
+            const hs = window.parseFloatIndo(hargaSatuanInput.value) || 0;
             const tot = q * hs;
             totalHargaInput.value = window.formatRibuan(tot);
             calculateTotalBiaya();
