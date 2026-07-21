@@ -5500,7 +5500,7 @@ window.openPOCustomerModal = function (id) {
         if (!Array.isArray(proses)) proses = [];
         console.log('[BOM DETAIL] proses count:', proses.length, '| items:', JSON.stringify(proses.map((p, idx) => ({ idx, nama: p.nama, gambar: p.gambar ? 'ADA (' + p.gambar.substring(0, 40) + '...)' : 'KOSONG' }))));
 
-        let matHtml = materials.map((m, i) => `<tr><td>${i + 1}</td><td>${m.kode || '-'}</td><td>${m.nama}</td><td>${parseInt(m.qty || 0).toLocaleString('id-ID')}</td><td>Rp ${parseInt(m.harga || 0).toLocaleString('id-ID')}</td></tr>`).join('');
+        let matHtml = materials.map((m, i) => `<tr><td>${i + 1}</td><td>${m.kode || '-'}</td><td>${m.nama}</td><td>${window.parseFloatIndo(m.qty || 0).toLocaleString('id-ID', { maximumFractionDigits: 5 })}</td><td>Rp ${window.parseFloatIndo(m.harga || 0).toLocaleString('id-ID')}</td></tr>`).join('');
         const prosPlaceholder = '<span style="display:inline-flex;align-items:center;justify-content:center;width:80px;height:60px;background:rgba(255,255,255,0.05);border-radius:5px;color:var(--text-muted);font-size:0.75rem;text-align:center;line-height:1.2;">Tidak ada<br>gambar</span>';
         let prosHtml = proses.map((p, i) => {
             let gambarUrl = p.gambar || '';
@@ -5624,9 +5624,9 @@ window.openPOCustomerModal = function (id) {
         div.style.gap = '10px';
         div.style.marginBottom = '10px';
         div.innerHTML = `
-            <input type="text" class="mat-kode" placeholder="Kode Mat" value="${kode}" style="flex: 1; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;" readonly>
+            <input type="text" class="mat-kode" placeholder="Kode Mat" value="${kode}" style="flex: 0.8; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;" readonly>
             <input type="text" list="bom-bahan-baku-list" class="mat-nama" placeholder="Nama Material" value="${nama}" required style="flex: 2; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
-            <input type="number" step="any" class="mat-qty" placeholder="Qty" value="${qty || '1'}" required style="flex: 0.8; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+            <input type="text" class="mat-qty number-format" placeholder="Qty" value="${qty ? window.formatRibuan(qty) : '1'}" required style="flex: 1.2; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
             <input type="text" class="mat-harga-satuan number-format" placeholder="Harga Satuan" value="" style="flex: 1.2; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;" readonly>
             <input type="text" class="mat-harga number-format" placeholder="Total" value="${hargaTotalLama ? window.formatRibuan(hargaTotalLama) : ''}" required style="flex: 1.2; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--accent); font-weight: bold;" readonly>
             <button type="button" class="btn btn-remove-row" style="background: var(--danger); padding: 0.6rem;"><i class="fa-solid fa-trash"></i></button>
