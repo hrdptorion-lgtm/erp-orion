@@ -70,7 +70,7 @@ class ERPAPI {
 
                 return jsonResponse;
             } catch (parseErr) {
-                console.error('[API] Gagal parse response.');
+                console.error('[API] Gagal parse response.', 'Status:', response.status, 'Response:', responseText.substring(0, 500));
                 return {
                     status: 'error',
                     message: 'Server mengembalikan response yang tidak valid.'
