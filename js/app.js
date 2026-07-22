@@ -5639,7 +5639,7 @@ window.openPOCustomerModal = function (id) {
         const kodeInput = div.querySelector('.mat-kode');
 
         const updateRowTotal = () => {
-            const q = parseFloat(qtyInput.value) || 0;
+            const q = window.parseFloatIndo(qtyInput.value) || 0;
             const hs = window.parseFloatIndo(hargaSatuanInput.value) || 0;
             const tot = q * hs;
             totalHargaInput.value = window.formatRibuan(tot);
@@ -5837,7 +5837,7 @@ window.openPOCustomerModal = function (id) {
         materialsContainer.querySelectorAll('div').forEach(div => {
             const kode = div.querySelector('.mat-kode')?.value;
             const nama = div.querySelector('.mat-nama')?.value;
-            const qty = parseFloat(div.querySelector('.mat-qty')?.value) || 0;
+            const qty = window.parseFloatIndo(div.querySelector('.mat-qty')?.value) || 0;
             const harga = parseInt(String(div.querySelector('.mat-harga')?.value).replace(/\D/g, '')) || 0;
             if (nama) materials.push({ kode: kode || '', nama, qty: qty || 1, harga: harga || 0 });
         });
