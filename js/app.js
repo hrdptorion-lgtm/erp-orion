@@ -5385,7 +5385,7 @@ window.openPOCustomerModal = function (id) {
                         <td style="font-weight: 500;">${item.kode_barang}</td>
                         <td>${item.nama_barang}</td>
                         <td>${imgHtml}</td>
-                        <td>Rp ${parseInt(item.total_biaya || 0).toLocaleString('id-ID')}</td>
+                        <td>Rp ${window.parseFloatIndo(item.total_biaya || 0).toLocaleString('id-ID', { maximumFractionDigits: 5 })}</td>
                         <td><div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">${actionBtns}</div></td>
                     `;
                     tbody.appendChild(tr);
@@ -5543,18 +5543,22 @@ window.openPOCustomerModal = function (id) {
                 ${imgHtml}
                 <div style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-bottom: 15px;">
                     <h4 style="color: var(--primary); margin-bottom: 10px;">Rincian Material</h4>
-                    <table style="width: 100%; font-size: 0.85rem;">
-                        <thead><tr><th>#</th><th>Kode</th><th>Nama</th><th>Qty</th><th>Biaya</th></tr></thead>
-                        <tbody>${matHtml || '<tr><td colspan="5" style="text-align:center;">-</td></tr>'}</tbody>
-                    </table>
-                    <p style="text-align: right; margin-top: 8px; font-weight: bold;">Total: Rp ${parseInt(item.total_biaya || 0).toLocaleString('id-ID')}</p>
+                    <div class="table-responsive">
+                        <table style="width: 100%; font-size: 0.85rem;">
+                            <thead><tr><th>#</th><th>Kode</th><th>Nama</th><th>Qty</th><th>Biaya</th></tr></thead>
+                            <tbody>${matHtml || '<tr><td colspan="5" style="text-align:center;">-</td></tr>'}</tbody>
+                        </table>
+                    </div>
+                    <p style="text-align: right; margin-top: 8px; font-weight: bold;">Total: Rp ${window.parseFloatIndo(item.total_biaya || 0).toLocaleString('id-ID', { maximumFractionDigits: 5 })}</p>
                 </div>
                 <div style="border-top: 1px solid var(--glass-border); padding-top: 15px; margin-bottom: 15px;">
                     <h4 style="color: var(--secondary); margin-bottom: 10px;">Rincian Proses Produksi</h4>
-                    <table style="width: 100%; font-size: 0.85rem;">
-                        <thead><tr><th>#</th><th>Tahapan</th><th>Gambar</th></tr></thead>
-                        <tbody>${prosHtml || '<tr><td colspan="3" style="text-align:center;">-</td></tr>'}</tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table style="width: 100%; font-size: 0.85rem;">
+                            <thead><tr><th>#</th><th>Tahapan</th><th>Gambar</th></tr></thead>
+                            <tbody>${prosHtml || '<tr><td colspan="3" style="text-align:center;">-</td></tr>'}</tbody>
+                        </table>
+                    </div>
                 </div>
                 <button class="btn" id="btn-close-bom-detail" style="width: 100%; justify-content: center; background: var(--bg-glass);">Tutup</button>
             </div>
@@ -5838,7 +5842,7 @@ window.openPOCustomerModal = function (id) {
             const kode = div.querySelector('.mat-kode')?.value;
             const nama = div.querySelector('.mat-nama')?.value;
             const qty = window.parseFloatIndo(div.querySelector('.mat-qty')?.value) || 0;
-            const harga = parseInt(String(div.querySelector('.mat-harga')?.value).replace(/\D/g, '')) || 0;
+            const harga = window.parseFloatIndo(div.querySelector('.mat-harga')?.value) || 0;
             if (nama) materials.push({ kode: kode || '', nama, qty: qty || 1, harga: harga || 0 });
         });
 
@@ -5874,7 +5878,7 @@ window.openPOCustomerModal = function (id) {
             kode_barang: kodeBOM,
             nama_barang: namaBOM,
             rincian_material: materials,
-            total_biaya: parseInt(totalBiayaDisplay.textContent.replace(/,/g, '').replace(/\./g, '')) || 0,
+            total_biaya: window.parseFloatIndo(totalBiayaDisplay.textContent) || 0,
             rincian_proses: proses,
             gambar_base64: bomGambarBase64,
             gambar_mime: bomGambarMime
@@ -5921,7 +5925,7 @@ window.openPOCustomerModal = function (id) {
                 <td><i class="fa-solid fa-spinner fa-spin"></i></td>
                 <td>${namaBOM}</td>
                 <td><span class="badge badge-warning">Menyimpan...</span></td>
-                <td>Rp ${parseInt(payload.total_biaya).toLocaleString('id-ID')}</td>
+                <td>Rp ${window.parseFloatIndo(payload.total_biaya).toLocaleString('id-ID', { maximumFractionDigits: 5 })}</td>
                 <td></td>
             `;
                 tbody.insertBefore(tr, tbody.firstChild);
@@ -5937,7 +5941,7 @@ window.openPOCustomerModal = function (id) {
                     const cells = targetRow.querySelectorAll('td');
                     if (cells.length > 3) {
                         cells[1].textContent = namaBOM;
-                        cells[3].textContent = 'Rp ' + parseInt(payload.total_biaya).toLocaleString('id-ID');
+                        cells[3].textContent = 'Rp ' + window.parseFloatIndo(payload.total_biaya).toLocaleString('id-ID', { maximumFractionDigits: 5 });
                     }
                 }
             }
@@ -6502,25 +6506,29 @@ window.openPOCustomerModal = function (id) {
             totalCost += cost;
 
             const invItem = cachedInventoryData.find(inv => inv.kode_material === m.kode);
-            const currentStock = invItem ? invItem.stok : 0;
+            const currentStock = invItem ? (parseFloat(invItem.stok) || 0) : 0;
             const shortage = reqQty - currentStock;
+            
+            const reqQtyDisp = window.formatRibuan(parseFloat(Number(reqQty).toFixed(5)));
+            const currentStockDisp = window.formatRibuan(parseFloat(Number(currentStock).toFixed(5)));
+            const shortageDisp = window.formatRibuan(parseFloat(Number(shortage).toFixed(5)));
 
             if (shortage > 0) {
                 hasShortage = true;
                 html += `<div style="display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px; color: var(--danger);">
                     <span><i class="fa-solid fa-triangle-exclamation"></i> ${m.kode || '-'} | ${m.nama}</span>
-                    <span><strong>${reqQty}</strong> unit (Stok: ${currentStock}, Kurang: ${shortage})</span>
+                    <span><strong>${reqQtyDisp}</strong> unit (Stok: ${currentStockDisp}, Kurang: ${shortageDisp})</span>
                 </div>`;
             } else {
                 html += `<div style="display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px; color: var(--success);">
                     <span><i class="fa-solid fa-check"></i> ${m.kode || '-'} | ${m.nama}</span>
-                    <span><strong>${reqQty}</strong> unit (Stok: ${currentStock}, Cukup)</span>
+                    <span><strong>${reqQtyDisp}</strong> unit (Stok: ${currentStockDisp}, Cukup)</span>
                 </div>`;
             }
         });
 
         container.innerHTML = html;
-        totalDisp.textContent = totalCost.toLocaleString('id-ID');
+        totalDisp.textContent = window.parseFloatIndo(totalCost).toLocaleString('id-ID', { maximumFractionDigits: 5 });
 
         if (hasShortage) {
             btnSubmit.disabled = true;
@@ -8288,6 +8296,7 @@ window.openPOCustomerModal = function (id) {
             try { sjItems = typeof item.items === 'string' ? JSON.parse(item.items) : (item.items || []); } catch (e) { }
 
             let itemsHtml = `
+                <div class="table-responsive">
                 <table style="width: 100%; margin-top: 15px; font-size: 0.9em; text-align: left; border-collapse: collapse;">
                     <thead>
                         <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
@@ -8309,7 +8318,7 @@ window.openPOCustomerModal = function (id) {
                     `;
                 });
             }
-            itemsHtml += `</tbody></table>`;
+            itemsHtml += `</tbody></table></div>`;
 
             Swal.fire({
                 title: 'Detail Surat Jalan',
@@ -9128,6 +9137,7 @@ window.openPOCustomerModal = function (id) {
             try { invItems = typeof item.items === 'string' ? JSON.parse(item.items) : (item.items || []); } catch (err) { }
 
             let itemsHtml = `
+                <div class="table-responsive">
                 <table style="width: 100%; margin-top: 15px; font-size: 0.9em; text-align: left; border-collapse: collapse;">
                     <thead>
                         <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
@@ -9156,7 +9166,7 @@ window.openPOCustomerModal = function (id) {
                     `;
                 });
             }
-            itemsHtml += `</tbody></table>`;
+            itemsHtml += `</tbody></table></div>`;
 
             Swal.fire({
                 title: 'Detail Invoice',
@@ -10799,7 +10809,7 @@ window.openGRNDetail = function (no_po) {
     
     if (historyPO.length > 0) {
         riwayatHTML += `<h5 style="text-align:left; margin-top:15px; margin-bottom:5px;">Riwayat Penerimaan:</h5>`;
-        riwayatHTML += `<table style="width:100%; border-collapse:collapse; font-size:0.8rem; text-align:left;">`;
+        riwayatHTML += `<div class="table-responsive"><table style="width:100%; border-collapse:collapse; font-size:0.8rem; text-align:left;">`;
         riwayatHTML += `<tr style="border-bottom:1px solid #ccc;"><th>Tgl</th><th>Penerima</th><th>No. SJ</th><th>Catatan</th><th>Bukti</th><th>Item (Qty)</th></tr>`;
         historyPO.forEach(g => {
             let itemsStr = (g.daftar_item_parsed || []).map(i => `${i.nama} (${i.qty_diterima || i.qty_terima || 0})`).join(', ');
@@ -10820,12 +10830,12 @@ window.openGRNDetail = function (no_po) {
                 mapDiterima[key] += Number(item.qty_diterima || item.qty_terima || 0);
             });
         });
-        riwayatHTML += `</table>`;
+        riwayatHTML += `</table></div>`;
     } else {
         riwayatHTML = `<div style="text-align:left; margin-top:15px; font-size:0.85rem; color:#888;">Belum ada riwayat penerimaan untuk PO ini.</div>`;
     }
 
-    let itemsHTML = `<table style="width:100%; border-collapse:collapse; font-size:0.85rem; text-align:left; margin-top:10px;">`;
+    let itemsHTML = `<div class="table-responsive"><table style="width:100%; border-collapse:collapse; font-size:0.85rem; text-align:left; margin-top:10px;">`;
     itemsHTML += `<tr style="background:rgba(0,0,0,0.05);"><th style="padding:5px;">Kode</th><th>Nama Barang</th><th style="text-align:center;">Diminta</th><th style="text-align:center;">Sudah Diterima</th></tr>`;
     
     (po.items_parsed || []).forEach(item => {
@@ -10839,7 +10849,7 @@ window.openGRNDetail = function (no_po) {
             <td style="text-align:center; font-weight:bold; color:${diterima >= diminta ? 'green' : 'inherit'}">${diterima}</td>
         </tr>`;
     });
-    itemsHTML += `</table>`;
+    itemsHTML += `</table></div>`;
 
     Swal.fire({
         title: `Detail Penerimaan PO: ${no_po}`,
