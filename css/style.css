@@ -1005,7 +1005,8 @@ body.light-mode input[type="date"]::-webkit-calendar-picker-indicator {
   #print-area,
   #print-sj-container,
   #print-inv-container,
-  #print-proforma-container {
+  #print-proforma-container,
+  #print-container {
     display: none !important;
     position: relative !important;
     width: 100% !important;
@@ -1020,7 +1021,8 @@ body.light-mode input[type="date"]::-webkit-calendar-picker-indicator {
   #print-area *,
   #print-sj-container *,
   #print-inv-container *,
-  #print-proforma-container * {
+  #print-proforma-container *,
+  #print-container * {
     visibility: visible !important;
   }
 
@@ -1028,7 +1030,8 @@ body.light-mode input[type="date"]::-webkit-calendar-picker-indicator {
     display: block !important;
   }
 
-  body.printing-po-internal #print-container {
+  body.printing-po-internal #print-container,
+  body.printing-po-internal .main-content {
     display: block !important;
   }
 
@@ -1577,6 +1580,7 @@ body.html2pdf-printing .print-only {
 body.html2pdf-printing:not(.printing-po) #print-area,
 body.html2pdf-printing:not(.printing-sj) #print-sj-container,
 body.html2pdf-printing:not(.printing-inv) #print-inv-container,
-body.html2pdf-printing:not(.printing-proforma) #print-proforma-container {
+body.html2pdf-printing:not(.printing-proforma) #print-proforma-container,
+body.html2pdf-printing:not(.printing-po-internal) #print-container {
   display: none !important;
 }
