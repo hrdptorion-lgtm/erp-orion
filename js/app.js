@@ -1953,7 +1953,12 @@ window.setupDOMPagination();
     function openPODetail(noPO, allData) {
         const item = allData.find(d => d.no_po === noPO);
         if (!item) return;
-        const items = item.items_parsed || [];
+        
+        let items = [];
+        try {
+            items = typeof item.items_parsed === 'object' ? item.items_parsed : JSON.parse(item.items || '[]');
+        } catch (e) { }
+        
         let infoTambahan = {};
         try { infoTambahan = item.info_tambahan ? JSON.parse(item.info_tambahan) : {}; } catch (e) { }
 
