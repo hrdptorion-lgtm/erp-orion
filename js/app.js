@@ -1751,6 +1751,11 @@ window.setupDOMPagination();
                     <td><span class="badge ${badgeClass}">${badgeIcon} ${item.status}</span></td>
                     <td><div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">${actionBtns}</div></td>
                 `;
+                tr.style.cursor = 'pointer';
+                tr.addEventListener('click', (e) => {
+                    if(e.target.closest('button')) return;
+                    openPODetail(item.no_po, response.data);
+                });
                 tbody.appendChild(tr);
             });
 
@@ -1914,6 +1919,9 @@ window.setupDOMPagination();
                 `;
             });
         }
+        
+        document.body.classList.remove('printing-sj', 'printing-inv', 'printing-po', 'printing-proforma');
+        document.body.classList.add('printing-po');
         window.print();
     }
 
