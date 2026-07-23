@@ -1028,6 +1028,10 @@ body.light-mode input[type="date"]::-webkit-calendar-picker-indicator {
     display: block !important;
   }
 
+  body.printing-po-internal #print-container {
+    display: block !important;
+  }
+
   body.printing-sj #print-sj-container {
     display: block !important;
   }

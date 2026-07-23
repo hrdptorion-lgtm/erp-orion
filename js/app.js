@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     let target = null;
                     if (document.body.classList.contains('printing-sj')) target = document.getElementById('print-sj-container');
                     else if (document.body.classList.contains('printing-po')) target = document.getElementById('print-area');
+                    else if (document.body.classList.contains('printing-po-internal')) target = document.getElementById('print-container');
                     else if (document.body.classList.contains('printing-inv')) {
                         if (document.getElementById('print-proforma-container') && document.getElementById('print-proforma-container').innerHTML.trim() !== '') {
                             target = document.getElementById('print-proforma-container');
@@ -72,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 
                 btnClose.onclick = function() {
-                    document.body.classList.remove('html2pdf-printing', 'print-modal-active', 'printing-sj', 'printing-po', 'printing-inv');
+                    document.body.classList.remove('html2pdf-printing', 'print-modal-active', 'printing-sj', 'printing-po', 'printing-inv', 'printing-po-internal');
                     fabContainer.style.display = 'none';
                 };
                 
@@ -1920,8 +1921,8 @@ window.setupDOMPagination();
             });
         }
         
-        document.body.classList.remove('printing-sj', 'printing-inv', 'printing-po', 'printing-proforma');
-        document.body.classList.add('printing-po');
+        document.body.classList.remove('printing-sj', 'printing-inv', 'printing-po', 'printing-proforma', 'printing-po-internal');
+        document.body.classList.add('printing-po-internal');
         window.print();
     }
 
