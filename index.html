@@ -1086,74 +1086,45 @@
 
         <!-- Print Container for PO -->
         <div id="print-container" class="print-only"
-            style="font-family: Arial, sans-serif; font-size: 12px; color: #000; padding: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
-                <div style="display: flex; gap: 15px; align-items: center;">
+            style="font-family: Arial, sans-serif; font-size: 11px; color: #000; padding: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                <div style="display: flex; gap: 15px; align-items: flex-start; width: 65%;">
                     <img src="logo.png" style="width: 80px; height: 80px; object-fit: contain;">
+                    <div>
+                        <h3 id="print_po_company_name" style="margin: 0; font-size: 14px; font-weight: bold; text-transform: uppercase;">PT. ORION KARYA SEJAHTERA</h3>
+                        <p id="print_po_company_address" style="margin: 2px 0; font-size: 10px; white-space: pre-wrap; line-height: 1.2;"></p>
+                        <p id="print_po_company_phone" style="margin: 2px 0; font-size: 10px; line-height: 1.2;"></p>
+                    </div>
                 </div>
-                <div style="text-align: right; max-width: 300px;">
-                    <h3 id="print_po_company_name" style="margin: 0; font-size: 14px; text-transform: uppercase;">NAMA
-                        PERUSAHAAN</h3>
-                    <p id="print_po_company_address" style="margin: 2px 0; font-size: 11px; white-space: pre-wrap;"></p>
-                    <p id="print_po_company_phone" style="margin: 2px 0; font-size: 11px;"></p>
-                </div>
-            </div>
-
-            <h2 style="text-align: center; font-size: 18px; margin: 20px 0; letter-spacing: 2px;">PURCHASE ORDER</h2>
-
-            <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-                <div style="width: 50%;">
-                    <table style="width: 100%; font-size: 12px; border: none;">
-                        <tr>
-                            <td style="width: 50px; font-weight: bold; border: none; padding: 2px;">To</td>
-                            <td style="width: 10px; border: none; padding: 2px;">:</td>
-                            <td id="print_po_to" style="font-weight: bold; border: none; padding: 2px;">-</td>
-                        </tr>
-                        <tr>
-                            <td colspan="3" id="print_po_address" style="border: none; padding: 2px 2px 10px 60px;">-
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: bold; border: none; padding: 2px;">Attn</td>
-                            <td style="border: none; padding: 2px;">:</td>
-                            <td id="print_po_attn" style="border: none; padding: 2px;">-</td>
-                        </tr>
-                    </table>
-                </div>
-                <div style="width: 45%;">
-                    <table style="width: 100%; font-size: 12px; border: none;">
-                        <tr>
-                            <td style="width: 120px; border: none; padding: 2px;">No</td>
-                            <td style="width: 10px; border: none; padding: 2px;">:</td>
-                            <td id="print_po_no"
-                                style="font-weight: bold; background: #cce5ff; border: none; padding: 2px;">-</td>
-                        </tr>
-
-                        <tr>
-                            <td style="border: none; padding: 2px;">Date</td>
-                            <td style="border: none; padding: 2px;">:</td>
-                            <td id="print_po_date" style="font-weight: bold; border: none; padding: 2px;">-</td>
-                        </tr>
-                        <tr>
-                            <td style="border: none; padding: 2px;">Revised Date-1</td>
-                            <td style="border: none; padding: 2px;">:</td>
-                            <td style="border: none; padding: 2px;">-</td>
-                        </tr>
-
-                    </table>
+                <div style="text-align: right; margin-top: 10px; width: 35%;">
+                    <h2 style="margin: 0; font-size: 18px; letter-spacing: 1px; border-bottom: 2px solid #000; padding-bottom: 5px; display: inline-block;">PURCHASE ORDER</h2>
                 </div>
             </div>
 
-            <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <table style="width: 48%; border: none; font-size: 11px;">
+                    <tr><td style="width: 70px; padding: 2px;">PO NO. *</td><td style="width: 10px; padding: 2px;">:</td><td id="print_po_no" style="padding: 2px;">-</td></tr>
+                    <tr><td style="padding: 2px;">TO *</td><td style="padding: 2px;">:</td><td id="print_po_to" style="padding: 2px;">-</td></tr>
+                    <tr><td style="padding: 2px;">ATTN *</td><td style="padding: 2px;">:</td><td id="print_po_attn" style="padding: 2px;">-</td></tr>
+                    <tr><td style="padding: 2px;">FROM *</td><td style="padding: 2px;">:</td><td id="print_po_pemohon" style="padding: 2px;">-</td></tr>
+                </table>
+                <table style="width: 48%; border: none; font-size: 11px;">
+                    <tr><td style="width: 130px; padding: 2px;">DATE OF P.O *</td><td style="width: 10px; padding: 2px;">:</td><td id="print_po_date" style="padding: 2px;">-</td></tr>
+                    <tr><td style="padding: 2px;">REQ DELIVERY DATE *</td><td style="padding: 2px;">:</td><td id="print_po_req_date" style="padding: 2px;">-</td></tr>
+                    <tr><td style="padding: 2px;">TERM OF PAYMENT *</td><td style="padding: 2px;">:</td><td id="print_po_payment" style="padding: 2px;">-</td></tr>
+                </table>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px; border: 2px solid #000; margin-bottom: 0;">
                 <thead>
-                    <tr style="background: #e6e6e6;">
-                        <th style="border: 1px solid #000; padding: 5px; width: 30px; text-align: center;">No</th>
-                        <th style="border: 1px solid #000; padding: 5px; text-align: center;">Part Number</th>
-                        <th style="border: 1px solid #000; padding: 5px; text-align: center;">Part Name</th>
-                        <th style="border: 1px solid #000; padding: 5px; text-align: center; width: 80px;">MOQ / PCS
-                        </th>
-                        <th style="border: 1px solid #000; padding: 5px; text-align: center;">Unit Price IDR</th>
-                        <th style="border: 1px solid #000; padding: 5px; text-align: center;">Subtotal IDR</th>
+                    <tr style="background-color: #dbe5f1; border-bottom: 2px solid #000;">
+                        <th style="border: 1px solid #000; padding: 5px; width: 30px; text-align: center;">NO</th>
+                        <th style="border: 1px solid #000; padding: 5px; text-align: center;">PAS CODE</th>
+                        <th style="border: 1px solid #000; padding: 5px; text-align: center;">DESCRIPTION OF GOODS</th>
+                        <th style="border: 1px solid #000; padding: 5px; width: 50px; text-align: center;">QTY</th>
+                        <th style="border: 1px solid #000; padding: 5px; width: 50px; text-align: center;">UOM</th>
+                        <th style="border: 1px solid #000; padding: 5px; text-align: center; width: 100px;">PRICE</th>
+                        <th style="border: 1px solid #000; padding: 5px; text-align: center; width: 100px;">AMOUNT</th>
                     </tr>
                 </thead>
                 <tbody id="po-table-body">
@@ -1161,46 +1132,37 @@
                 </tbody>
             </table>
 
-            <div style="margin-top: 10px;">
-                <p style="margin: 0; font-weight: bold;">Remarks :</p>
-                <div id="print_po_remarks" style="margin-left: 10px; font-size: 11px; white-space: pre-wrap;">
-                    1. Price is not include VAT (PPN) 11%
-                    2. Exchange Rate is base on Bank Indonesia Middle Rate (TTM) average of the last quarter
-                    Or following customer exchange rate
-                    Price will be review every 3 months
-                    3. Initial Cost
-                    - Plastic Tray & Returnable Box as on quotation
-                    4. Brief of the projects:
-                    End User Customer : -
-                    Product : -
-                    Forecast :
-                    SOP : TBC
-                    1st PP : TBC
-                    Life Time : TBC
-                    5. PP Price will discuss separately
-                    6. For detail please refer to cost breakdown
-                    7. Bank Name : -
-                    8. Name of beneficiary bank : PT Orion Karya Sejahtera
-                    9. A/C NO. OF BENEFICIARY : -
-                    10. Payment In Advance
-                </div>
-            </div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px; border: 2px solid #000; border-top: none; margin-bottom: 20px;">
+                <tr>
+                    <td style="width: 60%; vertical-align: top; border-right: 2px solid #000; padding: 5px;">
+                        <strong>NOTE : * :</strong><br>
+                        <span id="print_po_remarks" style="white-space: pre-wrap;"></span>
+                    </td>
+                    <td style="width: 40%; padding: 0; vertical-align: top;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: right;">
+                            <tr><td style="border-bottom: 1px solid #000; padding: 3px 5px; text-align: right; width: 40%;">TOTAL</td><td style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 3px 5px;" id="print_po_total">-</td></tr>
+                            <tr><td style="border-bottom: 1px solid #000; padding: 3px 5px;">Discount</td><td style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 3px 5px;" id="print_po_discount">-</td></tr>
+                            <tr><td style="border-bottom: 1px solid #000; padding: 3px 5px;">DPP</td><td style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 3px 5px;" id="print_po_dpp">-</td></tr>
+                            <tr><td style="border-bottom: 1px solid #000; padding: 3px 5px;">PPN 11%</td><td style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 3px 5px;" id="print_po_ppn">-</td></tr>
+                            <tr><td style="border-bottom: 1px solid #000; padding: 3px 5px;">BIAYA LAINNYA</td><td style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 3px 5px;" id="print_po_biaya">-</td></tr>
+                            <tr><td style="padding: 3px 5px;">SUB TOTAL</td><td style="border-left: 1px solid #000; padding: 3px 5px; font-weight: bold;" id="print_po_subtotal">-</td></tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
 
-            <div style="margin-top: 50px; display: flex; justify-content: space-between;">
-                <div style="text-align: center; width: 200px;">
-                    <img src="logo.png"
-                        style="width: 60px; height: 60px; object-fit: contain; margin-bottom: 5px; border-radius: 50%;">
-                    <p style="margin: 0; text-decoration: underline; font-weight: bold;" id="print_po_pemohon">Von Von
-                    </p>
-                    <p style="margin: 0;">PT Orion Karya Sejahtera</p>
-                </div>
-                <div style="width: 300px; font-size: 11px;">
-                    <p style="margin: 0;">Acknowledged by,</p>
-                    <p style="margin: 0; font-weight: bold;" id="print_po_ack">-</p>
-                    <br><br><br>
-                    <p style="margin: 0;">Date :</p>
-                </div>
-            </div>
+            <table style="width: 300px; border-collapse: collapse; font-size: 11px; border: 2px solid #000; text-align: center;">
+                <tr>
+                    <th style="border: 1px solid #000; padding: 5px; width: 33%;">REQUESTER</th>
+                    <th style="border: 1px solid #000; padding: 5px; width: 33%;">PREPARED</th>
+                    <th style="border: 1px solid #000; padding: 5px; width: 33%;">APPROVED</th>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #000; height: 60px; vertical-align: bottom; padding: 5px;" id="print_po_sign_req"></td>
+                    <td style="border: 1px solid #000; height: 60px; vertical-align: bottom; padding: 5px;" id="print_po_sign_prep"></td>
+                    <td style="border: 1px solid #000; height: 60px; vertical-align: bottom; padding: 5px;" id="print_po_ack2"></td>
+                </tr>
+            </table>
         </div>
 
         <!-- PO Internal Modal Overlay -->

@@ -1884,7 +1884,7 @@ window.setupDOMPagination();
             info = typeof item.info_tambahan === 'string' ? JSON.parse(item.info_tambahan) : (item.info_tambahan || {});
         } catch (e) { }
 
-        document.getElementById('print_po_company_name').textContent = cachedSettings['NAMA_PERUSAHAAN'] || 'NAMA PERUSAHAAN';
+        document.getElementById('print_po_company_name').textContent = cachedSettings['NAMA_PERUSAHAAN'] || 'PT. ORION KARYA SEJAHTERA';
         document.getElementById('print_po_company_address').textContent = cachedSettings['ALAMAT'] || 'Alamat Perusahaan';
         document.getElementById('print_po_company_phone').textContent = cachedSettings['NO_TELP'] || 'No. Telp';
 
@@ -1892,11 +1892,8 @@ window.setupDOMPagination();
         document.getElementById('print_po_date').textContent = item.tanggal ? item.tanggal.split(' ')[0] : '-';
 
         document.getElementById('print_po_to').textContent = info.po_to || '-';
-        document.getElementById('print_po_address').textContent = info.po_alamat || '-';
         document.getElementById('print_po_attn').textContent = info.po_attn || '-';
-
         document.getElementById('print_po_pemohon').textContent = item.pemohon || '-';
-        document.getElementById('print_po_ack').textContent = item.disetujui_oleh || '-';
 
         let items = [];
         try {
@@ -1904,23 +1901,53 @@ window.setupDOMPagination();
         } catch (e) { }
 
         const tbody = document.getElementById('po-table-body');
+        let total = 0;
         if (tbody) {
             tbody.innerHTML = '';
             items.forEach((it, i) => {
                 const sub = (it.qty || 0) * (it.harga || 0);
+                total += sub;
                 tbody.innerHTML += `
                     <tr>
-                        <td style="border: 1px solid #000; padding: 5px; text-align: center;">${i + 1}</td>
-                        <td style="border: 1px solid #000; padding: 5px; text-align: center;">${it.kode || '-'}</td>
-                        <td style="border: 1px solid #000; padding: 5px; font-weight: bold;">${it.nama || '-'}</td>
-                        <td style="border: 1px solid #000; padding: 5px; text-align: center;">${it.qty || 0}</td>
-                        <td style="border: 1px solid #000; padding: 5px; text-align: right;">${parseInt(it.harga || 0).toLocaleString('id-ID')}</td>
-                        <td style="border: 1px solid #000; padding: 5px; text-align: right;">${sub.toLocaleString('id-ID')}</td>
+                        <td style="border: 1px solid #000; padding: 5px; text-align: center; border-bottom: none; border-top: none;">${i + 1}</td>
+                        <td style="border: 1px solid #000; padding: 5px; text-align: center; border-bottom: none; border-top: none;">${it.kode || '-'}</td>
+                        <td style="border: 1px solid #000; padding: 5px; border-bottom: none; border-top: none;">${it.nama || '-'}</td>
+                        <td style="border: 1px solid #000; padding: 5px; text-align: center; border-bottom: none; border-top: none;">${it.qty || 0}</td>
+                        <td style="border: 1px solid #000; padding: 5px; text-align: center; border-bottom: none; border-top: none;">PCS</td>
+                        <td style="border: 1px solid #000; padding: 5px; text-align: right; border-bottom: none; border-top: none;">${parseInt(it.harga || 0).toLocaleString('id-ID')}</td>
+                        <td style="border: 1px solid #000; padding: 5px; text-align: right; border-bottom: none; border-top: none;">Rp ${sub.toLocaleString('id-ID')}</td>
                     </tr>
                 `;
             });
+            for(let i=items.length; i<5; i++) {
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="border: 1px solid #000; padding: 5px; height: 22px; border-bottom: none; border-top: none;"></td>
+                        <td style="border: 1px solid #000; border-bottom: none; border-top: none;"></td>
+                        <td style="border: 1px solid #000; border-bottom: none; border-top: none;"></td>
+                        <td style="border: 1px solid #000; border-bottom: none; border-top: none;"></td>
+                        <td style="border: 1px solid #000; border-bottom: none; border-top: none;"></td>
+                        <td style="border: 1px solid #000; border-bottom: none; border-top: none;"></td>
+                        <td style="border: 1px solid #000; border-bottom: none; border-top: none;"></td>
+                    </tr>
+                `;
+            }
         }
         
+        document.getElementById('print_po_total').textContent = 'Rp ' + total.toLocaleString('id-ID');
+        document.getElementById('print_po_subtotal').textContent = 'Rp ' + total.toLocaleString('id-ID');
+        document.getElementById('print_po_discount').textContent = 'Rp 0';
+        document.getElementById('print_po_dpp').textContent = 'Rp ' + total.toLocaleString('id-ID');
+        document.getElementById('print_po_ppn').textContent = 'Rp 0';
+        document.getElementById('print_po_biaya').textContent = 'Rp 0';
+
+        document.getElementById('print_po_req_date').textContent = info.req_date || '-';
+        document.getElementById('print_po_payment').textContent = info.payment_term || '-';
+        document.getElementById('print_po_sign_req').textContent = item.pemohon || '-';
+        document.getElementById('print_po_sign_prep').textContent = item.pemohon || '-';
+        document.getElementById('print_po_ack2').textContent = item.disetujui_oleh || '-';
+        document.getElementById('print_po_remarks').textContent = info.catatan || '-';
+
         document.body.classList.remove('printing-sj', 'printing-inv', 'printing-po', 'printing-proforma', 'printing-po-internal');
         document.body.classList.add('printing-po-internal');
         window.print();
