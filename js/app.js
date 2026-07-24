@@ -5910,6 +5910,27 @@ window.openPOCustomerModal = function (id) {
         totalBiayaDisplay.textContent = '0';
         addMaterialRow(); // add 1 default row
         addProsesRow(); // add 1 default row
+        const poDatalist = document.getElementById('po-items-list-bom');
+        if (poDatalist) {
+            poDatalist.innerHTML = '';
+            const poData = window.ERPAPI?.getCached('get_po_customer');
+            if (poData && poData.data) {
+                const uniqueItems = new Set();
+                poData.data.forEach(po => {
+                    let items = [];
+                    try { items = typeof po.item_po === 'string' ? JSON.parse(po.item_po) : (po.item_po || po.items || []); } catch(e){}
+                    items.forEach(it => {
+                        const name = String(it.nama || it.item || '').trim();
+                        if (name) uniqueItems.add(name);
+                    });
+                });
+                uniqueItems.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item;
+                    poDatalist.appendChild(opt);
+                });
+            }
+        }
         bomModal.classList.add('active');
     });
 

@@ -240,6 +240,27 @@ class ERPAPI {
             };
         } else if (action === 'save_settings') {
             return { status: 'success', message: 'Pengaturan berhasil disimpan.' };
+        } else if (action === 'save_penerimaan_barang') {
+            const cachedInv = JSON.parse(localStorage.getItem('mock_get_inventory') || '{"data":[]}');
+            if (cachedInv && cachedInv.data && payload && payload.items) {
+                payload.items.forEach(item => {
+                    const qty = Number(item.qty_diterima || item.qty || 0);
+                    if (qty > 0) {
+                        const invItem = cachedInv.data.find(x => x.kode_material === item.kode || x.nama_material === item.nama);
+                        if (invItem) {
+                            invItem.stok = (invItem.stok || 0) + qty;
+                        } else {
+                            cachedInv.data.push({
+                                kode_material: item.kode || 'NEW-' + Math.floor(Math.random()*1000),
+                                nama_material: item.nama || item.kode,
+                                stok: qty
+                            });
+                        }
+                    }
+                });
+                localStorage.setItem('mock_get_inventory', JSON.stringify(cachedInv));
+            }
+            return { status: 'success', message: 'Simulasi Penerimaan Barang berhasil. Stok otomatis bertambah.' };
         } else if (action === 'get_surat_jalan') {
             return { status: 'success', data: [] };
         } else if (action === 'save_surat_jalan') {
