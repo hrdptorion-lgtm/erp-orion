@@ -1,6 +1,6 @@
-// const API_URL = 'https://script.google.com/macros/s/AKfycbzre0bIZGUHMaXZpEDwduRnDrtYbb6zprcGYsjxXPdovLq1lGm_lA5bZPK6c2HnlIU/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzre0bIZGUHMaXZpEDwduRnDrtYbb6zprcGYsjxXPdovLq1lGm_lA5bZPK6c2HnlIU/exec';
 // Jika ingin menggunakan Vercel Proxy (menghindari bug multi-login Google), hilangkan komentar pada baris di bawah ini dan jadikan baris di atas komentar:
-const API_URL = '/api/gas';
+// const API_URL = '/api/gas';
 
 let activeRequests = 0;
 function toggleSyncIcon(isSyncing) {
@@ -251,7 +251,7 @@ class ERPAPI {
                             invItem.stok = (invItem.stok || 0) + qty;
                         } else {
                             cachedInv.data.push({
-                                kode_material: item.kode || 'NEW-' + Math.floor(Math.random()*1000),
+                                kode_material: item.kode || 'NEW-' + Math.floor(Math.random() * 1000),
                                 nama_material: item.nama || item.kode,
                                 stok: qty
                             });

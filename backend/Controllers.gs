@@ -1156,6 +1156,22 @@ function savePenawaran(payload) {
       sheet.getRange(i + 1, 8).setValue(payload.narasi || '');
       sheet.getRange(i + 1, 9).setValue(infoStr);
       handleAutoBOM(payload, noDoc);
+      
+      // Update linked PO Customer if exists
+      try {
+        const poSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB PO Customer');
+        if (poSheet) {
+          const poValues = poSheet.getDataRange().getDisplayValues();
+          for (let j = 1; j < poValues.length; j++) {
+            if (String(poValues[j][1]).trim() === noDoc) {
+              poSheet.getRange(j + 1, 5).setValue(rincianStr);
+              poSheet.getRange(j + 1, 6).setValue(payload.total_harga || 0);
+              break;
+            }
+          }
+        }
+      } catch(e) {}
+
       return { status: 'success', message: 'Penawaran berhasil diupdate.', no_doc: noDoc };
     }
   }
