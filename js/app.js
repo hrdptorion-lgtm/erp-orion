@@ -4922,7 +4922,64 @@ window.openPOCustomerModal = function (id) {
                         });
                     }
 
-                    document.getElementById('print_narasi').textContent = item.narasi || '';
+                    function formatRemarks(text) {
+                        if (!text) return '';
+                        let lines = text.split('\n');
+                        let html = '<table style="width: 100%; border-collapse: collapse; font-size: 11px;">';
+                        
+                        for (let i = 0; i < lines.length; i++) {
+                            let line = lines[i];
+                            if (line.trim() === '') continue;
+
+                            let numMatch = line.match(/^(\d+\.)\s+(.*)/);
+                            
+                            if (numMatch) {
+                                let num = numMatch[1];
+                                let rest = numMatch[2];
+                                
+                                // Jika ada titik dua dan posisinya lebih dari setengah string (untuk membedakan judul vs key-value)
+                                // Atau kita simpel saja, untuk baris 1-6 kita mungkin tidak mau titik duanya dipisah jauh
+                                // Mari kita buat agar baris bernomor yang dipisah adalah yang punya ':' yang bukan di akhir kalimat
+                                if (rest.includes(':') && !rest.endsWith(':')) {
+                                    let parts = rest.split(':');
+                                    html += `<tr>
+                                        <td style="width: 25px; vertical-align: top;">${num}</td>
+                                        <td style="width: 180px; vertical-align: top;">${parts[0].trim()}</td>
+                                        <td style="width: 15px; text-align: center; vertical-align: top;">:</td>
+                                        <td style="vertical-align: top;">${parts.slice(1).join(':').trim()}</td>
+                                    </tr>`;
+                                } else {
+                                    html += `<tr>
+                                        <td style="width: 25px; vertical-align: top;">${num}</td>
+                                        <td colspan="3" style="vertical-align: top;">${rest}</td>
+                                    </tr>`;
+                                }
+                            } else {
+                                if (line.includes(':') && !line.trim().endsWith(':')) {
+                                    let parts = line.split(':');
+                                    html += `<tr>
+                                        <td></td>
+                                        <td style="text-align: right; padding-right: 10px; vertical-align: top; width: 180px;">${parts[0].trim()}</td>
+                                        <td style="width: 15px; text-align: center; vertical-align: top;">:</td>
+                                        <td style="vertical-align: top;">${parts.slice(1).join(':').trim()}</td>
+                                    </tr>`;
+                                } else {
+                                    // Preserve leading spaces with &nbsp;
+                                    let leadingSpaces = line.match(/^\s*/)[0];
+                                    let content = line.trim();
+                                    let indentHtml = '&nbsp;'.repeat(leadingSpaces.length);
+                                    html += `<tr>
+                                        <td></td>
+                                        <td colspan="3" style="vertical-align: top;">${indentHtml}${content}</td>
+                                    </tr>`;
+                                }
+                            }
+                        }
+                        html += '</table>';
+                        return html;
+                    }
+
+                    document.getElementById('print_narasi').innerHTML = formatRemarks(item.narasi || '');
                     document.getElementById('print_ttd_company').textContent = cachedSettings['NAMA_PERUSAHAAN'] || 'PT Orion Karya Sejahtera';
                     document.getElementById('print_ttd_customer').textContent = item.customer;
 
