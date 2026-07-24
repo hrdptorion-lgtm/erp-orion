@@ -10483,6 +10483,35 @@ document.addEventListener('click', function (e) {
     }
 });
 
+document.getElementById('pc_coa_search')?.addEventListener('input', function(e) {
+    const term = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('.pc-coa-row');
+    
+    if (!term) {
+        // Reset to initial tree state (only roots visible)
+        rows.forEach(row => {
+            row.style.display = row.dataset.parent ? 'none' : ''; 
+        });
+        // Reset all icons to collapsed state
+        document.querySelectorAll('.pc-coa-toggle i').forEach(icon => {
+            if (icon.classList.contains('fa-caret-down')) {
+                icon.classList.replace('fa-caret-down', 'fa-caret-right');
+            }
+        });
+        return;
+    }
+
+    // Show matching rows, hide others
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        if (text.includes(term)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
 window.editCOA = function (item) {
     document.getElementById('coa_old_kode').value = item.kode;
     document.getElementById('coa_kode').value = item.kode;
