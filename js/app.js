@@ -4503,7 +4503,7 @@ window.openPOCustomerModal = function (id) {
 
                 const session = localStorage.getItem('erp_session');
                 const user = session ? JSON.parse(session) : {};
-                const isAdmin = ['Admin', 'Super Admin', 'Management', 'Direktur'].some(r => (user.role || '').toLowerCase().includes(r.toLowerCase()));
+                const isAdmin = ['Admin', 'Super Admin', 'super_admin', 'super', 'Management', 'Direktur'].some(r => (user.role || '').toLowerCase().includes(r.toLowerCase()));
 
                 let actionBtns = `<button class="btn btn-print-penawaran" data-item='${JSON.stringify(item).replace(/'/g, "&apos;")}' style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px; background: var(--info);" title="Print / Ekspor PDF"><i class="fa-solid fa-print"></i></button>`;
 
