@@ -1143,7 +1143,7 @@
                             <tr><td style="border-bottom: 1px solid #000; padding: 3px 5px; text-align: right; width: 40%;">TOTAL</td><td style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 3px 5px;" id="print_po_total">-</td></tr>
                             <tr><td style="border-bottom: 1px solid #000; padding: 3px 5px;">Discount</td><td style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 3px 5px;" id="print_po_discount">-</td></tr>
                             <tr><td style="border-bottom: 1px solid #000; padding: 3px 5px;">DPP</td><td style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 3px 5px;" id="print_po_dpp">-</td></tr>
-                            <tr><td style="border-bottom: 1px solid #000; padding: 3px 5px;">PPN 11%</td><td style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 3px 5px;" id="print_po_ppn">-</td></tr>
+                            <tr><td style="border-bottom: 1px solid #000; padding: 3px 5px;">PPN <span id="print_po_ppn_label">0</span>%</td><td style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 3px 5px;" id="print_po_ppn">-</td></tr>
                             <tr><td style="border-bottom: 1px solid #000; padding: 3px 5px;">BIAYA LAINNYA</td><td style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 3px 5px;" id="print_po_biaya">-</td></tr>
                             <tr><td style="padding: 3px 5px;">SUB TOTAL</td><td style="border-left: 1px solid #000; padding: 3px 5px; font-weight: bold;" id="print_po_subtotal">-</td></tr>
                         </table>
@@ -1175,6 +1175,7 @@
                 </div>
 
                 <form id="po-form">
+                    <input type="hidden" id="po_internal_id">
                     <!-- Info Pemohon (otomatis) -->
                     <div
                         style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem; padding:1rem; background:rgba(255,255,255,0.04); border-radius:10px; border:1px solid var(--glass-border);">
@@ -1251,11 +1252,31 @@
                                 <tbody id="po-items-tbody"></tbody>
                             </table>
                         </div>
-                        <div
-                            style="text-align:right; padding:0.75rem 0; border-top:2px solid var(--primary); margin-top:0.5rem;">
-                            <span style="color:var(--text-muted); font-size:0.85rem;">TOTAL ESTIMASI: </span>
-                            <span id="po-total-display"
-                                style="font-size:1.25rem; font-weight:700; color:var(--primary);">Rp 0</span>
+                        <div style="padding:0.75rem 0; border-top:2px solid var(--primary); margin-top:0.5rem;">
+                            <div style="display:flex; justify-content:flex-end; align-items:center; margin-bottom:0.5rem; gap:10px;">
+                                <label style="color:var(--text-muted); font-size:0.85rem; width:120px; text-align:right;">Total Item:</label>
+                                <div id="po_total_item_display" style="width:150px; text-align:right; font-weight:600;">Rp 0</div>
+                            </div>
+                            <div style="display:flex; justify-content:flex-end; align-items:center; margin-bottom:0.5rem; gap:10px;">
+                                <label style="color:var(--text-muted); font-size:0.85rem; width:120px; text-align:right;">Diskon (Rp):</label>
+                                <input type="text" id="po_diskon" class="number-format" placeholder="0" style="width:150px; text-align:right; padding:0.4rem; border-radius:6px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.06); color:white; font-size:0.85rem;">
+                            </div>
+                            <div style="display:flex; justify-content:flex-end; align-items:center; margin-bottom:0.5rem; gap:10px;">
+                                <label style="color:var(--text-muted); font-size:0.85rem; width:120px; text-align:right;">DPP:</label>
+                                <div id="po_dpp_display" style="width:150px; text-align:right; font-weight:600;">Rp 0</div>
+                            </div>
+                            <div style="display:flex; justify-content:flex-end; align-items:center; margin-bottom:0.5rem; gap:10px;">
+                                <label style="color:var(--text-muted); font-size:0.85rem; width:120px; text-align:right;">PPN (%):</label>
+                                <input type="number" id="po_ppn" min="0" max="100" placeholder="0" style="width:150px; text-align:right; padding:0.4rem; border-radius:6px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.06); color:white; font-size:0.85rem;">
+                            </div>
+                            <div style="display:flex; justify-content:flex-end; align-items:center; margin-bottom:0.5rem; gap:10px;">
+                                <label style="color:var(--text-muted); font-size:0.85rem; width:120px; text-align:right;">Biaya Lainnya (Rp):</label>
+                                <input type="text" id="po_biaya_lain" class="number-format" placeholder="0" style="width:150px; text-align:right; padding:0.4rem; border-radius:6px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.06); color:white; font-size:0.85rem;">
+                            </div>
+                            <div style="display:flex; justify-content:flex-end; align-items:center; margin-top:0.5rem; border-top:1px dashed var(--glass-border); padding-top:0.5rem;">
+                                <span style="color:var(--text-muted); font-size:0.85rem; width:120px; text-align:right; margin-right:10px;">TOTAL ESTIMASI:</span>
+                                <span id="po-total-display" style="font-size:1.25rem; font-weight:700; color:var(--primary); width:150px; text-align:right;">Rp 0</span>
+                            </div>
                         </div>
                     </div>
 

@@ -728,7 +728,7 @@ function createPOInternal(payload) {
     });
   }
   
-  const totalEstimasi = items.reduce((sum, item) => sum + ((parseFloat(item.harga) || 0) * (parseFloat(item.qty) || 0)), 0);
+  const totalEstimasi = payload.po_total_estimasi || items.reduce((sum, item) => sum + ((parseFloat(item.harga) || 0) * (parseFloat(item.qty) || 0)), 0);
   const noPO = 'POI-' + Date.now();
   const tanggal = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy HH:mm');
   
@@ -742,7 +742,10 @@ function createPOInternal(payload) {
     po_delivery: payload.po_delivery || '',
     po_incoterm: payload.po_incoterm || '',
     po_payment_term: payload.po_payment_term || '',
-    po_validity: payload.po_validity || ''
+    po_validity: payload.po_validity || '',
+    po_diskon: payload.po_diskon || 0,
+    po_ppn: payload.po_ppn || 0,
+    po_biaya_lain: payload.po_biaya_lain || 0
   };
 
   // Auto-register new supplier logic has been removed as requested.
@@ -762,6 +765,84 @@ function createPOInternal(payload) {
   ]);
   
   return { status: 'success', message: 'Pengajuan belanja berhasil dikirim!', no_po: noPO };
+}
+
+function updatePOInternal(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('DB PO Internal');
+  if (!sheet) return { status: 'error', message: 'DB PO Internal tidak ditemukan.' };
+  
+  const noPO = payload.no_po;
+  if (!noPO) return { status: 'error', message: 'Nomor PO tidak valid.' };
+  
+  const data = sheet.getDataRange().getDisplayValues();
+  const rowIndex = data.findIndex(row => row[0] === noPO);
+  if (rowIndex === -1) return { status: 'error', message: 'Data PO tidak ditemukan.' };
+  
+  // Row index is 0-based, spreadsheet is 1-based, plus header row, so rowIndex + 1
+  const targetRow = rowIndex + 1;
+  
+  const items = payload.items || [];
+  if (items.length === 0) return { status: 'error', message: 'Minimal harus ada 1 item belanja.' };
+  
+  // Auto-register new items
+  const stockSheet = ss.getSheetByName('DB Master Bahan Baku');
+  if (stockSheet) {
+    const stockValues = stockSheet.getDataRange().getDisplayValues();
+    const stockHeaders = stockValues[0];
+    const sNamaIdx = stockHeaders.findIndex(h => /nama/i.test(h));
+    const sKodeIdx = stockHeaders.findIndex(h => /kode/i.test(h));
+    const sHargaIdx = stockHeaders.findIndex(h => /harga/i.test(h));
+    const sSatuanIdx = stockHeaders.findIndex(h => /satuan/i.test(h));
+    const sStokIdx = stockHeaders.findIndex(h => /stok|stock/i.test(h));
+    const existingNames = stockValues.slice(1).map(r => String(r[sNamaIdx] || '').toLowerCase().trim());
+    
+    items.forEach(item => {
+      const namaLower = String(item.nama || '').toLowerCase().trim();
+      if (namaLower && !existingNames.includes(namaLower)) {
+        const newKode = item.kode || ('RM' + Date.now().toString().slice(-6));
+        const newRow = stockHeaders.map((h, i) => {
+          if (i === sKodeIdx) return newKode;
+          if (i === sNamaIdx) return item.nama;
+          if (i === sStokIdx) return 0;
+          if (i === sHargaIdx) return item.harga_aktual > 0 ? item.harga_aktual : (item.harga || 0);
+          if (i === sSatuanIdx) return item.satuan || 'pcs';
+          return '';
+        });
+        stockSheet.appendRow(newRow);
+        existingNames.push(namaLower);
+        item.kode = newKode;
+      }
+    });
+  }
+  
+  const totalEstimasi = payload.po_total_estimasi || items.reduce((sum, item) => sum + ((parseFloat(item.harga) || 0) * (parseFloat(item.qty) || 0)), 0);
+  
+  const infoTambahan = {
+    po_to: payload.po_to || '',
+    po_attn: payload.po_attn || '',
+    po_alamat: payload.po_alamat || '',
+    po_customer_ref: payload.po_customer_ref || '',
+    po_enq_no: payload.po_enq_no || '',
+    po_maker: payload.po_maker || '',
+    po_delivery: payload.po_delivery || '',
+    po_incoterm: payload.po_incoterm || '',
+    po_payment_term: payload.po_payment_term || '',
+    po_validity: payload.po_validity || '',
+    po_diskon: payload.po_diskon || 0,
+    po_ppn: payload.po_ppn || 0,
+    po_biaya_lain: payload.po_biaya_lain || 0
+  };
+  
+  // Columns in DB PO Internal:
+  // 1: No PO, 2: Tanggal, 3: Pemohon, 4: Items, 5: Total Estimasi, 6: Status, 7: Catatan, 8: Disetujui Oleh, 9: Tanggal Approve, 10: Info Tambahan
+  
+  sheet.getRange(targetRow, 4).setValue(JSON.stringify(items));
+  sheet.getRange(targetRow, 5).setValue(totalEstimasi);
+  sheet.getRange(targetRow, 7).setValue(payload.catatan || '');
+  sheet.getRange(targetRow, 10).setValue(JSON.stringify(infoTambahan));
+  
+  return { status: 'success', message: 'PO Internal berhasil diperbarui!', no_po: noPO };
 }
 
 function processGRN(payload) {

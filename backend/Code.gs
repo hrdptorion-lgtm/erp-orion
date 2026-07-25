@@ -182,6 +182,9 @@ function doPost(e) {
       case 'create_po_internal':
         response = createPOInternal(payload);
         break;
+      case 'update_po_internal':
+        response = updatePOInternal(payload);
+        break;
       case 'get_penerimaan_barang':
         response = getPenerimaanBarang();
         break;
