@@ -2487,6 +2487,8 @@ document.addEventListener("DOMContentLoaded", () => {
         info.po_attn || "-";
       document.getElementById("print_po_pemohon").textContent =
         item.pemohon || "-";
+      document.getElementById("print_po_req_date").textContent = info.po_delivery_date || "-";
+      document.getElementById("print_po_payment").textContent = info.po_payment_term || "-";
 
       let items = [];
       try {
@@ -2772,6 +2774,10 @@ document.addEventListener("DOMContentLoaded", () => {
           infoTambahan.po_alamat || "";
         document.getElementById("po_customer_ref").value =
           infoTambahan.po_customer_ref || "";
+        const elDelivery = document.getElementById("po_delivery_date");
+        if (elDelivery) elDelivery.value = infoTambahan.po_delivery_date || "";
+        const elPayment = document.getElementById("po_payment_term");
+        if (elPayment) elPayment.value = infoTambahan.po_payment_term || "";
 
         document.getElementById("po_catatan").value = item.catatan || "";
         document.getElementById("po_diskon").value =
@@ -2795,8 +2801,8 @@ document.addEventListener("DOMContentLoaded", () => {
           const tr = document.createElement("tr");
           tr.className = "po-item-row";
           tr.innerHTML = `
-                <td><input type="text" class="po-kode" placeholder="Kode" style="width:100%; border:none; background:transparent; outline:none;" value="${it.kode || ""}"></td>
-                <td><input type="text" class="po-nama" placeholder="Ketik nama barang..." style="width:100%; border:none; background:transparent; outline:none;" required value="${it.nama || ""}"></td>
+                <td><input type="text" class="po-kode" placeholder="Kode" style="width:100%; border:none; background:transparent; color:#fff; outline:none;" value="${it.kode || ""}"></td>
+                <td><input type="text" class="po-nama" placeholder="Ketik nama barang..." style="width:100%; border:none; background:transparent; color:#fff; outline:none;" required value="${it.nama || ""}"></td>
                 <td><input type="number" class="po-qty" style="width:60px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.2); color:#fff; border-radius:4px; padding:2px 5px;" value="${it.qty || 1}"></td>
                 <td><input type="text" class="po-satuan" style="width:60px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.2); color:#fff; border-radius:4px; padding:2px 5px;" value="${it.satuan || "pcs"}"></td>
                 <td><input type="text" class="po-harga price-input" style="width:100px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.2); color:#fff; border-radius:4px; padding:2px 5px;" value="${(it.harga || 0).toLocaleString("id-ID")}"></td>
@@ -3177,7 +3183,8 @@ document.addEventListener("DOMContentLoaded", () => {
           po_alamat: document.getElementById("po_alamat")?.value || "",
           po_customer_ref:
             document.getElementById("po_customer_ref")?.value || "",
-          po_incoterm: document.getElementById("po_incoterm")?.value || "",
+          po_delivery_date: document.getElementById("po_delivery_date")?.value || "",
+          po_payment_term: document.getElementById("po_payment_term")?.value || "",
           po_diskon,
           po_ppn,
           po_biaya_lain,
