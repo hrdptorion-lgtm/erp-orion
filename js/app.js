@@ -3108,6 +3108,14 @@ document.addEventListener("DOMContentLoaded", () => {
       poForm?.addEventListener("submit", async (e) => {
         e.preventDefault();
 
+        const btnSubmit = poForm.querySelector('button[type="submit"]');
+        if (btnSubmit) {
+          if (btnSubmit.disabled) return;
+          btnSubmit.innerHTML =
+            '<i class="fa-solid fa-spinner fa-spin"></i> Mengajukan...';
+          btnSubmit.disabled = true;
+        }
+
         const session = localStorage.getItem("erp_session");
         const user = session ? JSON.parse(session) : {};
 
@@ -3147,6 +3155,10 @@ document.addEventListener("DOMContentLoaded", () => {
             "❌ Pastikan semua baris terisi nama barang dan qty > 0",
             "error",
           );
+          if (btnSubmit) {
+            btnSubmit.innerHTML = "Kirim Pengajuan PO Internal";
+            btnSubmit.disabled = false;
+          }
           return;
         }
 
@@ -3192,13 +3204,6 @@ document.addEventListener("DOMContentLoaded", () => {
           items,
           catatan: document.getElementById("po_catatan")?.value || "",
         };
-
-        const btnSubmit = poForm.querySelector('button[type="submit"]');
-        if (btnSubmit) {
-          btnSubmit.innerHTML =
-            '<i class="fa-solid fa-spinner fa-spin"></i> Mengajukan...';
-          btnSubmit.disabled = true;
-        }
 
         poModal.classList.remove("active");
         if (typeof showToast !== "undefined")
