@@ -2758,6 +2758,8 @@ document.addEventListener("DOMContentLoaded", () => {
           document.getElementById("po-detail-modal").classList.remove("active");
           updatePOStatusAction(item.no_po, "Ditolak");
         });
+      }
+
       function openEditPOInternal(item) {
         document.getElementById("po_internal_id").value = item.no_po;
 
@@ -15401,5 +15403,4 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
     });
-  }
 });
