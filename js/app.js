@@ -843,6 +843,17 @@ document.addEventListener("DOMContentLoaded", () => {
       inputElem.value = window.formatRibuan(inputElem.value);
     };
 
+    window.calculatePettyCashTotal = function() {
+        const nominalStr = document.getElementById("pc_nominal")?.value || "0";
+        const nominal = typeof window.parseRibuan === "function" ? window.parseRibuan(nominalStr) : parseFloat(nominalStr.replace(/[^\d.-]/g, "")) || 0;
+        const qty = parseInt(document.getElementById("pc_qty")?.value) || 1;
+        const total = nominal * qty;
+        const totalElem = document.getElementById("pc_total");
+        if (totalElem) {
+            totalElem.value = typeof window.formatRibuan === "function" ? window.formatRibuan(total) : total;
+        }
+    };
+
     document.addEventListener("input", (e) => {
       if (e.target.classList && e.target.classList.contains("number-format")) {
         e.target.value = window.formatRibuan(e.target.value);
@@ -9317,11 +9328,20 @@ document.addEventListener("DOMContentLoaded", () => {
         ?.addEventListener("submit", async (e) => {
           e.preventDefault();
           const jenis = document.getElementById("pc_jenis").value;
+          const nominalStr = document.getElementById("pc_nominal").value;
           const nominal =
             typeof window.parseRibuan === "function"
-              ? window.parseRibuan(document.getElementById("pc_nominal").value)
-              : document.getElementById("pc_nominal").value;
-          const keterangan = document.getElementById("pc_keterangan").value;
+              ? window.parseRibuan(nominalStr)
+              : parseFloat(nominalStr.replace(/[^\d.-]/g, "")) || 0;
+          const qty = parseInt(document.getElementById("pc_qty")?.value) || 1;
+          const total = nominal * qty;
+          const baseKeterangan = document.getElementById("pc_keterangan").value;
+          
+          let keterangan = baseKeterangan;
+          if (qty > 1) {
+              const formatNom = typeof window.formatRibuan === "function" ? window.formatRibuan(nominal) : nominal;
+              keterangan += ` (Qty: ${qty} x Rp ${formatNom})`;
+          }
           const coa = document.getElementById("pc_coa").value;
 
           const session = localStorage.getItem("erp_session");
@@ -9329,7 +9349,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
           const payload = {
             jenis: jenis,
-            jumlah: nominal,
+            jumlah: total,
             keterangan: keterangan,
             coa: coa,
             user: user,
@@ -9345,7 +9365,7 @@ document.addEventListener("DOMContentLoaded", () => {
             jenis: jenis,
             coa: coa,
             keterangan: keterangan + " (Menyimpan...)",
-            jumlah: nominal,
+            jumlah: total,
           };
 
           if (typeof globalPettyCashData !== "undefined") {
@@ -9374,7 +9394,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td>${coa || "-"}</td>
                 <td>${keterangan} (Menyimpan...)</td>
                 <td style="font-weight: bold; text-align: right; color: ${jenis === "Masuk" ? "var(--success)" : "var(--danger)"};">
-                    ${jenis === "Masuk" ? "+" : "-"} Rp ${parseFloat(nominal).toLocaleString("id-ID")}
+                    ${jenis === "Masuk" ? "+" : "-"} Rp ${parseFloat(total).toLocaleString("id-ID")}
                 </td>
             `;
             tbodyKasir.insertBefore(tr, tbodyKasir.firstChild);
@@ -9386,12 +9406,12 @@ document.addEventListener("DOMContentLoaded", () => {
               let curr =
                 parseFloat(elMasuk.textContent.replace(/[^0-9]/g, "")) || 0;
               elMasuk.textContent =
-                "Rp " + (curr + parseFloat(nominal)).toLocaleString("id-ID");
+                "Rp " + (curr + parseFloat(total)).toLocaleString("id-ID");
             } else if (jenis === "Keluar" && elKeluar) {
               let curr =
                 parseFloat(elKeluar.textContent.replace(/[^0-9]/g, "")) || 0;
               elKeluar.textContent =
-                "Rp " + (curr + parseFloat(nominal)).toLocaleString("id-ID");
+                "Rp " + (curr + parseFloat(total)).toLocaleString("id-ID");
             }
           }
 
@@ -15344,13 +15364,30 @@ document.addEventListener("DOMContentLoaded", () => {
         if (btnEdit) {
           document.getElementById("pc_id").value = btnEdit.dataset.id;
           document.getElementById("pc_jenis").value = btnEdit.dataset.jenis;
-          const nominalStr =
-            typeof window.formatRibuan === "function"
-              ? window.formatRibuan(btnEdit.dataset.nominal)
-              : btnEdit.dataset.nominal;
-          document.getElementById("pc_nominal").value = nominalStr;
-          document.getElementById("pc_keterangan").value =
-            btnEdit.dataset.keterangan;
+
+          let nominal = parseFloat(btnEdit.dataset.nominal) || 0;
+          let qty = 1;
+          let ket = btnEdit.dataset.keterangan || "";
+
+          const qtyMatch = ket.match(/ \(Qty: (\d+) x Rp ([\d.,]+)\)$/);
+          if (qtyMatch) {
+              qty = parseInt(qtyMatch[1], 10);
+              let parsedNominal = typeof window.parseRibuan === "function" ? window.parseRibuan(qtyMatch[2]) : parseFloat(qtyMatch[2].replace(/[^\d]/g, "")) || 0;
+              if (parsedNominal > 0) {
+                  nominal = parsedNominal;
+                  ket = ket.replace(qtyMatch[0], "");
+              }
+          }
+
+          if (document.getElementById("pc_qty")) {
+              document.getElementById("pc_qty").value = qty;
+          }
+          document.getElementById("pc_nominal").value = typeof window.formatRibuan === "function" ? window.formatRibuan(nominal) : nominal;
+          document.getElementById("pc_keterangan").value = ket;
+          
+          if (typeof window.calculatePettyCashTotal === "function") {
+              window.calculatePettyCashTotal();
+          }
 
           const pcCoa = document.getElementById("pc_coa");
           if (pcCoa) pcCoa.value = btnEdit.dataset.coa;

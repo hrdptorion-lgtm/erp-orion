@@ -3163,9 +3163,19 @@
                         <option value="Masuk">Uang Masuk</option>
                     </select>
                 </div>
+                <div style="display: flex; gap: 10px;">
+                    <div class="input-group" style="flex: 1;">
+                        <label>Harga Satuan (Rp)</label>
+                        <input type="text" id="pc_nominal" class="number-format" required oninput="if(typeof window.formatCurrencyInput==='function') window.formatCurrencyInput(this); calculatePettyCashTotal();">
+                    </div>
+                    <div class="input-group" style="width: 100px;">
+                        <label>Qty</label>
+                        <input type="number" id="pc_qty" min="1" value="1" required oninput="calculatePettyCashTotal();" style="width: 100%; padding: 0.8rem; border-radius: 10px; background: var(--bg-glass); color: var(--text-main); border: 1px solid var(--glass-border);">
+                    </div>
+                </div>
                 <div class="input-group">
-                    <label>Nominal (Rp)</label>
-                    <input type="text" id="pc_nominal" class="number-format" required oninput="if(typeof window.formatCurrencyInput==='function') window.formatCurrencyInput(this)">
+                    <label>Total (Rp)</label>
+                    <input type="text" id="pc_total" class="number-format" readonly style="background: rgba(255,255,255,0.1); cursor: not-allowed;">
                 </div>
                 <div class="input-group">
                     <label>Keterangan</label>
