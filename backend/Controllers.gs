@@ -710,7 +710,9 @@ function createPOInternal(payload) {
     
     items.forEach(item => {
       const namaLower = String(item.nama || '').toLowerCase().trim();
-      if (namaLower && !existingNames.includes(namaLower)) {
+      const existingIdx = existingNames.indexOf(namaLower);
+      
+      if (namaLower && existingIdx === -1) {
         // New material — register with stok 0
         const newKode = item.kode || ('RM' + Date.now().toString().slice(-6));
         const newRow = stockHeaders.map((h, i) => {
@@ -724,6 +726,18 @@ function createPOInternal(payload) {
         stockSheet.appendRow(newRow);
         existingNames.push(namaLower);
         item.kode = newKode; // update kode to newly generated one
+      } else if (namaLower && existingIdx !== -1 && !item.kode) {
+        // Material exists in DB, but frontend didn't send kode
+        const existingKode = stockValues[existingIdx + 1][sKodeIdx];
+        if (existingKode && String(existingKode).trim() !== '') {
+           item.kode = String(existingKode).trim();
+        } else {
+           // Exists but has no code in DB. Generate one and update DB.
+           const newKode = 'RM' + Date.now().toString().slice(-6);
+           stockSheet.getRange(existingIdx + 2, sKodeIdx + 1).setValue(newKode);
+           stockValues[existingIdx + 1][sKodeIdx] = newKode; // update memory
+           item.kode = newKode;
+        }
       }
     });
   }
@@ -799,7 +813,9 @@ function updatePOInternal(payload) {
     
     items.forEach(item => {
       const namaLower = String(item.nama || '').toLowerCase().trim();
-      if (namaLower && !existingNames.includes(namaLower)) {
+      const existingIdx = existingNames.indexOf(namaLower);
+      
+      if (namaLower && existingIdx === -1) {
         const newKode = item.kode || ('RM' + Date.now().toString().slice(-6));
         const newRow = stockHeaders.map((h, i) => {
           if (i === sKodeIdx) return newKode;
@@ -812,6 +828,18 @@ function updatePOInternal(payload) {
         stockSheet.appendRow(newRow);
         existingNames.push(namaLower);
         item.kode = newKode;
+      } else if (namaLower && existingIdx !== -1 && !item.kode) {
+        // Material exists in DB, but frontend didn't send kode
+        const existingKode = stockValues[existingIdx + 1][sKodeIdx];
+        if (existingKode && String(existingKode).trim() !== '') {
+           item.kode = String(existingKode).trim();
+        } else {
+           // Exists but has no code in DB. Generate one and update DB.
+           const newKode = 'RM' + Date.now().toString().slice(-6);
+           stockSheet.getRange(existingIdx + 2, sKodeIdx + 1).setValue(newKode);
+           stockValues[existingIdx + 1][sKodeIdx] = newKode; // update memory
+           item.kode = newKode;
+        }
       }
     });
   }

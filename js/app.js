@@ -2681,18 +2681,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
       let footerBtns = `<button class="btn" onclick="document.getElementById('po-detail-modal').classList.remove('active')" style="background:var(--bg-glass);">Tutup</button>`;
 
-      if (item.status?.trim() === "Menunggu Approval") {
+      if (item.status?.trim() === "Menunggu Approval" || isAdmin) {
         footerBtns =
           `<button class="btn btn-edit-po-internal" data-item='${JSON.stringify(item).replace(/'/g, "&apos;")}' style="background:var(--accent);"><i class="fa-solid fa-pen"></i> Edit</button> ` +
           footerBtns;
-        if (isAtasan) {
+      }
+      if (item.status?.trim() === "Menunggu Approval" && isAtasan) {
           footerBtns =
             `<button class="btn btn-reject-po-action" data-no="${item.no_po}" style="background:var(--danger);"><i class="fa-solid fa-times"></i> Tolak</button> ` +
             footerBtns;
           footerBtns =
             `<button class="btn btn-approve-po-action" data-no="${item.no_po}" style="background:var(--success);"><i class="fa-solid fa-check"></i> Approve</button> ` +
             footerBtns;
-        }
       }
 
       document.getElementById("po-detail-content").innerHTML = `
@@ -2811,30 +2811,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (e) {}
 
         items.forEach((it) => {
-          const tr = document.createElement("tr");
-          tr.className = "po-item-row";
-          tr.innerHTML = `
-                <td><input type="text" class="po-kode" placeholder="Kode" style="width:100%; border:none; background:transparent; color:#fff; outline:none;" value="${it.kode || ""}"></td>
-                <td><input type="text" class="po-nama" placeholder="Ketik nama barang..." style="width:100%; border:none; background:transparent; color:#fff; outline:none;" required value="${it.nama || ""}"></td>
-                <td><input type="number" class="po-qty" style="width:60px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.2); color:#fff; border-radius:4px; padding:2px 5px;" value="${it.qty || 1}"></td>
-                <td><input type="text" class="po-satuan" style="width:60px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.2); color:#fff; border-radius:4px; padding:2px 5px;" value="${it.satuan || "pcs"}"></td>
-                <td><input type="text" class="po-harga price-input" style="width:100px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.2); color:#fff; border-radius:4px; padding:2px 5px;" value="${(it.harga || 0).toLocaleString("id-ID")}"></td>
-                <td><input type="text" class="po-harga-aktual price-input" style="width:100px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.2); color:#fff; border-radius:4px; padding:2px 5px;" value="${(it.harga_aktual || 0).toLocaleString("id-ID")}"></td>
-                <td><div class="po-subtotal" style="font-weight:600;">0</div></td>
-                <td style="text-align:center;"><button type="button" class="btn btn-remove-row" style="background:transparent; color:var(--danger); padding:2px 5px;"><i class="fa-solid fa-trash"></i></button></td>
-            `;
-          tbody.appendChild(tr);
-        });
-
-        // reattach listeners for new inputs
-        tbody.querySelectorAll(".price-input, .po-qty").forEach((inp) => {
-          inp.addEventListener("input", calculatePOTotal);
-        });
-        tbody.querySelectorAll(".btn-remove-row").forEach((btn) => {
-          btn.addEventListener("click", (e) => {
-            e.currentTarget.closest("tr").remove();
-            calculatePOTotal();
-          });
+          addPOItemRow(it.kode || "", it.nama || "", it.harga || 0, it.qty || 1, it.satuan || "pcs", it.harga_aktual || 0);
         });
 
         calculatePOTotal();
@@ -2971,6 +2948,7 @@ document.addEventListener("DOMContentLoaded", () => {
         harga = "",
         qty = "1",
         satuan = "pcs",
+        harga_aktual = "",
       ) {
         const tr = document.createElement("tr");
         tr.className = "po-item-row";
@@ -2984,15 +2962,16 @@ document.addEventListener("DOMContentLoaded", () => {
                     style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.06); color:white; font-size:0.83rem; text-align:right;">
             </td>
             <td style="padding:0.4rem;">
-                <input type="text" class="po-harga-aktual number-format" placeholder="0" value="${harga}"
+                <input type="text" class="po-harga-aktual number-format" placeholder="0" value="${harga_aktual || harga}"
                     style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.06); color:white; font-size:0.83rem; text-align:right;">
             </td>
             <td style="padding:0.4rem;">
                 <input type="text" inputmode="numeric" class="po-qty" value="${qty}" placeholder="1"
                     style="width:100%; min-width:80px; padding:0.5rem; border-radius:6px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.06); color:white; font-size:0.83rem; text-align:right;">
             </td>
-                <input type="hidden" class="po-satuan" value="${satuan}">
             <td style="padding:0.4rem; text-align:right;">
+                <input type="hidden" class="po-satuan" value="${satuan}">
+                <input type="hidden" class="po-kode" value="${kode}">
                 <span class="po-subtotal" style="font-weight:600; color:var(--primary); font-size:0.83rem;">Rp 0</span>
             </td>
             <td style="padding:0.4rem; text-align:center;">
@@ -3012,6 +2991,8 @@ document.addEventListener("DOMContentLoaded", () => {
             tr.querySelector(".po-harga-aktual").value = hargaFormatted;
             if (match.satuan)
               tr.querySelector(".po-satuan").value = match.satuan;
+            if (match.kode)
+              tr.querySelector(".po-kode").value = match.kode;
           }
           calculatePOTotal();
         });
