@@ -11118,12 +11118,16 @@ document.addEventListener("DOMContentLoaded", () => {
             badgeClass = "badge-danger";
           }
 
+          const userRole = String(window.ERP_USER?.role || "").toLowerCase();
+          const isSuperAdmin = userRole === "super admin" || userRole === "superadmin" || userRole === "super_admin";
+
           let actionBtns = "";
           if (isSelesai) {
             // If finished, only show Print button, hide edit/delete/finish
             actionBtns = `
                 <button class="btn btn-print-sj" data-idx="${suratJalanData.indexOf(sj)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(59, 130, 246, 0.2); color: #60a5fa; margin-right: 5px;" title="Print"><i class="fa-solid fa-print"></i></button>
                 <button class="btn btn-print-proforma-sj" data-idx="${suratJalanData.indexOf(sj)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(168, 85, 247, 0.2); color: #a855f7; margin-right: 5px;" title="Print Proforma Invoice"><i class="fa-solid fa-file-invoice-dollar"></i></button>
+                ${isSuperAdmin ? `<button class="btn btn-edit-sj" data-idx="${suratJalanData.indexOf(sj)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(16, 185, 129, 0.2); color: var(--secondary); margin-right: 5px;" title="Edit (Super Admin)"><i class="fa-solid fa-pen"></i></button>` : ''}
                 <span style="font-size: 0.8rem; color: var(--success); display: inline-flex; align-items: center; padding: 0.4rem;"><i class="fa-solid fa-check-circle"></i> Selesai</span>
                 `;
           } else {
