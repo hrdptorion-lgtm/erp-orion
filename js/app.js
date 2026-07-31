@@ -11119,7 +11119,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
 
           const userSession = JSON.parse(localStorage.getItem("erp_session") || "{}");
-          const userRole = String(userSession.role || "").toLowerCase();
+          const userRole = String(userSession.role || "").toLowerCase().trim();
           const isSuperAdmin = userRole === "super admin" || userRole === "superadmin" || userRole === "super_admin";
 
           let actionBtns = "";
