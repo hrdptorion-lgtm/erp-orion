@@ -2410,9 +2410,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     <strong>${it.kode || "-"}</strong><br>
                     <span style="font-size: 0.8rem; color: var(--text-muted);">${it.nama || "-"}</span>
                     <input type="hidden" name="grn_kode[]" value="${it.kode || ""}">
+                    <input type="hidden" name="grn_nama[]" value="${it.nama || ""}">
                 </td>
-                <td style="text-align: center;">${qtyPesan} ${it.satuan || ""}</td>
-                <td style="text-align: center; color: var(--success);">${qtyTerima}</td>
+                <td style="text-align: center;">${qtyPesan.toLocaleString("id-ID")} ${it.satuan || ""}</td>
+                <td style="text-align: center; color: var(--success);">${qtyTerima.toLocaleString("id-ID")}</td>
                 <td>
                     <input type="number" name="grn_qty_in[]" class="form-control" style="width: 100px; padding: 0.2rem 0.5rem;" min="0" max="${sisa}" value="${sisa > 0 ? sisa : 0}" ${sisa === 0 ? "readonly" : ""} step="any">
                 </td>
@@ -2434,13 +2435,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const no_po = document.getElementById("grn_no_po_input").value;
         const form = e.target;
         const kodes = form.querySelectorAll('input[name="grn_kode[]"]');
+        const namas = form.querySelectorAll('input[name="grn_nama[]"]');
         const qtys = form.querySelectorAll('input[name="grn_qty_in[]"]');
 
         const receivedItems = [];
         for (let i = 0; i < kodes.length; i++) {
           const q = parseFloat(qtys[i].value) || 0;
           if (q > 0) {
-            receivedItems.push({ kode: kodes[i].value, qty_in: q });
+            receivedItems.push({ kode: kodes[i].value, nama: namas[i].value, qty_in: q });
           }
         }
 
@@ -5954,7 +5956,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     tr.className = "sj-item-row";
                     tr.innerHTML = `
                                 <td>${idx + 1}</td>
-                                <td><input type="text" class="sj-item-nama" style="width:100%; border:none; background:transparent; color:var(--text-main);" value="${ritem.nama}" readonly></td>
+                                <td><input type="text" class="sj-item-nama" style="width:100%; border:none; background:transparent; color:var(--text-main);" value="${ritem.nama || ritem.part_name || ''}" readonly></td>
                                 <td><input type="number" class="sj-item-qty" style="width:100%; border:1px solid var(--glass-border); background:var(--bg-glass); color:var(--text-main); border-radius:4px; padding:4px;" value="${ritem.qty}" min="1" required></td>
                                 <td><input type="text" class="sj-item-satuan" style="width:100%; border:1px solid var(--glass-border); background:var(--bg-glass); color:var(--text-main); border-radius:4px; padding:4px;" value="pcs" required></td>
                             `;
@@ -6149,6 +6151,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   );
                   if (found) {
                     addrEl.value =
+                      found.alamat ||
                       found.alamat_keterangan ||
                       found["alamat_/_keterangan"] ||
                       "";
@@ -10253,7 +10256,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const canDelete = window.checkPermission("customer", "delete");
           let actionBtns = "";
           if (canEdit)
-            actionBtns += `<button class="btn btn-edit-customer" data-id="${c.id_customer}" data-nama="${c.nama_customer}" data-kontak="${c.kontak_telepon || c["kontak_/_telepon"] || ""}" data-alamat="${c.alamat_keterangan || c["alamat_/_keterangan"] || ""}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>`;
+            actionBtns += `<button class="btn btn-edit-customer" data-id="${c.id_customer}" data-nama="${c.nama_customer}" data-kontak="${c.kontak_telepon || c["kontak_/_telepon"] || ""}" data-alamat="${c.alamat || c.alamat_keterangan || c["alamat_/_keterangan"] || ""}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; margin-right: 5px;"><i class="fa-solid fa-pen"></i></button>`;
           if (canDelete) {
             actionBtns += `<button class="btn btn-delete-customer" data-id="${c.id_customer}" data-nama="${c.nama_customer}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--danger); display: inline-flex;"><i class="fa-solid fa-trash"></i></button>`;
           }
@@ -10262,7 +10265,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <td>${c.id_customer || "-"}</td>
             <td style="font-weight: 500;">${c.nama_customer || "-"}</td>
             <td>${c.kontak_telepon || c["kontak_/_telepon"] || "-"}</td>
-            <td>${c.alamat_keterangan || c["alamat_/_keterangan"] || "-"}</td>
+            <td>${c.alamat || c.alamat_keterangan || c["alamat_/_keterangan"] || "-"}</td>
             <td>${c.tanggal_terdaftar || "-"}</td>
             <td><div style="display: flex; gap: 5px; flex-wrap: nowrap; min-width: max-content;">${actionBtns}</div></td>
         `;
@@ -10874,7 +10877,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div><div style="font-size:0.75rem; color:var(--text-muted);">ID CUSTOMER</div><div style="font-weight:600;">${item.id_customer || "-"}</div></div>
             <div><div style="font-size:0.75rem; color:var(--text-muted);">NAMA CUSTOMER</div><div style="font-weight:600;">${item.nama_customer || "-"}</div></div>
             <div><div style="font-size:0.75rem; color:var(--text-muted);">TANGGAL TERDAFTAR</div><div style="font-weight:600;">${item.tanggal_terdaftar || "-"}</div></div>
-            <div style="grid-column:1/-1;"><div style="font-size:0.75rem; color:var(--text-muted);">ALAMAT / KETERANGAN</div><div>${item.alamat_keterangan || item["alamat_/_keterangan"] || "-"}</div></div>
+            <div style="grid-column:1/-1;"><div style="font-size:0.75rem; color:var(--text-muted);">ALAMAT / KETERANGAN</div><div>${item.alamat || item.alamat_keterangan || item["alamat_/_keterangan"] || "-"}</div></div>
         </div>
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:1.5rem;">
             <button class="btn" onclick="document.getElementById('customer-detail-modal').classList.remove('active'); document.querySelector('.btn-edit-customer[data-id=\\'${item.id_customer}\\']')?.click()" style="background:var(--accent);"><i class="fa-solid fa-pen"></i> Edit</button>
@@ -11776,7 +11779,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     '<tr><td colspan="4" style="text-align:center;">Tidak ada item di PO ini</td></tr>';
                 } else {
                   poItems.forEach((it) => {
-                    const iname = String(it.nama || it.item || "").trim();
+                    const iname = String(it.nama || it.part_name || it.item || "").trim();
 
                     const fg = (window.barangJadiData || []).find((b) => {
                       let bNameRaw = "";
@@ -11835,7 +11838,7 @@ document.addEventListener("DOMContentLoaded", () => {
                           } catch (e) {}
                           sjIt.forEach((sItem) => {
                             if (
-                              String(sItem.nama || sItem.item || "")
+                              String(sItem.nama || sItem.part_name || sItem.item || "")
                                 .trim()
                                 .toLowerCase() === iname.toLowerCase()
                             ) {

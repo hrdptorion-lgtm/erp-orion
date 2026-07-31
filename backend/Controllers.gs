@@ -924,7 +924,9 @@ function processGRN(payload) {
     // Find in PO items to update qty_received
     let poItemRef = null;
     for (let it of items) {
-      if (String(it.kode) === String(rItem.kode)) {
+      const itKey = String(it.kode || it.nama || '').trim();
+      const rKey = String(rItem.kode || rItem.nama || '').trim();
+      if (itKey !== '' && itKey === rKey) {
         it.qty_received = (parseFloat(it.qty_received) || 0) + qtyIn;
         poItemRef = it;
         break;
@@ -935,7 +937,10 @@ function processGRN(payload) {
     let foundStockRow = -1;
     for (let i = 1; i < stockValues.length; i++) {
       const k = String(stockValues[i][sKodeIdx] || '').trim();
-      if (k === String(rItem.kode).trim()) {
+      const n = String(stockValues[i][sNamaIdx] || '').trim();
+      const skey = k || n;
+      const rKey = String(rItem.kode || rItem.nama || '').trim();
+      if (skey !== '' && skey === rKey) {
         foundStockRow = i + 1;
         break;
       }
@@ -3088,9 +3093,14 @@ function getPenerimaanBarang() {
 }
 
 function savePenerimaanBarang(payload) {
-  if (!payload || !payload.no_po || !payload.items || !payload.penerima) {
-    return { status: 'error', message: 'Data tidak lengkap.' };
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) {
+    return { status: 'error', message: 'Sistem sedang memproses, silakan coba lagi.' };
   }
+  try {
+    if (!payload || !payload.no_po || !payload.items || !payload.penerima) {
+      return { status: 'error', message: 'Data tidak lengkap.' };
+    }
   
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheetGRN = ss.getSheetByName('DB Penerimaan Barang');
@@ -3128,11 +3138,14 @@ function savePenerimaanBarang(payload) {
   let mapPO = {};
   poItems.forEach(item => {
     const key = item.kode || item.nama;
-    mapPO[key] = { 
-        qty_diminta: Number(item.qty), 
-        qty_diterima: 0,
-        harga_satuan: Number(item.harga_aktual || item.harga || 0)
-    };
+    if (!mapPO[key]) {
+      mapPO[key] = { 
+          qty_diminta: 0, 
+          qty_diterima: 0,
+          harga_satuan: Number(item.harga_aktual || item.harga || 0)
+      };
+    }
+    mapPO[key].qty_diminta += Number(item.qty);
   });
   
   // Tambahkan yg sudah diterima sebelumnya
@@ -3244,6 +3257,9 @@ function savePenerimaanBarang(payload) {
   }
   
   return { status: 'success', message: 'Penerimaan barang berhasil dicatat.' };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // ==========================================
