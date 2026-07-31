@@ -3382,6 +3382,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
         if (!item) return;
 
+        const prefillDp = parseInt(String(item.dp_po_customer || item.down_payment || '0').replace(/[^0-9]/g, '')) || 0;
         Swal.fire({
           title: `Masukkan Nilai DP`,
           html: `<div style="color: #545454; font-size: 15px; margin-bottom: 20px; line-height: 1.6;">
@@ -3390,7 +3391,7 @@ document.addEventListener("DOMContentLoaded", () => {
                    </div>
                    <div style="text-align: left; padding: 0 5px;">
                        <label for="swal-dp-input" style="font-weight: 600; font-size: 14px; margin-bottom: 8px; display: block; color: #545454;">Nilai DP (Rp)</label>
-                       <input type="text" id="swal-dp-input" class="swal2-input" placeholder="Contoh: 5.000.000" style="color: #333; width: 100%; box-sizing: border-box; margin: 0; padding: 0.75rem 1rem; border-radius: 8px; font-size: 16px; display: block;" oninput="this.value = this.value.replace(/[^0-9]/g, '').replace(/\\B(?=(\\d{3})+(?!\\d))/g, '.')">
+                       <input type="text" id="swal-dp-input" class="swal2-input" value="${prefillDp > 0 ? prefillDp.toLocaleString('id-ID') : ''}" placeholder="Contoh: 5.000.000" style="color: #333; width: 100%; box-sizing: border-box; margin: 0; padding: 0.75rem 1rem; border-radius: 8px; font-size: 16px; display: block;" oninput="this.value = this.value.replace(/[^0-9]/g, '').replace(/\\B(?=(\\d{3})+(?!\\d))/g, '.')">
                    </div>`,
           showCancelButton: true,
           confirmButtonText: "Lanjutkan",
@@ -4707,35 +4708,57 @@ document.addEventListener("DOMContentLoaded", () => {
                 btnSj.style.pointerEvents = "auto";
               }
             }
+            let totalTerbayar = 0;
+            let dpInvoiceExists = false;
+            
+            relatedInv.forEach((i) => {
+               const st = (i.status_pembayaran || "").toLowerCase();
+               const isDp = (i.catatan || '').toLowerCase().includes('dp') || (i.items || '').toLowerCase().includes('uang muka') || (i.items || '').toLowerCase().includes('dp');
+               if (isDp) dpInvoiceExists = true;
+
+               if (st === "lunas") {
+                  totalTerbayar += (parseFloat(i.grand_total) || parseFloat(i.total_tagihan) || 0);
+               } else {
+                  totalTerbayar += (parseFloat(i.terbayar) || 0);
+               }
+            });
+
+            const numericTotalHarga = typeof item.total_harga === "string" ? parseFloat(item.total_harga.replace(/[^0-9]/g, "")) || 0 : parseFloat(item.total_harga) || 0;
+            let sisaTagihan = numericTotalHarga - totalTerbayar;
+            if (sisaTagihan < 0) sisaTagihan = 0;
+
+            const infoDiv = document.getElementById("detail-poc-info");
+            if (infoDiv) {
+               infoDiv.innerHTML += `
+                  <div style="flex: 1; min-width: 250px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px;">
+                      <p style="margin: 5px 0; color: #a78bfa;"><strong>Total Terbayar:</strong> Rp ${totalTerbayar.toLocaleString("id-ID")}</p>
+                      <p style="margin: 5px 0; color: ${sisaTagihan <= 0 ? 'var(--success)' : 'var(--warning)'};"><strong>Sisa Tagihan:</strong> Rp ${sisaTagihan.toLocaleString("id-ID")}</p>
+                  </div>
+               `;
+            }
+
             const btnDp = document.getElementById("btn-detail-act-inv-dp");
+            const dpValue = parseFloat(item.dp_po_customer || item.down_payment || 0);
             if (btnDp) {
-              if (relatedInv.length > 0) {
-                btnDp.style.opacity = "0.5";
-                btnDp.style.cursor = "not-allowed";
-                btnDp.style.pointerEvents = "none";
+              if (dpValue <= 0) {
+                 btnDp.style.display = 'none';
               } else {
-                btnDp.style.opacity = "1";
-                btnDp.style.cursor = "pointer";
-                btnDp.style.pointerEvents = "auto";
+                 btnDp.style.display = 'flex';
+                 if (dpInvoiceExists) {
+                   btnDp.style.opacity = "0.5";
+                   btnDp.style.cursor = "not-allowed";
+                   btnDp.style.pointerEvents = "none";
+                 } else {
+                   btnDp.style.opacity = "1";
+                   btnDp.style.cursor = "pointer";
+                   btnDp.style.pointerEvents = "auto";
+                 }
               }
             }
+
             const btnLunas = document.getElementById("btn-detail-act-inv");
             if (btnLunas) {
-              const totalTerbayar = relatedInv.reduce((sum, i) => {
-                if (i.status_pembayaran === "Lunas")
-                  return (
-                    sum +
-                    (parseFloat(i.grand_total) ||
-                      parseFloat(i.total_tagihan) ||
-                      0)
-                  );
-                return sum + (parseFloat(i.terbayar) || 0);
-              }, 0);
-              const numericTotalHarga =
-                typeof item.total_harga === "string"
-                  ? parseFloat(item.total_harga.replace(/[^0-9]/g, "")) || 0
-                  : parseFloat(item.total_harga) || 0;
-              if (totalTerbayar >= numericTotalHarga && numericTotalHarga > 0) {
+              if (sisaTagihan <= 0 && numericTotalHarga > 0) {
                 btnLunas.style.opacity = "0.5";
                 btnLunas.style.cursor = "not-allowed";
                 btnLunas.style.pointerEvents = "none";
@@ -12585,9 +12608,9 @@ document.addEventListener("DOMContentLoaded", () => {
             (dpAmount / (subtotal + ppnAmount)) * 100,
           );
           document.getElementById("print_inv_dp_label").textContent =
-            `DP ${dpPercentage}%`;
+            `Potongan DP`;
           document.getElementById("print_inv_dp_amount").textContent =
-            parseInt(dpAmount).toLocaleString("id-ID");
+            "- " + parseInt(dpAmount).toLocaleString("id-ID");
         }
 
         document.getElementById("print_inv_total").textContent = parseInt(
@@ -12832,20 +12855,42 @@ document.addEventListener("DOMContentLoaded", () => {
         const price = item.harga_satuan || item.price || 0;
 
         tr.innerHTML = `
-        <td><input type="text" class="inv-item-desc" list="bom-items-list" value="${desc}" placeholder="Nama barang / Jasa" required style="width: 100%;"></td>
+        <td><input type="text" class="inv-item-desc" list="po-items-list" value="${desc}" placeholder="Nama barang / Jasa" required style="width: 100%;"></td>
         <td><input type="number" class="inv-item-qty" value="${qty}" min="1" required style="width: 100%; text-align: right;"></td>
-        <td><input type="text" class="inv-item-price" value="${window.formatRupiah(price).replace("Rp ", "")}" min="0" required oninput="window.formatCurrencyInput(this); calculateInvoiceTotal()" style="width: 100%; text-align:right;"></td>
+        <td><input type="text" class="inv-item-price" value="${window.formatRupiah(price).replace("Rp ", "")}" min="0" required style="width: 100%; text-align:right;"></td>
         <td style="text-align: right;" class="inv-item-subtotal">Rp 0</td>
         <td style="text-align: center;"><button type="button" class="btn btn-remove-inv-item" style="padding: 0.4rem; background: transparent; color: var(--danger); border: none;"><i class="fa-solid fa-trash"></i></button></td>
     `;
 
-        tr.querySelector(".inv-item-qty").addEventListener(
+        const descInput = tr.querySelector(".inv-item-desc");
+        const qtyInput = tr.querySelector(".inv-item-qty");
+        const priceInput = tr.querySelector(".inv-item-price");
+
+        descInput.addEventListener("input", () => {
+            const val = descInput.value.trim().toLowerCase();
+            if (window.currentInvoicePOItems && window.currentInvoicePOItems.length > 0) {
+                const match = window.currentInvoicePOItems.find(poIt => {
+                    const poName = String(poIt.nama || poIt.part_name || '').trim().toLowerCase();
+                    return poName === val;
+                });
+                if (match) {
+                    const matchedPrice = match.harga_satuan || match.price || match.harga || 0;
+                    priceInput.value = window.formatRupiah(matchedPrice).replace("Rp ", "");
+                    calculateInvoiceTotal();
+                }
+            }
+        });
+
+        qtyInput.addEventListener(
           "input",
           calculateInvoiceTotal,
         );
-        tr.querySelector(".inv-item-price").addEventListener(
+        priceInput.addEventListener(
           "input",
-          calculateInvoiceTotal,
+          () => {
+              window.formatCurrencyInput(priceInput);
+              calculateInvoiceTotal();
+          }
         );
         tr.querySelector(".btn-remove-inv-item").addEventListener(
           "click",
@@ -13252,6 +13297,22 @@ document.addEventListener("DOMContentLoaded", () => {
                           if (cName) {
                               document.getElementById("inv_customer").value = cName;
                           }
+                          try {
+                              window.currentInvoicePOItems = typeof po.item_po === 'string' ? JSON.parse(po.item_po) : (po.item_po || []);
+                              
+                              let dataList = document.getElementById("po-items-list");
+                              if (!dataList) {
+                                  dataList = document.createElement("datalist");
+                                  dataList.id = "po-items-list";
+                                  document.body.appendChild(dataList);
+                              }
+                              dataList.innerHTML = "";
+                              window.currentInvoicePOItems.forEach(it => {
+                                  const opt = document.createElement("option");
+                                  opt.value = it.nama || it.part_name || "";
+                                  dataList.appendChild(opt);
+                              });
+                          } catch(e) {}
                       }
                   }
               } catch(e) { console.error(e); }
