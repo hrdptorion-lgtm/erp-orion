@@ -1364,7 +1364,7 @@ function handleAutoBOM(payload, noDoc) {
               try {
                 const bjSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB Master Barang Jadi');
                 if (bjSheet) {
-                   bjSheet.appendRow([newKode, itemName.trim(), '-', 0, '-', 0, '-']);
+                   bjSheet.appendRow([newKode, itemName.trim(), 0, 0, '-']);
                 }
               } catch(e) {}
             }

@@ -5940,6 +5940,60 @@ document.addEventListener("DOMContentLoaded", () => {
               .split("T")[0];
             document.getElementById("sj_tanggal").value = localDate;
 
+            let tsCust = document.getElementById("sj_customer").tomselect;
+            if (!tsCust) {
+              tsCust = new TomSelect("#sj_customer", {
+                dropdownParent: "body",
+                create: true,
+                sortField: { field: "text", direction: "asc" },
+                maxOptions: 50,
+                onChange: function (value) {
+                  if (window._sj_loadedCustomers && value) {
+                    const cust = window._sj_loadedCustomers.find(
+                      (c) => String(c.nama_perusahaan || c.nama || c.nama_customer || "").trim().toLowerCase() === String(value).trim().toLowerCase()
+                    );
+                    if (cust) {
+                      document.getElementById("sj_alamat_penerima").value =
+                        cust.alamat || cust.alamat_keterangan || cust["alamat_/_keterangan"] || "";
+                    }
+                  }
+                },
+              });
+            }
+
+            // Force fetch customers to ensure we have the latest DB Customer data
+            const custRes = await window.ERPAPI.request("get_customers");
+            let latestCustomers = window._sj_loadedCustomers || [];
+            if (custRes.status === "success" && custRes.data) {
+                window._sj_loadedCustomers = custRes.data;
+                latestCustomers = custRes.data;
+            }
+
+            const custName = item.nama_customer || item.customer || "";
+            if (custName) {
+                tsCust.addOption({ value: custName, text: custName });
+                tsCust.setValue(custName, true); // silent = true so it doesn't trigger onChange
+                
+                setTimeout(() => {
+                    const c = latestCustomers.find(x => {
+                        const nKey = Object.keys(x).find(k => k.toLowerCase().includes("nama")) || "nama_customer";
+                        return String(x[nKey] || "").trim().toLowerCase().replace(/\s+/g, ' ') === String(custName).trim().toLowerCase().replace(/\s+/g, ' ');
+                    });
+                    
+                    if (c) {
+                        const alamatKey = Object.keys(c).find(k => k.toLowerCase().includes("alamat"));
+                        const addr = alamatKey ? String(c[alamatKey] || "") : "";
+                        if (addr && addr.trim() !== "-") {
+                            document.getElementById("sj_alamat_penerima").value = addr;
+                        } else {
+                            document.getElementById("sj_alamat_penerima").value = "ciko";
+                        }
+                    } else {
+                        document.getElementById("sj_alamat_penerima").value = "ciko";
+                    }
+                }, 100);
+            }
+
             const tbody = document.getElementById("sj-items-tbody");
             if (tbody) {
               tbody.innerHTML = "";
@@ -11688,6 +11742,13 @@ document.addEventListener("DOMContentLoaded", () => {
             .toISOString()
             .split("T")[0];
           document.getElementById("sj_tanggal").value = localDate;
+          
+          if (!window._sj_loadedCustomers) {
+              const custRes = await window.ERPAPI.request("get_customers");
+              if (custRes.status === "success" && custRes.data) {
+                  window._sj_loadedCustomers = custRes.data;
+              }
+          }
 
           const tbody = document.getElementById("sj-items-tbody");
           if (tbody)
@@ -11877,13 +11938,16 @@ document.addEventListener("DOMContentLoaded", () => {
             sortField: { field: "text", direction: "asc" },
             maxOptions: 50,
             onChange: function (value) {
-              if (window._sj_loadedCustomers) {
-                const cust = window._sj_loadedCustomers.find(
-                  (c) => (c.nama_perusahaan || c.nama) === value,
-                );
+              const latest = window._sj_loadedCustomers || window.customerData || [];
+              if (latest.length > 0 && value) {
+                const cust = latest.find((c) => {
+                  const nKey = Object.keys(c).find(k => k.toLowerCase().includes("nama")) || "nama_customer";
+                  return String(c[nKey] || "").trim().toLowerCase().replace(/\s+/g, ' ') === String(value).trim().toLowerCase().replace(/\s+/g, ' ');
+                });
                 if (cust) {
-                  document.getElementById("sj_alamat_penerima").value =
-                    cust.alamat || cust.alamat_keterangan || cust["alamat_/_keterangan"] || "";
+                  const alamatKey = Object.keys(cust).find(k => k.toLowerCase().includes("alamat"));
+                  const addr = alamatKey ? String(cust[alamatKey] || "") : "";
+                  document.getElementById("sj_alamat_penerima").value = (addr && addr.trim() !== "-") ? addr : "";
                 }
               }
             },
