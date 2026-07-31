@@ -12800,23 +12800,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const dpInput = document.getElementById("inv_potongan_dp");
 
-        if (
-          dpInput &&
-          dpInput.dataset.dpRatio &&
-          !dpInput.dataset.manuallyEdited
-        ) {
-          const ratio = parseFloat(dpInput.dataset.dpRatio) || 0;
-          const sisa = parseFloat(dpInput.dataset.sisaDp) || 0;
-          let propDP = totalTagihan * ratio;
-          if (propDP > sisa) propDP = sisa;
-
-          if (typeof window.formatRibuan === "function") {
-            dpInput.value = window.formatRibuan(Math.round(propDP));
-          } else {
-            dpInput.value = Math.round(propDP);
-          }
-        }
-
         const dpVal = dpInput
           ? parseFloat(String(dpInput.value).replace(/[^0-9]/g, "") || 0)
           : 0;
@@ -13086,6 +13069,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
               let sisaDp = totalDpPaid - totalDpConsumed;
+              const dpInfo = document.getElementById("inv_dp_info");
               if (sisaDp > 0) {
                 let currentSub = 0;
                 document
@@ -13106,21 +13090,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 const tTagihan = currentSub + currentSub * (pRate / 100);
 
                 const maxPotongan = Math.min(sisaDp, tTagihan);
-                const dpInput = document.getElementById("inv_potongan_dp");
-                if (dpInput && maxPotongan > 0) {
-                  dpInput.value = window
-                    .formatRupiah(maxPotongan)
-                    .replace("Rp ", "");
-                  calculateInvoiceTotal();
-                  setTimeout(
-                    () =>
-                      showToast?.(
-                        `Sisa DP sebesar Rp ${sisaDp.toLocaleString("id-ID")} ditemukan. Otomatis memotong Rp ${maxPotongan.toLocaleString("id-ID")}!`,
-                        "info",
-                      ),
-                    500,
-                  );
+                if (dpInfo) {
+                    dpInfo.textContent = `*Terdapat sisa DP sebesar Rp ${sisaDp.toLocaleString("id-ID")} dari PO ini yang dapat dipotong secara manual.`;
                 }
+              } else {
+                if (dpInfo) dpInfo.textContent = "";
               }
             }
             // -----------------------------
@@ -13267,6 +13241,22 @@ document.addEventListener("DOMContentLoaded", () => {
         .getElementById("inv_no_penawaran")
         ?.addEventListener("change", async (e) => {
           const selectedPo = e.target.value.trim();
+          
+          if (selectedPo && window.ERPAPI) {
+              try {
+                  const poRes = await window.ERPAPI.request("get_po_customer");
+                  if (poRes && poRes.status === "success" && poRes.data) {
+                      const po = poRes.data.find(p => (p.id_po_customer || p.no_penawaran) === selectedPo);
+                      if (po) {
+                          const cName = po.nama_customer || po.customer || po.nama_perusahaan || "";
+                          if (cName) {
+                              document.getElementById("inv_customer").value = cName;
+                          }
+                      }
+                  }
+              } catch(e) { console.error(e); }
+          }
+          
           const sjSelect = document.getElementById("inv_no_sj");
           if (sjSelect && sjSelect.tomselect) {
             sjSelect.tomselect.destroy();

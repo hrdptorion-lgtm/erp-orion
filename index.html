@@ -3411,6 +3411,7 @@
                         <label>Potongan DP (Rp)</label>
                         <input type="text" id="inv_potongan_dp" value="0"
                             oninput="this.dataset.manuallyEdited = 'true'; window.formatCurrencyInput(this); window.calculateInvoiceTotal && window.calculateInvoiceTotal()">
+                        <small id="inv_dp_info" style="color:var(--info); font-size:0.8rem; display:block; margin-top:5px;"></small>
                     </div>
                     <div class="input-group" style="margin-bottom:0;">
                         <label>Grand Total (Rp)</label>
@@ -3835,7 +3836,7 @@
     </datalist>
 
     <script src="js/api.js?v=35"></script>
-    <script src="js/app.js?v=999912"></script>
+    <script src="js/app.js?v=999915"></script>
 </body>
 
 </html>    <div id="image-viewer-modal" class="login-overlay" style="z-index: 99999; display: none; justify-content: center; align-items: center; background: rgba(0,0,0,0.9);" onclick="this.style.display='none'">
