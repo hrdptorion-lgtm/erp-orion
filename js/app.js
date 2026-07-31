@@ -11450,7 +11450,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
                 if (cust) {
                   document.getElementById("sj_alamat_penerima").value =
-                    cust.alamat || "";
+                    cust.alamat || cust.alamat_keterangan || cust["alamat_/_keterangan"] || "";
                 }
               }
             },
@@ -11883,7 +11883,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
                 if (cust) {
                   document.getElementById("sj_alamat_penerima").value =
-                    cust.alamat || "";
+                    cust.alamat || cust.alamat_keterangan || cust["alamat_/_keterangan"] || "";
                 }
               }
             },
