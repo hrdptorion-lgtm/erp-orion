@@ -4362,8 +4362,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   .toLowerCase();
                 return (
                   bName === itemName ||
-                  bName.includes(itemName) ||
-                  itemName.includes(bName)
+                  (bName !== "" && itemName !== "" && (bName.includes(itemName) || itemName.includes(bName)))
                 );
               });
               if (fgMatch) {
@@ -4393,8 +4392,7 @@ document.addEventListener("DOMContentLoaded", () => {
                       const poItemName = String(itemName).trim().toLowerCase();
                       if (
                         sjItemName === poItemName ||
-                        sjItemName.includes(poItemName) ||
-                        poItemName.includes(sjItemName)
+                        (sjItemName !== "" && poItemName !== "" && (sjItemName.includes(poItemName) || poItemName.includes(sjItemName)))
                       ) {
                         deliveredQty += parseFloat(sjItem.qty || 0);
                       }
