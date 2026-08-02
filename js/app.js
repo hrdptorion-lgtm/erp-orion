@@ -8368,7 +8368,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-          const response = await window.ERPAPI.request("get_produksi");
+          const pProduksi = window.ERPAPI.request("get_produksi");
+          const pBom = window.ERPAPI.request("get_bom");
+          
+          const [response, bomResponse] = await Promise.all([pProduksi, pBom]);
+          const bomLookup = (bomResponse && bomResponse.status === "success") ? (bomResponse.data || []) : [];
+
           if (response.status === "success" && response.data) {
             tbody.innerHTML = "";
             if (response.data.length === 0) {
@@ -8406,10 +8411,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
               actionBtns += `<button class="btn btn-delete-spk" data-no="${item.no_spk}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: var(--danger);" title="Hapus SPK"><i class="fa-solid fa-trash"></i></button>`;
 
+              const kodeBarang = item.kode_barang_jadi || item.kode_barang || "-";
+              let namaBarang = item.nama_barang_jadi || item.nama_barang || item.nama || "";
+              
+              if (!namaBarang && kodeBarang !== "-") {
+                  const bomMatch = bomLookup.find(b => b.kode_barang === kodeBarang);
+                  if (bomMatch) namaBarang = bomMatch.nama_barang;
+              }
+
               tr.innerHTML = `
                     <td>${item.no_spk || "-"}</td>
                     <td>${item.tanggal || "-"}</td>
-                    <td style="font-weight: 500;">${item.kode_barang_jadi || item.kode_barang || "-"}</td>
+                    <td style="font-weight: 500;">
+                        ${namaBarang || kodeBarang}
+                    </td>
                     <td>${item.qty_produksi || item.qty || "-"}</td>
                     <td style="color: var(--accent); font-weight: 500;">${item.kode_po_customer || item.no_penawaran || '<span style="color:var(--text-muted); font-size:0.8rem; font-weight:normal;">Internal</span>'}</td>
                     <td>${statusBadge}</td>
