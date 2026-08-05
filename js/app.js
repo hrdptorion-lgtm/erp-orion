@@ -1,4 +1,11 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // Global click listener to close modal when clicking on the overlay background
+  document.addEventListener("click", (e) => {
+    if (e.target.classList && e.target.classList.contains("login-overlay")) {
+      e.target.classList.remove("active");
+    }
+  });
+
   // Override window.print on Mobile to provide a Download PDF option
   const originalPrint = window.print;
   window.print = function () {
@@ -4236,12 +4243,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const infoDiv = document.getElementById("detail-poc-info");
         if (infoDiv) {
           infoDiv.innerHTML = `
-                <div style="flex: 1; min-width: 250px;">
+                <div style="flex: 1; min-width: 250px; word-wrap: break-word; overflow-wrap: break-word; padding-right: 15px;">
                     <p style="margin: 5px 0;"><strong>No PO Customer:</strong> ${item.id_po_customer || "-"}</p>
                     <p style="margin: 5px 0;"><strong>Customer:</strong> ${item.nama_customer || item.customer || "-"}</p>
                     <p style="margin: 5px 0;"><strong>Status:</strong> ${item.status || "Pending"}</p>
                 </div>
-                <div style="flex: 1; min-width: 250px;">
+                <div style="flex: 1; min-width: 250px; word-wrap: break-word; overflow-wrap: break-word;">
                     <p style="margin: 5px 0;"><strong>No Penawaran:</strong> ${item.no_penawaran || "-"}</p>
                     <p style="margin: 5px 0;"><strong>Tanggal:</strong> ${formattedDate}</p>
                     <p style="margin: 5px 0;"><strong>Total Harga:</strong> ${window.formatRupiah ? window.formatRupiah(item.total_harga || 0) : "Rp " + Number(item.total_harga || 0).toLocaleString("id-ID")}</p>
@@ -4282,10 +4289,10 @@ document.addEventListener("DOMContentLoaded", () => {
           itemsTbody.innerHTML = "";
           if (Array.isArray(rincian) && rincian.length > 0) {
             itemsTbody.innerHTML =
-              '<tr><td colspan="4" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data pesanan & SPK...</td></tr>';
+              '<tr><td colspan="6" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data pesanan & SPK...</td></tr>';
           } else {
             itemsTbody.innerHTML =
-              '<tr><td colspan="4" style="text-align: center;">Tidak ada rincian item.</td></tr>';
+              '<tr><td colspan="6" style="text-align: center;">Tidak ada rincian item.</td></tr>';
           }
         }
 
@@ -4445,10 +4452,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     String(b.nama_barang).trim().toLowerCase() === itemName,
                 );
                 if (matchedBom) {
-                  const mats =
-                    typeof matchedBom.rincian_material === "string"
+                  let mats = [];
+                  try {
+                    mats = typeof matchedBom.rincian_material === "string" && matchedBom.rincian_material.trim() !== ""
                       ? JSON.parse(matchedBom.rincian_material)
-                      : matchedBom.rincian_material || [];
+                      : (matchedBom.rincian_material || []);
+                  } catch (e) {
+                    console.warn("Gagal parse rincian_material:", e);
+                  }
                   mats.forEach((mat) => {
                     const matName = (
                       mat.nama ||
@@ -4668,8 +4679,10 @@ document.addEventListener("DOMContentLoaded", () => {
                   sisaHtml = `<span style="color: var(--danger);">${sisaKekurangan}</span>`;
 
                 const tr = document.createElement("tr");
+                const hargaSatuan = parseFloat(poItem.harga_satuan || poItem.price || poItem.harga || 0);
                 tr.innerHTML = `
                             <td>${itemName}</td>
+                            <td style="text-align: right;">${window.formatRupiah ? window.formatRupiah(hargaSatuan) : "Rp " + hargaSatuan.toLocaleString("id-ID")}</td>
                             <td style="text-align: center;">${orderedQty}</td>
                             <td style="text-align: center;">${deliveredQty}</td>
                             <td style="text-align: center;">${fgStock}</td>
@@ -4681,7 +4694,7 @@ document.addEventListener("DOMContentLoaded", () => {
               allSpkCreated = true;
               allSjDelivered = true;
               itemsTbody.innerHTML =
-                '<tr><td colspan="5" style="text-align: center;">Tidak ada rincian item.</td></tr>';
+                '<tr><td colspan="6" style="text-align: center;">Tidak ada rincian item.</td></tr>';
             }
 
             const btnSpk = document.getElementById("btn-detail-act-spk");
@@ -12888,17 +12901,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
         descInput.addEventListener("input", () => {
             const val = descInput.value.trim().toLowerCase();
+            let isMatched = false;
+            
             if (window.currentInvoicePOItems && window.currentInvoicePOItems.length > 0) {
                 const match = window.currentInvoicePOItems.find(poIt => {
-                    const poName = String(poIt.nama || poIt.part_name || '').trim().toLowerCase();
+                    const poName = String(poIt.nama || poIt.nama_barang || poIt.part_name || '').trim().toLowerCase();
                     return poName === val;
                 });
                 if (match) {
                     const matchedPrice = match.harga_satuan || match.price || match.harga || 0;
                     priceInput.value = window.formatRupiah(matchedPrice).replace("Rp ", "");
-                    calculateInvoiceTotal();
+                    isMatched = true;
                 }
             }
+            
+            if (!isMatched && val !== "") {
+                priceInput.value = "0";
+            }
+            calculateInvoiceTotal();
         });
 
         qtyInput.addEventListener(
@@ -13329,7 +13349,7 @@ document.addEventListener("DOMContentLoaded", () => {
                               dataList.innerHTML = "";
                               window.currentInvoicePOItems.forEach(it => {
                                   const opt = document.createElement("option");
-                                  opt.value = it.nama || it.part_name || "";
+                                  opt.value = it.nama || it.nama_barang || it.part_name || "";
                                   dataList.appendChild(opt);
                               });
                           } catch(e) {}
