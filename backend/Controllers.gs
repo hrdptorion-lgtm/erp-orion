@@ -1474,8 +1474,13 @@ function savePOCustomer(payload) {
   const ppnIdx = headers.findIndex(h => String(h).toLowerCase().trim() === 'ppn');
   const dpIdx = headers.findIndex(h => String(h).toLowerCase().trim() === 'dp po customer');
 
+  // Cari baris yang akan diupdate
+  // Jika ada original_id (dipakai saat ID PO diubah manual), gunakan itu sebagai kunci pencarian
+  const originalId = payload.original_id || payload.id_po_customer;
+
   for (let i = 1; i < values.length; i++) {
-    if (String(values[i][0]).trim() === String(payload.id_po_customer).trim()) {
+    if (originalId && String(values[i][0]).trim() === String(originalId).trim()) {
+      sheet.getRange(i + 1, 1).setValue(idPO || originalId);
       sheet.getRange(i + 1, 2).setValue(payload.no_penawaran || '');
       sheet.getRange(i + 1, 3).setValue(payload.nama_customer || '');
       sheet.getRange(i + 1, 4).setValue(payload.tanggal_po || new Date().toLocaleDateString('id-ID'));
@@ -1493,7 +1498,6 @@ function savePOCustomer(payload) {
       return { status: 'success', message: 'PO Customer berhasil diupdate.' };
     }
   }
-  
   const newRow = [
     idPO,
     payload.no_penawaran || '',

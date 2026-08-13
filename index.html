@@ -1871,6 +1871,10 @@
                 <h2 id="po-customer-modal-title" style="margin-bottom: 0.8rem;">Buat PO dari Penawaran</h2>
                 <form id="po-customer-form">
                     <input type="hidden" id="poc_id">
+                    <div class="input-group" id="poc_manual_id_group">
+                        <label>Nomor PO <span style="color:var(--text-muted); font-size:0.8rem;">(Kosongkan untuk otomatis)</span></label>
+                        <input type="text" id="poc_manual_id" placeholder="Contoh: PNW-001-PO-001 (opsional)">
+                    </div>
                     <div class="input-group">
                         <label>Pilih Customer <span style="color:var(--danger)">*</span></label>
                         <select id="poc_customer_select" required

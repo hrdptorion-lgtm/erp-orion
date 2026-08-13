@@ -3902,6 +3902,9 @@ document.addEventListener("DOMContentLoaded", () => {
           document.getElementById("poc_file_pdf_link").innerHTML = "";
 
           document.getElementById("poc_id").value = "";
+          if (document.getElementById("poc_manual_id")) {
+            document.getElementById("poc_manual_id").value = "";
+          }
           if (document.getElementById("poc_dp")) {
             document.getElementById("poc_dp").value = "0";
           }
@@ -4187,8 +4190,12 @@ document.addEventListener("DOMContentLoaded", () => {
             });
           });
 
+          const currentId = document.getElementById("poc_id").value;
+          const manualId = (document.getElementById("poc_manual_id")?.value || "").trim();
+
           const payload = {
-            id_po_customer: document.getElementById("poc_id").value,
+            id_po_customer: manualId || currentId,
+            original_id: currentId || undefined,
             no_penawaran: document.getElementById("poc_no_penawaran").value,
             nama_customer: document.getElementById("poc_customer").value,
             tanggal_po: document.getElementById("poc_tanggal").value,
@@ -5605,6 +5612,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         document.getElementById("poc_id").value = item.id_po_customer;
+        if (document.getElementById("poc_manual_id")) {
+          document.getElementById("poc_manual_id").value = item.id_po_customer || "";
+        }
         document.getElementById("po-customer-modal-title").innerText =
           "Edit PO Customer";
 
@@ -11149,14 +11159,16 @@ document.addEventListener("DOMContentLoaded", () => {
           const userSession = JSON.parse(localStorage.getItem("erp_session") || "{}");
           const userRole = String(userSession.role || "").toLowerCase().trim();
           const isSuperAdmin = userRole === "super admin" || userRole === "superadmin" || userRole === "super_admin";
+          const isAdmin = isSuperAdmin || userRole === "admin";
 
           let actionBtns = "";
           if (isSelesai) {
-            // If finished, only show Print button, hide edit/delete/finish
+            // If finished, show Print buttons; admin/super admin can also Edit & Delete
             actionBtns = `
                 <button class="btn btn-print-sj" data-idx="${suratJalanData.indexOf(sj)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(59, 130, 246, 0.2); color: #60a5fa; margin-right: 5px;" title="Print"><i class="fa-solid fa-print"></i></button>
                 <button class="btn btn-print-proforma-sj" data-idx="${suratJalanData.indexOf(sj)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(168, 85, 247, 0.2); color: #a855f7; margin-right: 5px;" title="Print Proforma Invoice"><i class="fa-solid fa-file-invoice-dollar"></i></button>
-                ${isSuperAdmin ? `<button class="btn btn-edit-sj" data-idx="${suratJalanData.indexOf(sj)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(16, 185, 129, 0.2); color: var(--secondary); margin-right: 5px;" title="Edit (Super Admin)"><i class="fa-solid fa-pen"></i></button>` : ''}
+                ${isAdmin ? `<button class="btn btn-edit-sj" data-idx="${suratJalanData.indexOf(sj)}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(16, 185, 129, 0.2); color: var(--secondary); margin-right: 5px;" title="Edit (Admin)"><i class="fa-solid fa-pen"></i></button>` : ''}
+                ${isAdmin ? `<button class="btn btn-delete-sj" data-no="${sjNo}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; background: rgba(239, 68, 68, 0.1); color: var(--danger); margin-right: 5px;" title="Hapus (Admin)"><i class="fa-solid fa-trash"></i></button>` : ''}
                 <span style="font-size: 0.8rem; color: var(--success); display: inline-flex; align-items: center; padding: 0.4rem;"><i class="fa-solid fa-check-circle"></i> Selesai</span>
                 `;
           } else {
