@@ -1,5 +1,5 @@
 // const API_URL = 'https://script.google.com/macros/s/AKfycbzre0bIZGUHMaXZpEDwduRnDrtYbb6zprcGYsjxXPdovLq1lGm_lA5bZPK6c2HnlIU/exec';
-// Jika ingin menggunakan Vercel Proxy (menghindari bug multi-login Google), hilangkan komentar pada baris di bawah ini dan jadikan baris di atas komentar:
+// Jika ingin apk menggunakan Vercel Proxy (menghindari bug multi-login Google), hilangkan komentar pada baris di bawah ini dan jadikan baris di atas komentar:
 const API_URL = '/api/gas';
 
 let activeRequests = 0;
