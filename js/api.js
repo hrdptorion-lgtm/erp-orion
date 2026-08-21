@@ -1,4 +1,4 @@
-// const API_URL = 'https://script.google.com/macros/s/AKfycbzre0bIZGUHMaXZpEDwduRnDrtYbb6zprcGYsjxXPdovLq1lGm_lA5bZPK6c2HnlIU/exec';
+// const API_URL = 'https://script.google.com/macros/s/AKfycbx7zUao5wg2xWMT4JNFonvsNPa-ywT7OWfWHl_UJ6n_fAn6tRBPdG7UkH0xbfF3r54/exec';
 // Jika ingin menggunakan Vercel Proxy (menghindari bug multi-login Google), hilangkan komentar pada baris di bawah ini dan jadikan baris di atas komentar:
 const API_URL = '/api/gas';
 

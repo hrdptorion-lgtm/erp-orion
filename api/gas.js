@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ status: 'error', message: 'Method Not Allowed' });
   }
 
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbzre0bIZGUHMaXZpEDwduRnDrtYbb6zprcGYsjxXPdovLq1lGm_lA5bZPK6c2HnlIU/exec';
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbx7zUao5wg2xWMT4JNFonvsNPa-ywT7OWfWHl_UJ6n_fAn6tRBPdG7UkH0xbfF3r54/exec';
 
   try {
     // Baca raw body stream
